@@ -34,11 +34,6 @@ async function connectWallet() {
             resetBtn(); return;
         }
 
-        console.log('Wallet info:', info);
-        if (!['xian-1', 'xian-testnet-12'].includes(info.chainId)) {
-            toast('Wrong network – switch to mainnet or testnet', 'error');
-            resetBtn(); return;
-        }
 
         /* success! */
         userAddress = info.address;
