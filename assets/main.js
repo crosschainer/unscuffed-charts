@@ -204,6 +204,21 @@ async function selectPair(pairId) {
   chart.initEmptyChart();
   await chart.loadInitialCandles(pairId, chartDenom);
 
+  updateTradeBox({
+    id: pairId,
+    sym0: meta0.symbol,
+    sym1: meta1.symbol,
+    price: priceNow.toLocaleString(undefined, { maximumFractionDigits: 6 }) + ' ' + meta1.symbol,
+    balance0: '—',            // fetch wallet balances if you like
+    balance1: '—',
+    contract0: token0,
+    contract1: token1,
+    currentPrice: priceNow,
+    reserve0: resD.reserve0 || 0,
+    reserve1: resD.reserve1 || 0,
+  });
+  refreshBalanceLine();
+
   /* 6) trades ------------------------------------------------------------*/
   els.tradesList.innerHTML = '';
   (tradesD.trades || []).forEach(t => {

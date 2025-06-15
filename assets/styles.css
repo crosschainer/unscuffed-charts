@@ -35,3 +35,6 @@ body::before {
   scrollbar-width: thin;
   scrollbar-color:#4b5563 transparent;
 }
+.btn-neon:hover {
+  box-shadow: 0 0 8px #08FBD6, 0 0 12px #C400FF;
+}
