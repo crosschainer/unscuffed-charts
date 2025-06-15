@@ -1,0 +1,37 @@
+ :root { --brandbar-h: 48px; }   /* matches h-12 */
+/* cosmic radial backdrop */
+body::before {
+    content: "";
+    position: fixed;
+    inset: 0;
+    background: radial-gradient(800px at 20% 30%, rgba(8, 251, 214, 0.08), transparent 70%),
+    radial-gradient(800px at 80% 70%, rgba(196, 0, 255, 0.08), transparent 70%);
+    pointer-events: none;
+    z-index: -1;
+}
+/* subtle diagonal grid for the chart area */
+.chart-bg {
+    background-image: linear-gradient(
+        135deg,
+        rgba(255, 255, 255, 0.04) 10%,
+        transparent 10%,
+        transparent 50%,
+        rgba(255, 255, 255, 0.04) 50%,
+        rgba(255, 255, 255, 0.04) 60%,
+        transparent 60%,
+        transparent 100%
+    );
+    background-size: 16px 16px;
+}
+/* same dark scrollbar for WebKit + Firefox */
+#pairsScroller::-webkit-scrollbar      { width: 8px; }
+#pairsScroller::-webkit-scrollbar-track{ background:transparent; }
+#pairsScroller::-webkit-scrollbar-thumb{
+  background:#4b5563; border-radius:4px;
+}
+#pairsScroller:hover::-webkit-scrollbar-thumb{ background:#9ca3af; }
+
+#pairsScroller {                       /* Firefox */
+  scrollbar-width: thin;
+  scrollbar-color:#4b5563 transparent;
+}

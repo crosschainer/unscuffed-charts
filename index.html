@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Xian Dex Research</title>
+
+  <!-- Tailwind -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            inter: ["Inter", "ui-sans-serif", "system-ui"],
+          },
+          colors: {
+            brand: {
+              cyan: "#08FBD6",
+              magenta: "#C400FF",
+              indigo: "#44A4FF",
+              base: "#060708",
+              card: "#0d0e11",
+            },
+          },
+          boxShadow: {
+            neon: "0 0 12px rgba(8, 251, 214, 0.6)",
+          },
+        },
+      },
+    };
+  </script>
+
+  <!-- Lightweight Charts -->
+  <script src="https://unpkg.com/lightweight-charts@4.0.0/dist/lightweight-charts.standalone.production.js"></script>
+  <!-- Inter font -->
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <!-- Custom CSS -->
+  <link href="assets/styles.css" rel="stylesheet" />
+</head>
+
+<body class="font-inter bg-brand-base text-gray-200 h-screen flex flex-col">
+  <!--Brand and Menu Bar -->
+  <header class="flex items-center gap-2 h-10 px-4
+               border-b border-white/5 bg-brand-card/90 backdrop-blur-sm
+               shrink-0">
+    <div class="flex items-center space-x-3">
+      <span class="text-lg font-semibold">Xian Dex Research</span>
+    </div>
+    
+  </header>
+  
+  <!-- Mobile header with hamburger -->
+  <div class="md:hidden flex items-center space-x-2 px-4 py-2 border-b border-white/5 bg-brand-card">
+    <button id="hamburger" class="p-2">
+      <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
+      </svg>
+    </button>
+    <span class="ml-2 text-lg font-semibold">Pairs</span>
+  </div>
+
+  <div class="flex flex-1 overflow-hidden">
+
+    <!-- Sidebar on md+; toggled offcanvas on mobile -->
+    <aside id="sidebar" class="hidden md:flex w-64 flex-col border-r border-white/5 bg-brand-card">
+      <div class="p-4 text-lg font-semibold">Pairs</div>
+      <div class="px-4">
+        <input id="pairSearch" type="text" placeholder="Search..."
+          class="w-full rounded-md bg-white/5 px-3 py-2 text-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-brand-cyan" />
+      </div>
+      <div id="pairsScroller" class="mt-4 h-full overflow-y-auto relative">
+        <!-- dynamic padders keep total height -->
+        <div id="topPad"></div>
+        <nav id="rowHost" class="space-y-1 absolute inset-x-0"></nav>
+        <div id="bottomPad"></div>
+      </div>
+    </aside>
+
+    <!-- Main panel -->
+    <main class="flex-1 flex flex-col md:flex-row overflow-hidden relative">
+
+      <!-- Content column -->
+      <div class="flex-1 flex flex-col ">
+        <!-- Stats bar -->
+        <header
+          class="flex items-center justify-between px-4 md:px-6 py-3 border-b border-white/5 backdrop-blur-sm bg-brand-base/70">
+          <div class="flex items-center gap-3">
+            <img id="pairLogo" src="data:image/gif;base64,R0lGODlhAQABAAD/ACwAAAAAAQABAAACADs=" class=""
+              onerror="this.onerror=null;this.src=this.src" height="28" width="28" alt="Logo" />
+            <h1 id="pairName" class="text-lg font-semibold">&nbsp;</h1>
+          </div>
+          <div class="hidden lg:flex items-center gap-4 text-xs">
+            <span>Price: <span id="price" class="font-medium">—</span></span>
+            <span>24h Δ: <span id="delta" class="font-medium">—</span></span>
+            <span>Liquidity: <span id="liquidity" class="font-medium">—</span></span>
+            <span>Vol 24h: <span id="volume" class="font-medium">—</span></span>
+          </div>
+
+        </header>
+
+        <!-- Chart -->
+        <div id="chartContainer" class="flex-1 chart-bg relative"></div>
+      </div>
+
+      <!-- Trades panel (full width on mobile, fixed on desktop) -->
+      <aside class="w-full md:w-96 border-l border-white/5 bg-brand-card overflow-y-auto flex-shrink-0">
+        <div class="p-4 border-b border-white/5 text-sm font-semibold">Latest Trades</div>
+        <div class="overflow-x-auto">
+          <table class="min-w-full table-fixed text-xs">
+            <colgroup>
+              <col style="width: 10%" />
+              <col style="width: 35%" />
+              <col style="width: 25%" />
+              <col style="width: 20%" />
+            </colgroup>
+            <thead class="bg-brand-card/75">
+              <tr class="border-b border-white/10">
+                <th class="px-2 py-2 text-left">Side</th>
+                <th class="px-2 py-2 text-right">Amount</th>
+                <th class="px-2 py-2 text-right">Price</th>
+                <th class="px-2 py-2 text-right">Age</th>
+              </tr>
+            </thead>
+            <tbody id="tradesList" class="divide-y divide-white/5"></tbody>
+          </table>
+        </div>
+      </aside>
+
+    </main>
+  </div>
+
+  <script>
+    // hamburger toggle
+    document.getElementById('hamburger').onclick = () => {
+      document.getElementById('sidebar').classList.toggle('hidden');
+    };
+  </script>
+  <script src="assets/main.js" type="module"></script>
+</body>
+
+</html>
