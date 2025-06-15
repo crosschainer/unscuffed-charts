@@ -38,3 +38,15 @@ body::before {
 .btn-neon:hover {
   box-shadow: 0 0 8px #08FBD6, 0 0 12px #C400FF;
 }
+
+/* same dark scrollbar for WebKit + Firefox */
+aside::-webkit-scrollbar      { width: 8px; }
+aside::-webkit-scrollbar-track{ background:transparent; }
+aside::-webkit-scrollbar-thumb{
+  background:#4b5563; border-radius:4px;
+}
+aside:hover::-webkit-scrollbar-thumb{ background:#9ca3af; }
+aside {                       /* Firefox */
+  scrollbar-width: thin;
+  scrollbar-color:#4b5563 transparent;
+}
