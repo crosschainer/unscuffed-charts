@@ -317,7 +317,6 @@ async function executeTrade({ side, pairId, amount }) {
   if (result.errors) throw new Error('swap failed');
 
   /* ---------- 4. success toast ---------- */
-  toast(`${side === 'buy' ? 'Bought' : 'Sold'} ${amount} tokens`, 'success');
   setTimeout(() => {
     /* refresh balance line after 2 s */
     refreshBalanceLine();

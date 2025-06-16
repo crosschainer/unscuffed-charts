@@ -13,6 +13,9 @@ const rowH = 56;              // px – real height of 1 sidebar row
 let searchTerm = '';          // current lowercase query
 let allPairs = [];          // master list (set in init)
 let sidebarStats = {};          // 24 h vol/Δ cache (set later)
+let candleTimer = null;         // live candle updates
+let tradeTimer = null;          // live trade updates
+
 
 /* --------------------------- Start-up -----------------------------------*/
 document.addEventListener('DOMContentLoaded', init);
@@ -265,6 +268,42 @@ els.volumeM.textContent    = els.volume.textContent;
       <td class="px-2 py-2 text-right text-gray-400 whitespace-nowrap">${timeAgo(t.created)}</td>`;
     els.tradesList.appendChild(row);
   });
+
+  /* ───────────────── live refresh loops ────────────────────────── */
+clearInterval(candleTimer);
+clearInterval(tradeTimer);
+
+/* ① newest candle every 15 s */
+/* ① newest candle every 15 s --------------------------------------- */
+candleTimer = setInterval(async () => {
+  try {
+    const after = chart.lastUnixMs();             // ← helper from patch #1
+    const { candles } = await api.getPairCandles(pairId, {
+      token    : chartDenom,
+      interval : chart.currentInterval(),         // “5m” so buckets match
+      after                                    // only newer buckets
+    });
+
+    candles.forEach(c => chart.upsertLastCandle(c));
+    if (candles.length) chart.timeScale().scrollToRealTime();
+  } catch { /* ignore hic-cups */ }
+}, 15_000);
+/* ② newest trades every 10 s */
+let lastIso = tradesD.trades?.[0]?.created ?? null;
+
+tradeTimer = setInterval(async () => {
+  try {
+    const fresh = await api.getPairTrades(pairId, {
+      token: denomTrades,
+      created_after: lastIso
+    });
+    if (fresh.trades?.length) {
+      lastIso = fresh.trades[0].created;
+      prependTrades(fresh.trades, meta0, meta1);   // helper below
+    }
+  } catch {}
+}, 10_000);
+
 }
 function updateVisibleRows() {
   const start = Math.floor(els.pairsScroller.scrollTop / rowH);
@@ -304,3 +343,43 @@ function matchesSearch(pair) {
   return haystack.includes(searchTerm);
 }
 
+function prependTrades(list, meta0, meta1) {
+  list.slice().reverse().forEach(t => {           // oldest-first
+    const row = buildTradeRow(t, meta0, meta1);   // reuse your exact logic
+    els.tradesList.insertBefore(row, els.tradesList.firstChild);
+  });
+  // keep table lean
+  while (els.tradesList.children.length > 40) els.tradesList.lastChild.remove();
+}
+
+function buildTradeRow(t, meta0, meta1) {
+  let side = ((t.side || '').toLowerCase() === 'buy') ? 'Buy' : 'Sell';
+    let amountSymbol = t.amountSymbol || meta0.symbol;
+    let price;
+    let amount = t.amount || 0;
+    if (meta1.symbol === 'xUSDC') {
+      price = formatPrice(1 / t.price);  // xUSDC is a stablecoin, invert price
+    } else {
+      price = formatPrice(t.price);
+    }
+    if (meta1.symbol === 'xUSDC' && meta0.symbol === 'XIAN') {
+      side = (side === 'Buy') ? 'Sell' : 'Buy';  // reverse for USDC/currency
+    }
+    else{
+      amountSymbol = meta0.symbol;  // always use token0 symbol
+      amount = t.amount0 || t.amount1 || 0;  // prefer token0 amount
+    }
+
+  const row = document.createElement('tr');
+  row.className = 'odd:bg-white/5 hover:bg-white/10 transition';
+  row.innerHTML = `
+    <td class="px-2 py-2 text-left ${side==='Buy'?'text-emerald-400':'text-rose-400'} whitespace-nowrap">${side}</td>
+    <td class="px-2 py-2 text-right whitespace-nowrap">
+      ${amount.toLocaleString(undefined,{minFractionDigits:2,maxFractionDigits:4})} ${amountSymbol}
+    </td>
+    <td class="px-2 py-2 text-right whitespace-nowrap">
+      ${price.toLocaleString(undefined,{minFractionDigits:2,maxFractionDigits:8})} ${meta1.symbol}
+    </td>
+    <td class="px-2 py-2 text-right text-gray-400 whitespace-nowrap">${timeAgo(t.created)}</td>`;
+  return row;
+}

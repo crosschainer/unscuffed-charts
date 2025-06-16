@@ -8,6 +8,7 @@ let oldestCursor = null;
 let isLoadingBars = false;
 let currentPairId = null;
 let chartDenom = '0';   // 0 = Xian, 1 = USD
+let chartInterval = '5m';
 
 export function initEmptyChart() {
     if (chart) chart.remove();
@@ -77,6 +78,7 @@ export function initEmptyChart() {
 }
 
 export async function loadInitialCandles(pairId, denom = '0') {
+    chartInterval = '5m';  // default interval
     chartDenom = denom;
     currentPairId = pairId;
     isLoadingBars = true;
@@ -111,10 +113,37 @@ async function onVisibleRangeChanged(range) {
 }
 
 function toBar(c) {
-    return {
-        time: Math.floor(new Date(c.t).getTime() / 1000),
+      // add a “Z” if the backend forgot it so Date() parses in UTC
+  const iso = c.t.endsWith('Z') ? c.t : c.t + 'Z';
+  return {
+      time: Math.floor(Date.parse(iso) / 1000),
         open: c.open, high: c.high,
         low: c.low, close: c.close,
         volume: c.volume,
     };
+}
+export function upsertLastCandle(raw) {
+  const bar = toBar(raw);                  // you already have toBar()
+  const last = allBars[allBars.length - 1];
+
+  if (last && last.time === bar.time) {
+    // replace existing candle
+    allBars[allBars.length - 1] = bar;
+    candleSeries.update(bar);
+    volumeSeries.update({ time: bar.time, value: bar.volume });
+  } else {
+    // push new candle
+    allBars.push(bar);
+    candleSeries.update(bar);
+    volumeSeries.update({ time: bar.time, value: bar.volume });
+  }
+}
+// unix-milliseconds of the newest bar we have
+export function lastUnixMs() {
+  return allBars.length ? allBars[allBars.length - 1].time * 1000 : null;
+}
+
+// (optional) whichever interval was used for the initial load (“5m”, “1h”…)
+export function currentInterval() {
+  return chartInterval;          // see change just below
 }

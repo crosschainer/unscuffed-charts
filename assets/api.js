@@ -31,9 +31,26 @@ export const getPairs = () => fetchJSON(`${API_BASE}/pairs?limit=100`);
 export const getPair = id => fetchJSON(`${API_BASE}/pairs/${id}`);
 export const get24hPriceChange = (id, t = 1) => fetchJSON(`${API_BASE}/pairs/${id}/pricechange24h?token=${t}`);
 export const get24hVolume = (id, t = 1) => fetchJSON(`${API_BASE}/pairs/${id}/volume24h?token=${t}`);
-export const getPairCandles = (id, { interval = '5m', range = '7d', before, token = 0 } = {}) =>
-    fetchJSON(`${API_BASE}/pairs/${id}/candles?interval=${interval}&range=${range}` +
-        (before ? `&before=${before}` : '') + `&token=${token}`);
-export const getPairTrades = (id, { token = 1, limit = 25 } = {}) =>
-    fetchJSON(`${API_BASE}/pairs/${id}/trades?token=${token}&limit=${limit}`);
+export const getPairCandles = (
+  id,
+  { interval = '5m', range = '7d', before, limit,
+    after,       //  ← new
+    token = 0 } = {}
+) => {
+  const qs = new URLSearchParams({ interval, range, token });
+  if (before) qs.append('before', before);
+  if (limit)  qs.append('limit',  limit);
+  if (after)  qs.append('after',  after);   // ← new line
+  return fetchJSON(`${API_BASE}/pairs/${id}/candles?${qs}`)
+         .then(r => Array.isArray(r) ? { candles: r, page: {} } : r);
+};
+
+export const getPairTrades = (
+  id,
+  { token = 1, limit = 25, created_after } = {}
+) => {
+  const qs = new URLSearchParams({ token, limit });
+  if (created_after) qs.append('created_after', created_after);
+  return fetchJSON(`${API_BASE}/pairs/${id}/trades?${qs}`);
+};
 export const getPairReserves = id => fetchJSON(`${API_BASE}/pairs/${id}/reserves`);
