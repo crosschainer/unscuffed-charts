@@ -16,7 +16,7 @@ export function initEmptyChart() {
 
     chart = LightweightCharts.createChart(els.chartWrap, {
         width: els.chartWrap.clientWidth,
-        height: Math.max(200, els.chartWrap.clientHeight || 0),
+        height: Math.max(300, els.chartWrap.clientHeight || 0),
         layout: { background: { type: 'solid', color: 'rgba(0,0,0,0)' }, textColor: '#cbd5e1' },
         grid: {
             vertLines: { color: 'rgba(255,255,255,0.05)' },
@@ -57,7 +57,7 @@ export function initEmptyChart() {
     window.addEventListener('resize', () =>
         chart.applyOptions({
             width: els.chartWrap.clientWidth,
-            height: Math.max(200, els.chartWrap.clientHeight), // fallback
+            height: Math.max(300, els.chartWrap.clientHeight), // fallback
         }));
         new ResizeObserver(entries => {
     const { width, height } = entries[0].contentRect;
