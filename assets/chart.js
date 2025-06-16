@@ -57,8 +57,12 @@ export function initEmptyChart() {
     window.addEventListener('resize', () =>
         chart.applyOptions({
             width: els.chartWrap.clientWidth,
-            height: els.chartWrap.clientHeight
+            height: Math.max(200, els.chartWrap.clientHeight), // fallback
         }));
+        new ResizeObserver(entries => {
+    const { width, height } = entries[0].contentRect;
+    chart.applyOptions({ width, height });
+  }).observe(els.chartWrap);
 }
 
 export async function loadInitialCandles(pairId, denom = '0') {
