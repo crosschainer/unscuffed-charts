@@ -86,27 +86,41 @@
   <div class="flex flex-1 overflow-hidden">
 
     <!-- Sidebar on md+; toggled offcanvas on mobile -->
-   <aside id="sidebar"
-       class="
-         fixed md:static         
-         inset-y-0 left-0 z-40
-         w-64                       
-         -translate-x-full          
-         md:translate-x-0         
-         transition-transform duration-200
-         flex flex-col bg-brand-card border-r border-white/5">
-      <div class="p-4 text-lg font-semibold">Pairs</div>
-      <div class="px-4">
-        <input id="pairSearch" type="text" placeholder="Search..."
-          class="w-full rounded-md bg-white/5 px-3 py-2 text-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-brand-cyan" />
-      </div>
-      <div id="pairsScroller" class="mt-4 h-full overflow-y-auto relative">
-        <!-- dynamic padders keep total height -->
-        <div id="topPad"></div>
-        <nav id="rowHost" class="space-y-1 absolute inset-x-0"></nav>
-        <div id="bottomPad"></div>
-      </div>
-    </aside>
+  <aside id="sidebar"
+       class="fixed md:static inset-y-0 left-0 z-40 w-64
+              -translate-x-full pointer-events-none
+              md:translate-x-0 md:pointer-events-auto
+              transition-transform duration-200
+              flex flex-col bg-brand-card border-r border-white/5">
+  <!-- header row with close “X” (mobile only) -->
+  <div class="flex items-center justify-between p-4 md:hidden">
+    <span class="text-lg font-medium">Pairs</span>
+    <button id="closeSidebar" class="p-2">
+      <svg class="w-5 h-5" viewBox="0 0 24 24" stroke="currentColor" fill="none">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+              d="M6 18L18 6M6 6l12 12" />
+      </svg>
+    </button>
+  </div>
+
+  <!-- header row (desktop) -->
+  <div class="hidden md:block p-4 text-lg font-semibold">Pairs</div>
+
+  <!-- search box -->
+  <div class="px-4">
+    <input id="pairSearch" type="text" placeholder="Search..."
+           class="w-full rounded-md bg-white/5 px-3 py-2 text-sm
+                  placeholder-gray-400 focus:outline-none
+                  focus:ring-2 focus:ring-brand-cyan" />
+  </div>
+
+  <!-- virtualised list -->
+  <div id="pairsScroller" class="mt-4 h-full overflow-y-auto relative">
+    <div id="topPad"></div>
+    <nav id="rowHost" class="space-y-1 absolute inset-x-0"></nav>
+    <div id="bottomPad"></div>
+  </div>
+</aside>
 
     <!-- Main panel -->
     <main class="flex-1 flex flex-col md:flex-row md:overflow-hidden relative">

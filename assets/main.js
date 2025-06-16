@@ -16,9 +16,14 @@ let sidebarStats = {};          // 24 h vol/Δ cache (set later)
 
 /* --------------------------- Start-up -----------------------------------*/
 document.addEventListener('DOMContentLoaded', init);
-document.getElementById('hamburger').onclick = () =>
-  document.getElementById('sidebar').classList.toggle('-translate-x-full');
+const sb = document.getElementById('sidebar');
+function toggleSidebar() {
+  sb.classList.toggle('-translate-x-full');
+  sb.classList.toggle('pointer-events-none');
+}
 
+document.getElementById('hamburger').onclick   = toggleSidebar;
+document.getElementById('closeSidebar').onclick = toggleSidebar;
 async function init() {
   showSidebarSkeleton();
   showMainSkeleton();

@@ -1,4 +1,5 @@
  :root { --brandbar-h: 48px; }   /* matches h-12 */
+ 
 /* cosmic radial backdrop */
 body::before {
     content: "";
