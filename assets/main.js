@@ -15,6 +15,7 @@ let allPairs = [];          // master list (set in init)
 let sidebarStats = {};          // 24 h vol/Δ cache (set later)
 let candleTimer = null;         // live candle updates
 let tradeTimer = null;          // live trade updates
+let statsTimer = null;          // live stats updates
 
 
 /* --------------------------- Start-up -----------------------------------*/
@@ -272,9 +273,46 @@ els.volumeM.textContent    = els.volume.textContent;
   /* ───────────────── live refresh loops ────────────────────────── */
 clearInterval(candleTimer);
 clearInterval(tradeTimer);
+clearInterval(statsTimer);
+
+statsTimer = setInterval(async () => {
+  try {
+    /* price & 24 h change (same denom logic) */
+    const priceD = await api.get24hPriceChange(pairId, denomPrice);
+    const priceNow = priceD.priceNow ?? priceD.price ?? 0;
+    els.price.textContent = `${formatPrice(priceNow)} ${meta1.symbol}`;
+
+    const pct = priceD.changePct ?? priceD.percentChange ?? 0;
+    els.delta.textContent = `${pct >= 0 ? '+' : ''}${pct.toFixed(2)}%`;
+    els.delta.classList.toggle('text-emerald-400', pct >= 0);
+    els.delta.classList.toggle('text-rose-400',    pct < 0);
+
+    /* 24 h volume */
+    const volD = await api.get24hVolume(pairId, denomVol);
+    els.volume.textContent =
+      `$${(volD.volume24h * currencyUsdPrice)
+          .toLocaleString(undefined, { maximumFractionDigits: 0 })}`;
+
+    /* liquidity (reserve1 is the “USD side” for every pair) */
+    const resD = await api.getPairReserves(pairId);
+    const usdLiq =
+      Number(resD.reserve1 || 0) * currencyUsdPrice * 2;
+    els.liquidity.textContent =
+      `$${usdLiq.toLocaleString(undefined,
+            { minFractionDigits: 2, maxFractionDigits: 2 })}`;
+
+    /* mirror to mobile line */
+    els.priceM.textContent     = els.price.textContent;
+    els.deltaM.textContent     = els.delta.textContent;
+    els.deltaM.classList.toggle('text-emerald-400', pct >= 0);
+    els.deltaM.classList.toggle('text-rose-400',    pct < 0);
+    els.volumeM.textContent    = els.volume.textContent;
+    els.liquidityM.textContent = els.liquidity.textContent;
+
+  } catch {/* network hiccup → ignore */}
+}, 30_000);
 
 /* ① newest candle every 15 s */
-/* ① newest candle every 15 s --------------------------------------- */
 candleTimer = setInterval(async () => {
   try {
     const after = chart.lastUnixMs();             // ← helper from patch #1
