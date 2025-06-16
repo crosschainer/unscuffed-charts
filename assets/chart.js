@@ -29,7 +29,17 @@ export function initEmptyChart() {
             priceFormatter: v => new Intl.NumberFormat(navigator.language, {
                 minimumFractionDigits: 6, maximumFractionDigits: 6,
             }).format(v),
-            dateFormat: 'dd.MM.yyyy',
+            timeFormatter: ts => {
+     // ts is the same seconds number you passed in setData / update
+     return new Date(ts * 1000)      // js wants milliseconds
+       .toLocaleString(navigator.language, {
+         hour:   '2-digit',
+         minute: '2-digit',
+         day:    '2-digit',
+         month:  'short',
+         hour12: false               // drop for AM/PM
+       });
+   },
         },
         rightPriceScale: {
             mode: LightweightCharts.PriceScaleMode.Logarithmic,
