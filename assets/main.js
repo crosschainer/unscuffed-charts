@@ -208,7 +208,8 @@ async function selectPair(pairId) {
   /* mobile mirrors */
 els.priceM.textContent     = els.price.textContent;
 els.deltaM.textContent     = els.delta.textContent;
-els.deltaM.classList.add(...els.delta.classList); // copy classes
+els.deltaM.classList.remove('text-emerald-400', 'text-rose-400');
+els.deltaM.classList.add(els.delta.className.split(' ')[0]); // copy class
 els.liquidityM.textContent = els.liquidity.textContent;
 els.volumeM.textContent    = els.volume.textContent;
 
