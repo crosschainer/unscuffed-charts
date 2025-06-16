@@ -235,6 +235,7 @@ els.volumeM.textContent    = els.volume.textContent;
   els.tradesList.innerHTML = '';
   (tradesD.trades || []).forEach(t => {
     let side = ((t.side || '').toLowerCase() === 'buy') ? 'Buy' : 'Sell';
+    let amountSymbol = t.amountSymbol || meta0.symbol;
     let price;
     if (meta1.symbol === 'xUSDC') {
       price = formatPrice(1 / t.price);  // xUSDC is a stablecoin, invert price
@@ -244,13 +245,16 @@ els.volumeM.textContent    = els.volume.textContent;
     if (meta1.symbol === 'xUSDC' && meta0.symbol === 'XIAN') {
       side = (side === 'Buy') ? 'Sell' : 'Buy';  // reverse for USDC/currency
     }
+    else{
+      amountSymbol = meta1.symbol;  // always use token0 symbol
+    }
     const sym0 = meta0.symbol;
     const row = document.createElement('tr');
     row.className = 'odd:bg-white/5 hover:bg-white/10 transition';
     row.innerHTML = `
       <td class="px-2 py-2 text-left ${side === 'Buy' ? 'text-emerald-400' : 'text-rose-400'} whitespace-nowrap">${side}</td>
       <td class="px-2 py-2 text-right whitespace-nowrap">
-        ${t.amount.toLocaleString(undefined, { minFractionDigits: 2, maxFractionDigits: 4 })} ${sym0}
+        ${t.amount.toLocaleString(undefined, { minFractionDigits: 2, maxFractionDigits: 4 })} ${amountSymbol}
       </td>
       <td class="px-2 py-2 text-right whitespace-nowrap">
         ${price.toLocaleString(undefined, { minFractionDigits: 2, maxFractionDigits: 8 })} ${meta1.symbol}
