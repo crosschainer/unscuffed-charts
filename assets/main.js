@@ -17,7 +17,7 @@ let sidebarStats = {};          // 24 h vol/Δ cache (set later)
 /* --------------------------- Start-up -----------------------------------*/
 document.addEventListener('DOMContentLoaded', init);
 document.getElementById('hamburger').onclick = () =>
-  document.getElementById('sidebar').classList.toggle('hidden');
+  document.getElementById('sidebar').classList.toggle('-translate-x-full');
 
 async function init() {
   showSidebarSkeleton();
