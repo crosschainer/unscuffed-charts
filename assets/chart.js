@@ -14,6 +14,7 @@ export function initEmptyChart() {
 
     els.chartWrap.innerHTML = '';  // clear previous chart
 
+
     chart = LightweightCharts.createChart(els.chartWrap, {
         width: els.chartWrap.clientWidth,
         height: Math.max(300, els.chartWrap.clientHeight || 0),
