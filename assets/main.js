@@ -205,6 +205,12 @@ async function selectPair(pairId) {
   const usdLiq = Number(resD.reserve1 || 0) * currencyUsdPrice * 2;
   els.liquidity.textContent = `$${usdLiq.toLocaleString(undefined, { minFractionDigits: 2, maxFractionDigits: 2 })}`;
 
+  /* mobile mirrors */
+els.priceM.textContent     = els.price.textContent;
+els.deltaM.textContent     = els.delta.textContent;
+els.liquidityM.textContent = els.liquidity.textContent;
+els.volumeM.textContent    = els.volume.textContent;
+
   /* 5) chart -------------------------------------------------------------*/
   chart.initEmptyChart();
   await chart.loadInitialCandles(pairId, chartDenom);

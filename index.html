@@ -128,21 +128,33 @@
       <!-- Content column -->
       <div class="flex-1 flex flex-col ">
         <!-- Stats bar -->
-        <header
-          class="flex items-center justify-between px-4 md:px-6 py-3 border-b border-white/5 backdrop-blur-sm bg-brand-base/70">
-          <div class="flex items-center gap-3">
-            <img id="pairLogo" src="data:image/gif;base64,R0lGODlhAQABAAD/ACwAAAAAAQABAAACADs=" class=""
-              onerror="this.onerror=null;this.src=this.src" height="28" width="28" alt="Logo" />
-            <h1 id="pairName" class="text-lg font-semibold">&nbsp;</h1>
-          </div>
-          <div class="hidden lg:flex items-center gap-4 text-xs">
-            <span>Price: <span id="price" class="font-medium">—</span></span>
-            <span>24h Δ: <span id="delta" class="font-medium">—</span></span>
-            <span>Liquidity: <span id="liquidity" class="font-medium">—</span></span>
-            <span>Vol 24h: <span id="volume" class="font-medium">—</span></span>
-          </div>
+        <header class="border-b border-white/5 backdrop-blur-sm bg-brand-base/70">
+  <!-- top row: logo + inline stats (desktop) -->
+  <div class="flex items-center justify-between px-4 md:px-6 py-3">
+    <div class="flex items-center gap-3">
+      <img id="pairLogo" src="data:image/gif;base64,R0lGODlhAQABAAD/ACwAAAAAAQABAAACADs="
+           class="h-7 w-7" alt="Logo"
+           onerror="this.onerror=null;this.src=this.src">
+      <h1 id="pairName" class="text-lg font-semibold">&nbsp;</h1>
+    </div>
 
-        </header>
+    <!-- inline stats — desktop only -->
+    <div class="hidden lg:flex items-center gap-4 text-xs">
+      <span>Price: <span id="price" class="font-medium">—</span></span>
+      <span>24h Δ: <span id="delta" class="font-medium">—</span></span>
+      <span>Liquidity: <span id="liquidity" class="font-medium">—</span></span>
+      <span>Vol 24h: <span id="volume" class="font-medium">—</span></span>
+    </div>
+  </div>
+
+  <!-- wrapped grid — mobile only -->
+  <div class="grid grid-cols-2 gap-x-6 gap-y-1 px-4 pb-2 text-xs lg:hidden">
+    <span>Price:</span>      <span id="priceM"     class="font-medium justify-self-end">—</span>
+    <span>24 h Δ:</span>     <span id="deltaM"     class="font-medium justify-self-end">—</span>
+    <span>Liquidity:</span>  <span id="liquidityM" class="font-medium justify-self-end">—</span>
+    <span>Vol 24 h:</span>   <span id="volumeM"    class="font-medium justify-self-end">—</span>
+  </div>
+</header>
 
         <!-- Chart -->
         <div id="chartContainer" class="flex-1 min-h-0 chart-bg relative"></div>

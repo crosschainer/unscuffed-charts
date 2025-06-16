@@ -12,6 +12,11 @@ export const els = {
     volume: document.getElementById('volume'),
     tradesList: document.getElementById('tradesList'),
     chartWrap: document.getElementById('chartContainer'),
+    /* ▼ mobile copies ▼ */
+  priceM     : document.getElementById('priceM'),
+  deltaM     : document.getElementById('deltaM'),
+  liquidityM : document.getElementById('liquidityM'),
+  volumeM    : document.getElementById('volumeM'),
 };
 
 export function showSidebarSkeleton(count = 12) {
