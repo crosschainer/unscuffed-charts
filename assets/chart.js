@@ -59,7 +59,7 @@ export function initEmptyChart() {
         borderVisible: false,
         priceFormat: { type: 'price', precision: 6, minMove: 0.000001 },
     });
-    candleSeries.priceScale().applyOptions({ scaleMargins: { top: 0, bottom: 0.30 } });
+    candleSeries.priceScale().applyOptions({ scaleMargins: { top: 0.10, bottom: 0.30 } });
 
     volumeSeries = chart.addHistogramSeries({
         priceScaleId: '', color: '#44A4FF80', priceFormat: { type: 'volume' },
