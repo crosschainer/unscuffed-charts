@@ -344,8 +344,9 @@ tradeTimer = setInterval(async () => {
 
 }
 function updateVisibleRows() {
-  const start = Math.floor(els.pairsScroller.scrollTop / rowH);
-  const end = Math.min(start + Math.ceil(els.pairsScroller.clientHeight / rowH) + 4,
+  const rawTop = els.pairsScroller.scrollTop;
+  const start  = Math.max(0, Math.floor(rawTop / rowH));   // ← clamp
+  const end = Math.min(Math.max(start,start + Math.ceil(els.pairsScroller.clientHeight / rowH) + 4),
     liveRows.length);
 
   // Resize padders
