@@ -150,7 +150,13 @@ function makePairButton(p, volUSD, stats) {
     <div class="text-xs text-gray-400 mt-0.5">
       $${volUSD.toLocaleString(undefined, { maximumFractionDigits: 0 })} vol
     </div>`;
-  btn.onclick = () => selectPair(p.pair);
+  btn.onclick = () => {
+    selectPair(p.pair);
+     // ── NEW ── only on <768 px
+    if (window.matchMedia('(max-width: 767px)').matches) {
+      toggleSidebar();                // reuse your existing helper
+    }
+  }
   return btn;
 }
 
