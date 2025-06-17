@@ -27,7 +27,10 @@ export async function fetchTokenMeta(contract) {
 /* High-level “endpoint” helpers — keep these pure, no DOM inside! */
 
 export const getCurrencyPrice = () => fetchJSON(`${API_BASE}/pairs/1/pricechange24h?token=0`);
-export const getPairs = () => fetchJSON(`${API_BASE}/pairs?limit=100`);
+export function getPairs({ offset = 0, limit = 100, order = "desc" } = {}) {
+  const qs = new URLSearchParams({ offset, limit, order });
+  return fetchJSON(`${API_BASE}/pairs?${qs}`);
+}
 export const getPair = id => fetchJSON(`${API_BASE}/pairs/${id}`);
 export const get24hPriceChange = (id, t = 1) => fetchJSON(`${API_BASE}/pairs/${id}/pricechange24h?token=${t}`);
 export const get24hVolume = (id, t = 1) => fetchJSON(`${API_BASE}/pairs/${id}/volume24h?token=${t}`);

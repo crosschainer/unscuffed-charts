@@ -2,9 +2,8 @@
 import { els, showSidebarSkeleton, showMainSkeleton } from './ui.js';
 import * as api from './api.js';
 import * as chart from './chart.js';
-import { chunk, timeAgo, getPairFromHash, setPairHash, formatPrice } from './utils.js';
+import { timeAgo, getPairFromHash, setPairHash, formatPrice } from './utils.js';
 import { TOKEN_CACHE } from './api.js';
-import { binarySearch } from './utils.js';
 let currencyUsdPrice = 0;    // USD per Xian
 const liveRows = [];
 const rowH = 56;              // px – real height of 1 sidebar row
@@ -12,7 +11,6 @@ const rowH = 56;              // px – real height of 1 sidebar row
 /* ─── search state ────────────────────────────────────────── */
 let searchTerm = '';          // current lowercase query
 let allPairs = [];          // master list (set in init)
-let sidebarStats = {};          // 24 h vol/Δ cache (set later)
 let candleTimer = null;         // live candle updates
 let tradeTimer = null;          // live trade updates
 let statsTimer = null;          // live stats updates
@@ -39,12 +37,11 @@ async function init() {
     .addEventListener('input', onSearch);
 
   currencyUsdPrice = (await api.getCurrencyPrice()).priceNow;
-  const rawPairs = (await api.getPairs()).pairs;
+  const rawPairs = (await api.getPairs({ limit:1031 })).pairs; // already sorted DESC
   allPairs = normalisePairs(rawPairs);
   await preloadTokenMetadata(allPairs);
-  sidebarStats = await batchSidebarStats(allPairs);
 
-  renderSidebar(allPairs, sidebarStats);           // first paint
+  renderSidebar(allPairs);                         // first paint
   // deep-link support
   const maybeId = getPairFromHash();
   if (maybeId && allPairs.some(p => p.pair === maybeId)) {
@@ -66,66 +63,32 @@ async function preloadTokenMetadata(pairs) {
   await Promise.all(contracts.map(api.fetchTokenMeta));
 }
 
-async function batchSidebarStats(pairs) {
-  const paths = pairs.flatMap(p => [
-    `/pairs/${p.pair}/pricechange24h?token=1`,
-    `/pairs/${p.pair}/volume24h?token=1`,
-  ]);
-  paths.unshift('/pairs/1/pricechange24h?token=0', '/pairs/1/volume24h?token=0');
+function renderSidebar(pairs) {
 
-  const stats = {};
-  for (const grp of chunk(paths, 16)) {
-    const res = await Promise.all(
-      grp.map(path => api.throttledFetchJSON(api.API_BASE + path))
-    );
-    res.forEach((r, i) => {
-      stats[grp[i]] = r;
-
-      /* — stream update for the pair touched by this API path — */
-      const m = grp[i].match(/\/pairs\/(\d+)\//);   // capture pair id
-      if (m) {
-        const id = m[1];
-        const pairObj = pairs.find(p => p.pair === id);
-        if (pairObj) upsertRow(pairObj, stats);
-      }
-    });
-  }
-  return stats;
-}
-function renderSidebar(pairs, stats) {
-  // first call: clear skeleton; afterwards we keep DOM nodes alive
-  if (!liveRows.length) els.pairsList.innerHTML = '';
-
-  pairs.forEach(p => upsertRow(p, stats));
+  pairs.forEach(upsertRow);
   updateVisibleRows();
 }
 
-function upsertRow(pair, stats) {
+function upsertRow(pair) {
   if (!matchesSearch(pair)) return;   // skip if filtered out
-  const volUSD = usdVol(stats, pair);
+  const volUSD = toUsdVol(pair);      // ← helper below
 
   /* 1) de-duplicate ---------------------------------------------------- */
   const oldIdx = liveRows.findIndex(r => r.id === pair.pair);
   if (oldIdx !== -1) {
     liveRows.splice(oldIdx, 1);          // remove old record only
   }
-
-  /* 2) find sorted position ------------------------------------------- */
-  const pos = binarySearch(liveRows, volUSD, r => r.vol);
-
-  /* 3) build / store button ------------------------------------------- */
-  const btn = makePairButton(pair, volUSD, stats);
-  liveRows.splice(pos, 0, { id: pair.pair, vol: volUSD, btn });
+  /* already volume-sorted from the API → just push in order */
+  const btn = makePairButton(pair, volUSD);
+  liveRows.push({ id: pair.pair, vol: volUSD, btn });
 
   /* 4) repaint the visible window ------------------------------------- */
   updateVisibleRows();
 }
 
 
-function makePairButton(p, volUSD, stats) {
-  const pct = (p.token0 === 'currency' && p.token1 === 'con_usdc')
-    ? stats['/pairs/1/pricechange24h?token=0'].changePct
-    : stats[`/pairs/${p.pair}/pricechange24h?token=1`]?.changePct ?? 0;
+function makePairButton(p, volUSD) {
+  const pct = p.pricePct24h ?? 0;
 
   const meta0 = TOKEN_CACHE[p.token0] ?? { symbol: p.token0, logo: '' };
   const meta1 = TOKEN_CACHE[p.token1] ?? { symbol: p.token1, logo: '' };
@@ -160,12 +123,10 @@ function makePairButton(p, volUSD, stats) {
   return btn;
 }
 
-function usdVol(stats, p) {
-  const id = p.token0 === 'currency' && p.token1 === 'con_usdc'
-    ? '/pairs/1/volume24h?token=1'
-    : `/pairs/${p.pair}/volume24h?token=1`;
-  return (stats[id]?.volume24h ?? 0) * currencyUsdPrice;
-}
+function toUsdVol(p) {
+  /* token-1 side is always the ‘dollar’ side in the new payload */
+  return (p.volume24h ?? 0) * currencyUsdPrice;
+ }
 
 /* --------------------------- Pair page ----------------------------------*/
 async function selectPair(pairId) {
@@ -303,17 +264,22 @@ function onSearch(e) {
   updateVisibleRows();                 // reset padders
   // re-insert only matches
   const visiblePairs = allPairs.filter(matchesSearch);
-  visiblePairs.forEach(p => upsertRow(p, sidebarStats));
+  visiblePairs.forEach(upsertRow);
 }
 function matchesSearch(pair) {
-  if (!searchTerm) return true;        // empty → show all
-  const meta0 = TOKEN_CACHE[pair.token0];
-  const meta1 = TOKEN_CACHE[pair.token1];
+  if (!searchTerm) return true;           // empty box → show all
 
-  const haystack =
-    (meta0.symbol + ' ' + meta1.symbol + ' ' +
-      meta0.name + ' ' + meta1.name + ' ' +
-      pair.token0 + ' ' + pair.token1).toLowerCase();
+    const meta0 = TOKEN_CACHE[pair.token0] || {};
+  const meta1 = TOKEN_CACHE[pair.token1] || {};
+
+  const haystack = [
+   meta0.symbol, meta1.symbol,
+    meta0.name,   meta1.name,
+    pair.token0,  pair.token1           // ← raw contracts as fallback
+  ]
+    .filter(Boolean)                    // drop undefined / null / ''
+    .join(' ')
+    .toLowerCase();
 
   return haystack.includes(searchTerm);
 }
