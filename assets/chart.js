@@ -103,6 +103,14 @@ async function onVisibleRangeChanged(range) {
     isLoadingBars = true;
     const page = await getPairCandles(currentPairId, { before: oldestCursor, token: chartDenom });
     const more = page.candles.map(toBar);
+
+
+       // ── remove the bucket we already have ────────────────────────────────
+   if (more.length && allBars.length &&
+      more[more.length - 1].time === allBars[0].time) {
+       more.pop();                     // drop the duplicate overlap bar
+   }
+
     allBars = more.concat(allBars);
 
     candleSeries.setData(allBars);
