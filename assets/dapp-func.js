@@ -319,6 +319,7 @@ async function executeTrade({ side, pairId, amount }) {
   setTimeout(() => {
     /* refresh balance line after 2 s */
     refreshBalanceLine();
+    window.selectPair(pairId);
   }, 2000);
 }
 

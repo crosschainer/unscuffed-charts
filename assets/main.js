@@ -236,10 +236,9 @@ els.volumeM.textContent    = els.volume.textContent;
       <td class="px-2 py-2 text-right text-gray-400 whitespace-nowrap">${timeAgo(t.created)}</td>`;
     els.tradesList.appendChild(row);
   });
-
-  
-
 }
+window.selectPair = selectPair;  // expose to global scope
+
 function updateVisibleRows() {
   const rawTop = els.pairsScroller.scrollTop;
   const start  = Math.max(0, Math.floor(rawTop / rowH));   // ← clamp
