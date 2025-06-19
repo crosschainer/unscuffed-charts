@@ -103,7 +103,7 @@ function makePairButton(p, volUSD) {
     <div class="flex items-center justify-between w-full">
       <span class="flex items-center gap-2">
         <img src="${meta0.logo}" width="20" height="20"
-             onerror="this.onerror=null;this.src='data:image/gif;base64,R0lGODlhAQABAAD/ACwAAAAAAQABAAACADs=';" />
+             onerror="this.onerror=null;this.src='./assets/ph.png';" />
         <span>${t0} / ${t1}</span>
       </span>
       <span class="text-xs ${pct >= 0 ? 'text-emerald-400' : 'text-rose-400'}">
@@ -146,10 +146,10 @@ async function selectPair(pairId) {
 
   /* pair logo -------------------------------------------------------- */
   els.pairLogo.src = meta0.logo ||                          // main logo
-    'data:image/gif;base64,R0lGODlhAQABAAD/ACwAAAAAAQABAAACADs='; // 1×1 GIF fallback
+    './assets/ph.png'; // 1×1 GIF fallback
   els.pairLogo.onerror = () => {                            // graceful 404
     els.pairLogo.src =
-      'data:image/gif;base64,R0lGODlhAQABAAD/ACwAAAAAAQABAAACADs=';
+      './assets/ph.png';
   };
 
   els.pairName.textContent = `${meta0.symbol} / ${meta1.symbol}`;

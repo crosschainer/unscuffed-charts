@@ -18,7 +18,7 @@ export async function fetchTokenMeta(contract) {
         symbol: d.token_symbol || contract.slice(0, 6),
         name: d.token_name || d.symbol || contract,
         logo: d.token_logo_url || d.logo ||
-            'data:image/gif;base64,R0lGODlhAQABAAD/ACwAAAAAAQABAAACADs=',
+            './ph.png',
     };
     TOKEN_CACHE[contract] = meta;
     return meta;
