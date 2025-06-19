@@ -19,24 +19,42 @@ export const els = {
   volumeM    : document.getElementById('volumeM'),
 };
 
-export function showSidebarSkeleton(count = 12) {
+export function showSidebarSkeleton(count = 22) {
     els.rowHost.innerHTML = '';
     for (let i = 0; i < count; i++) {
-        const ph = Object.assign(document.createElement('div'), {
-            className: 'h-10 bg-gray-700 animate-pulse',
-        });
-        els.rowHost.appendChild(ph);
+        const btn = document.createElement('button');
+        btn.className = 'flex flex-col items-start w-full px-4 py-2 text-left hover:bg-white/5 active:bg-white/10 transition';
+        btn.innerHTML = `
+      <div class="flex items-center justify-between w-full">
+        <span class="flex items-center gap-2">
+          <img src="./assets/ph.png" width="20" height="20" onerror="this.onerror=null;this.src='./assets/ph.png';">
+          <span class="bg-gray          -700 rounded animate-pulse inline-block w-24 h-4"></span>
+        </span>
+        <span class="text-xs text-rose-400">
+          <span class="bg-gray-700 rounded animate-pulse inline-block w-12 h-4"></span>
+        </span>         
+        </div>
+        <div class="text-xs text-gray-400 mt-1.5">
+            <span class="bg-gray-700 rounded animate-pulse inline-block w-16 h-4"></span>
+
+                                </div>`;                                    
+                                                    els.rowHost.appendChild(btn);           
     }
 }
 
 export function showMainSkeleton() {
     const pulse = '<span class="bg-gray-700 rounded animate-pulse inline-block';
-    els.price.innerHTML = `${pulse} w-12 h-4"></span>`;
-    els.delta.innerHTML = `${pulse} w-12 h-4"></span>`;
-    els.liquidity.innerHTML = `${pulse} w-24 h-4"></span>`;
-    els.volume.innerHTML = `${pulse} w-24 h-4"></span>`;
-    els.pairName.innerHTML = `${pulse} w-24 h-6"></span>`;
-    els.pairLogo.src = 'data:image/gif;base64,R0lGODlhAQABAAD/ACwAAAAAAQABAAACADs=';
+    els.price.innerHTML = `${pulse} w-12 h-4 transform translate-y-1"></span>`;
+    els.delta.innerHTML = `${pulse} w-12 h-4 transform translate-y-1"></span>`;
+    els.liquidity.innerHTML = `${pulse} w-24 h-4 transform translate-y-1"></span>`;
+    els.volume.innerHTML = `${pulse} w-24 h-4 transform translate-y-1"></span>`;
+    els.pairName.innerHTML = `${pulse} w-24 h-6 transform translate-y-1"></span>`;
+    
+    els.priceM.innerHTML = `${pulse} w-12 h-4 transform translate-y-1"></span>`;
+    els.deltaM.innerHTML = `${pulse} w-12 h-4 transform translate-y-1"></span>`;
+    els.liquidityM.innerHTML = `${pulse} w-24 h-4 transform translate-y-1"></span>`;
+    els.volumeM.innerHTML = `${pulse} w-24 h-4 transform translate-y-1"></span>`;
+    els.pairLogo.src = './assets/ph.png';
 
     els.chartWrap.innerHTML = '<div class="w-full h-full bg-gray-700 rounded animate-pulse"></div>';
 

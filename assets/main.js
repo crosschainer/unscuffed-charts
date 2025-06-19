@@ -14,6 +14,7 @@ let allPairs = [];          // master list (set in init)
 let candleTimer = null;         // live candle updates
 let tradeTimer = null;          // live trade updates
 let statsTimer = null;          // live stats updates
+let hasRealData = false; // top-level flag
 
 
 /* --------------------------- Start-up -----------------------------------*/
@@ -64,9 +65,9 @@ async function preloadTokenMetadata(pairs) {
 }
 
 function renderSidebar(pairs) {
-
+  hasRealData = true;
   pairs.forEach(upsertRow);
-  updateVisibleRows();
+  updateVisibleRows(); // only safe now
 }
 
 function upsertRow(pair) {
@@ -110,7 +111,7 @@ function makePairButton(p, volUSD) {
         ${pct.toFixed(2)}%
       </span>
     </div>
-    <div class="text-xs text-gray-400 mt-0.5">
+    <div class="text-xs text-gray-400 mt-1.5">
       $${volUSD.toLocaleString(undefined, { maximumFractionDigits: 0 })} vol
     </div>`;
   btn.onclick = () => {
@@ -240,17 +241,15 @@ els.volumeM.textContent    = els.volume.textContent;
 window.selectPair = selectPair;  // expose to global scope
 
 function updateVisibleRows() {
+  if (!hasRealData) return; // skip during skeleton mode
   const rawTop = els.pairsScroller.scrollTop;
-  const start  = Math.max(0, Math.floor(rawTop / rowH));   // ← clamp
-  const end = Math.min(Math.max(start,start + Math.ceil(els.pairsScroller.clientHeight / rowH) + 4),
-    liveRows.length);
+  const start  = Math.max(0, Math.floor(rawTop / rowH));
+  const end = Math.min(Math.max(start, start + Math.ceil(els.pairsScroller.clientHeight / rowH) + 4), liveRows.length);
 
-  // Resize padders
   els.topPad.style.height = start * rowH + 'px';
   els.bottomPad.style.height = (liveRows.length - end) * rowH + 'px';
 
-  // Mount only the rows we need
-  els.rowHost.innerHTML = '';                 // cheap clear
+  els.rowHost.innerHTML = ''; // ← clear for virtual scroll
   for (let i = start; i < end; i++) {
     els.rowHost.appendChild(liveRows[i].btn);
   }
