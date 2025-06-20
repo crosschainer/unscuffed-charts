@@ -34,12 +34,12 @@ export function initEmptyChart() {
      // ts is the same seconds number you passed in setData / update
      return new Date(ts * 1000)      // js wants milliseconds
        .toLocaleString(navigator.language, {
-         hour:   '2-digit',
-         minute: '2-digit',
-         day:    '2-digit',
-         month:  'short',
-         hour12: false               // drop for AM/PM
-       });
+    day: '2-digit',
+    month: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: false,
+  }).replace(',', '');
    },
         },
         rightPriceScale: {
@@ -49,7 +49,17 @@ export function initEmptyChart() {
         },
         timeScale: {
             borderVisible: false, timeVisible: true, secondsVisible: false,
-            rightOffset: 5, minBarSpacing: 0.05
+            rightOffset: 5, minBarSpacing: 0.05,
+            tickMarkFormatter: ts => {
+  const date = new Date(ts * 1000);
+  return date.toLocaleString(navigator.language, {
+    day: '2-digit',
+    month: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: false,
+  }).replace(',', '');
+}
         },
     });
 
