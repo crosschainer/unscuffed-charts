@@ -60,36 +60,44 @@ function normalisePairs(pairs) {
     ? { ...p, token0: 'currency', token1: 'con_usdc', pair: '1' }
     : p);
 }
-function hydrateMetadataIfNeeded(pair) {
+async function hydrateMetadataIfNeeded(pair) {
   const key = pair.pair;
 
-  // Already hydrated?
+  // Already done? We're good.
   if (hydratedPairs.has(key)) return;
 
-  const [t0Ready, t1Ready] = [TOKEN_CACHE[pair.token0], TOKEN_CACHE[pair.token1]];
+  // Wait for both tokens
+  await Promise.all(
+    [pair.token0, pair.token1].map(async (token) => {
+      if (TOKEN_CACHE[token]) return;
 
-  if (t0Ready && t1Ready) {
-    hydratedPairs.add(key);
-    refreshSidebarRow(pair);
-    return;
-  }
-
-  // Begin fetches if needed
-  [pair.token0, pair.token1].forEach(async (token) => {
-    if (!TOKEN_CACHE[token] && !hydratingContracts.has(token)) {
-      hydratingContracts.add(token);
-      try {
-        const meta = await api.fetchTokenMeta(token);
-        TOKEN_CACHE[token] = meta;
-      } catch (err) {
-        console.warn(`Metadata fetch failed for ${token}`, err);
-      } finally {
-        hydratingContracts.delete(token);
-        hydrateMetadataIfNeeded(pair);  // Try again
+      // Dedup concurrent fetches
+      if (!hydratingContracts.has(token)) {
+        hydratingContracts.add(token);
+        try {
+          const meta = await api.fetchTokenMeta(token);
+          TOKEN_CACHE[token] = meta;
+        } catch (err) {
+          console.warn(`❌ Token metadata failed for ${token}`, err);
+        } finally {
+          hydratingContracts.delete(token);
+        }
       }
-    }
-  });
+
+      // Wait for another ongoing fetch to complete
+      while (!TOKEN_CACHE[token]) {
+        await new Promise(r => setTimeout(r, 100)); // poll
+      }
+    })
+  );
+
+  // At this point: both token0 + token1 are in cache
+  if (!hydratedPairs.has(key)) {
+    hydratedPairs.add(key);
+    refreshSidebarRow(pair); // trigger UI update
+  }
 }
+
 
 
 
