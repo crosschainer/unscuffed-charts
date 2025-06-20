@@ -40,7 +40,6 @@ async function init() {
   currencyUsdPrice = (await api.getCurrencyPrice()).priceNow;
   const rawPairs = (await api.getPairs({ limit:1031 })).pairs; // already sorted DESC
   allPairs = normalisePairs(rawPairs);
-  await preloadTokenMetadata(allPairs);
 
   renderSidebar(allPairs);                         // first paint
   // deep-link support
@@ -58,34 +57,26 @@ function normalisePairs(pairs) {
     ? { ...p, token0: 'currency', token1: 'con_usdc', pair: '1' }
     : p);
 }
+function hydrateMetadataIfNeeded(pair) {
+  const tokens = [pair.token0, pair.token1];
 
-async function preloadTokenMetadata(pairs, concurrency = 6, retries = 2) {
-  const contracts = [...new Set(pairs.flatMap(p => [p.token0, p.token1]))];
+  tokens.forEach(async (contract) => {
+    if (TOKEN_CACHE[contract]) return; // already cached
 
-  const queue = [...contracts];
-  const workers = [];
+    try {
+      const meta = await api.fetchTokenMeta(contract);
+      TOKEN_CACHE[contract] = meta;
 
-  for (let i = 0; i < concurrency; i++) {
-    workers.push((async () => {
-      while (queue.length) {
-        const name = queue.pop();
-        for (let attempt = 0; attempt <= retries; attempt++) {
-          try {
-            await api.fetchTokenMeta(name);
-            break; // success
-          } catch (err) {
-            if (attempt === retries) {
-              console.warn(`Failed to load metadata for ${name}:`, err.message);
-            } else {
-              await new Promise(r => setTimeout(r, 150 * (2 ** attempt))); // exponential backoff
-            }
-          }
-        }
+      // If this pair is still in view, re-render its button
+      const row = liveRows.find(r => r.id === pair.pair);
+      if (row) {
+        row.btn = makePairButton(pair, toUsdVol(pair));
+        updateVisibleRows(); // will rerender the current view
       }
-    })());
-  }
-
-  await Promise.all(workers);
+    } catch (err) {
+      console.warn(`Failed to fetch meta for ${contract}`, err);
+    }
+  });
 }
 
 function renderSidebar(pairs) {
@@ -265,17 +256,21 @@ els.volumeM.textContent    = els.volume.textContent;
 window.selectPair = selectPair;  // expose to global scope
 
 function updateVisibleRows() {
-  if (!hasRealData) return; // skip during skeleton mode
+  if (!hasRealData) return;
+
   const rawTop = els.pairsScroller.scrollTop;
   const start  = Math.max(0, Math.floor(rawTop / rowH));
-  const end = Math.min(Math.max(start, start + Math.ceil(els.pairsScroller.clientHeight / rowH) + 4), liveRows.length);
+  const end    = Math.min(start + Math.ceil(els.pairsScroller.clientHeight / rowH) + 4, liveRows.length);
 
   els.topPad.style.height = start * rowH + 'px';
   els.bottomPad.style.height = (liveRows.length - end) * rowH + 'px';
+  els.rowHost.innerHTML = '';
 
-  els.rowHost.innerHTML = ''; // ← clear for virtual scroll
   for (let i = start; i < end; i++) {
-    els.rowHost.appendChild(liveRows[i].btn);
+    const { id, btn } = liveRows[i];
+    const pair = allPairs.find(p => p.pair === id);
+    els.rowHost.appendChild(btn);
+    hydrateMetadataIfNeeded(pair); // 👈 Lazy hydrate here
   }
 }
 function onSearch(e) {
