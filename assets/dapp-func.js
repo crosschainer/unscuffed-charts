@@ -51,15 +51,23 @@ async function connectWallet() {
 }
 
 /* ——— UI helpers ——— */
-async function getTokenBalance(contract, address,
-                               retries = 5, backoffMs = 400) {
+async function getTokenBalance(
+  contract,
+  address,
+  retries = 5,
+  backoffMs = 400,
+  timeout = 5000
+) {
   const url = `https://xian-api.poc.workers.dev/token/${contract}/balance/${address}`;
 
   for (let attempt = 0; attempt <= retries; attempt++) {
-    try {
-      const res = await fetch(url);
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), timeout);
 
-      // retry only on server-side errors (5xx)
+    try {
+      const res = await fetch(url, { signal: controller.signal });
+      clearTimeout(timer);
+
       if (!res.ok) {
         if (res.status >= 500 && attempt < retries) {
           throw new Error(`server ${res.status}`);
@@ -70,14 +78,19 @@ async function getTokenBalance(contract, address,
       const { balance = 0 } = await res.json();
       return balance;
     } catch (err) {
-      if (attempt === retries) throw err;          // ran out of tries
+      clearTimeout(timer);
 
-      // network error or 5xx → wait & retry
+      const isAbort = err.name === 'AbortError';
+      const isNetworkOr5xx = isAbort || (err.message && err.message.startsWith('server'));
+
+      if (attempt === retries || !isNetworkOr5xx) throw err;
+
       await new Promise(r => setTimeout(r, backoffMs));
-      backoffMs *= 2;                              // exponential back-off
+      backoffMs *= 2; // exponential back-off
     }
   }
 }
+
 
 /* ------------------------------------------------------------------ *
  *  parseAmount(str)                                                  *
