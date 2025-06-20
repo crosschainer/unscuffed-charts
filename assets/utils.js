@@ -1,8 +1,25 @@
 /* Generic helpers ---------------------------------------------------------*/
-export async function fetchJSON(url, opts) {
-    const res = await fetch(url, opts);
-    if (!res.ok) throw new Error(`${url} → HTTP ${res.status}`);
-    return res.json();
+export async function fetchJSON(url, opts = {}, retries = 2, backoff = 200) {
+  let lastErr;
+
+  for (let i = 0; i <= retries; i++) {
+    try {
+      const res = await fetch(url, opts);
+      if (!res.ok) throw new Error(`${url} → HTTP ${res.status}`);
+      return await res.json();
+    } catch (err) {
+      lastErr = err;
+
+      // Only retry on network errors or 5xx
+      if (i === retries || (err.message && err.message.includes('HTTP 4'))) break;
+
+      console.warn(`Retry ${i + 1} for ${url}:`, err.message);
+      await new Promise(r => setTimeout(r, backoff));
+      backoff *= 2; // exponential
+    }
+  }
+
+  throw lastErr;
 }
 
 // ─── throttle_N_parallel_requests ──────────────────────────────
