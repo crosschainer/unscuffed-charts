@@ -15,7 +15,8 @@ let candleTimer = null;         // live candle updates
 let tradeTimer = null;          // live trade updates
 let statsTimer = null;          // live stats updates
 let hasRealData = false; // top-level flag
-const hydratingContracts = new Set();
+const hydratingContracts = new Set();          // in-progress fetches
+const hydratedPairs = new Set();               // pair.pair → fully hydrated
 
 
 
@@ -60,29 +61,48 @@ function normalisePairs(pairs) {
     : p);
 }
 function hydrateMetadataIfNeeded(pair) {
-  const tokens = [pair.token0, pair.token1];
+  const key = pair.pair;
 
-  tokens.forEach(async (contract) => {
-    if (TOKEN_CACHE[contract] || hydratingContracts.has(contract)) return;
+  // Already hydrated?
+  if (hydratedPairs.has(key)) return;
 
-    hydratingContracts.add(contract);
+  const [t0Ready, t1Ready] = [TOKEN_CACHE[pair.token0], TOKEN_CACHE[pair.token1]];
 
-    try {
-      const meta = await api.fetchTokenMeta(contract);
-      TOKEN_CACHE[contract] = meta;
+  if (t0Ready && t1Ready) {
+    hydratedPairs.add(key);
+    refreshSidebarRow(pair);
+    return;
+  }
 
-      // Replace any live row button with a rehydrated one
-      const row = liveRows.find(r => r.id === pair.pair);
-      if (row) {
-        row.btn = makePairButton(pair, toUsdVol(pair));
-        updateVisibleRows(); // re-paint
+  // Begin fetches if needed
+  [pair.token0, pair.token1].forEach(async (token) => {
+    if (!TOKEN_CACHE[token] && !hydratingContracts.has(token)) {
+      hydratingContracts.add(token);
+      try {
+        const meta = await api.fetchTokenMeta(token);
+        TOKEN_CACHE[token] = meta;
+      } catch (err) {
+        console.warn(`Metadata fetch failed for ${token}`, err);
+      } finally {
+        hydratingContracts.delete(token);
+        hydrateMetadataIfNeeded(pair);  // Try again
       }
-    } catch (err) {
-      console.warn(`Metadata fetch failed for ${contract}`, err);
-    } finally {
-      hydratingContracts.delete(contract);
     }
   });
+}
+
+
+
+function refreshSidebarRow(pair) {
+  const idx = liveRows.findIndex(r => r.id === pair.pair);
+  if (idx === -1) return;
+
+  const newBtn = makePairButton(pair, toUsdVol(pair));
+  liveRows[idx].btn = newBtn;
+
+  // Replace the old button in DOM if it exists
+  const oldBtn = els.rowHost.querySelector(`button[data-pair="${pair.pair}"]`);
+  if (oldBtn) oldBtn.replaceWith(newBtn);
 }
 
 
@@ -136,6 +156,8 @@ function makePairButton(p, volUSD) {
     <div class="text-xs text-gray-400 mt-1.5">
       $${volUSD.toLocaleString(undefined, { maximumFractionDigits: 0 })} vol
     </div>`;
+    btn.setAttribute('data-pair', p.pair);
+
   btn.onclick = () => {
     selectPair(p.pair);
      // ── NEW ── only on <768 px
