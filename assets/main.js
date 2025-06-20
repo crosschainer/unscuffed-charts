@@ -59,9 +59,33 @@ function normalisePairs(pairs) {
     : p);
 }
 
-async function preloadTokenMetadata(pairs) {
+async function preloadTokenMetadata(pairs, concurrency = 6, retries = 2) {
   const contracts = [...new Set(pairs.flatMap(p => [p.token0, p.token1]))];
-  await Promise.all(contracts.map(api.fetchTokenMeta));
+
+  const queue = [...contracts];
+  const workers = [];
+
+  for (let i = 0; i < concurrency; i++) {
+    workers.push((async () => {
+      while (queue.length) {
+        const name = queue.pop();
+        for (let attempt = 0; attempt <= retries; attempt++) {
+          try {
+            await api.fetchTokenMeta(name);
+            break; // success
+          } catch (err) {
+            if (attempt === retries) {
+              console.warn(`Failed to load metadata for ${name}:`, err.message);
+            } else {
+              await new Promise(r => setTimeout(r, 150 * (2 ** attempt))); // exponential backoff
+            }
+          }
+        }
+      }
+    })());
+  }
+
+  await Promise.all(workers);
 }
 
 function renderSidebar(pairs) {
