@@ -52,7 +52,7 @@ async function connectWallet() {
 
 /* ——— UI helpers ——— */
 async function getTokenBalance(contract, address,
-                               retries = 3, backoffMs = 400) {
+                               retries = 5, backoffMs = 400) {
   const url = `https://xian-api.poc.workers.dev/token/${contract}/balance/${address}`;
 
   for (let attempt = 0; attempt <= retries; attempt++) {

@@ -1,5 +1,5 @@
 /* Generic helpers ---------------------------------------------------------*/
-export async function fetchJSON(url, opts = {}, retries = 2, backoff = 200) {
+export async function fetchJSON(url, opts = {}, retries = 10, backoff = 200) {
   let lastErr;
 
   for (let i = 0; i <= retries; i++) {
