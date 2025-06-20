@@ -1,26 +1,38 @@
-/* Generic helpers ---------------------------------------------------------*/
-export async function fetchJSON(url, opts = {}, retries = 10, backoff = 200) {
+export async function fetchJSON(url, opts = {}, retries = 10, backoff = 200, timeout = 5000) {
   let lastErr;
 
   for (let i = 0; i <= retries; i++) {
+    const controller = new AbortController();
+    const id = setTimeout(() => controller.abort(), timeout);
+
     try {
-      const res = await fetch(url, opts);
+      const res = await fetch(url, {
+        ...opts,
+        signal: controller.signal,
+      });
+
+      clearTimeout(id);
+
       if (!res.ok) throw new Error(`${url} → HTTP ${res.status}`);
       return await res.json();
     } catch (err) {
+      clearTimeout(id);
       lastErr = err;
 
-      // Only retry on network errors or 5xx
-      if (i === retries || (err.message && err.message.includes('HTTP 4'))) break;
+      const isAbort = err.name === 'AbortError';
+      const isNetworkOr5xx = isAbort || !err.response || (err.message && err.message.includes('HTTP 5'));
+
+      if (i === retries || (!isNetworkOr5xx && !isAbort)) break;
 
       console.warn(`Retry ${i + 1} for ${url}:`, err.message);
       await new Promise(r => setTimeout(r, backoff));
-      backoff *= 2; // exponential
+      backoff *= 2; // exponential backoff
     }
   }
 
   throw lastErr;
 }
+
 
 // ─── throttle_N_parallel_requests ──────────────────────────────
 const inFlight = new Set();
