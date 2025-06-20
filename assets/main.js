@@ -15,6 +15,8 @@ let candleTimer = null;         // live candle updates
 let tradeTimer = null;          // live trade updates
 let statsTimer = null;          // live stats updates
 let hasRealData = false; // top-level flag
+const hydratingContracts = new Set();
+
 
 
 /* --------------------------- Start-up -----------------------------------*/
@@ -61,23 +63,28 @@ function hydrateMetadataIfNeeded(pair) {
   const tokens = [pair.token0, pair.token1];
 
   tokens.forEach(async (contract) => {
-    if (TOKEN_CACHE[contract]) return; // already cached
+    if (TOKEN_CACHE[contract] || hydratingContracts.has(contract)) return;
+
+    hydratingContracts.add(contract);
 
     try {
       const meta = await api.fetchTokenMeta(contract);
       TOKEN_CACHE[contract] = meta;
 
-      // If this pair is still in view, re-render its button
+      // Replace any live row button with a rehydrated one
       const row = liveRows.find(r => r.id === pair.pair);
       if (row) {
         row.btn = makePairButton(pair, toUsdVol(pair));
-        updateVisibleRows(); // will rerender the current view
+        updateVisibleRows(); // re-paint
       }
     } catch (err) {
-      console.warn(`Failed to fetch meta for ${contract}`, err);
+      console.warn(`Metadata fetch failed for ${contract}`, err);
+    } finally {
+      hydratingContracts.delete(contract);
     }
   });
 }
+
 
 function renderSidebar(pairs) {
   hasRealData = true;
