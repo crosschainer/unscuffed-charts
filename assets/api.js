@@ -4,7 +4,7 @@ import { fetchJSON } from './utils.js';
 export { fetchJSON };   // ← add this
 export { throttledFetchJSON } from './utils.js';  // ← add this
 
-export const API_BASE = 'https://xian-api.poc.workers.dev';
+export const API_BASE = 'https://api.snaklytics.com';
 
 const TOKEN_CACHE = {};      // contract → {symbol,name,logo}
 

@@ -58,7 +58,7 @@ async function getTokenBalance(
   backoffMs = 400,
   timeout = 5000
 ) {
-  const url = `https://xian-api.poc.workers.dev/token/${contract}/balance/${address}`;
+  const url = `https://api.snaklytics.com/token/${contract}/balance/${address}`;
 
   for (let attempt = 0; attempt <= retries; attempt++) {
     const controller = new AbortController();
