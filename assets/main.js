@@ -11,14 +11,16 @@ const rowH = 56;              // px – real height of 1 sidebar row
 /* ─── search state ────────────────────────────────────────── */
 let searchTerm = '';          // current lowercase query
 let allPairs = [];          // master list (set in init)
-let candleTimer = null;         // live candle updates
-let tradeTimer = null;          // live trade updates
-let statsTimer = null;          // live stats updates
 let hasRealData = false; // top-level flag
 const hydratingContracts = new Set();          // in-progress fetches
 const hydratedPairs = new Set();               // pair.pair → fully hydrated
 
-
+let currentTradesWs = null;  // ← track the active socket
+let currentPriceChangeWs = null;
+let currentVolumeWs = null;
+let currentReservesWs = null;
+let currentPairsWs = null;   // ← NEW: sidebar pairs feed
+let currentCandlesWs = null;  // ← NEW: live candles feed
 
 /* --------------------------- Start-up -----------------------------------*/
 document.addEventListener('DOMContentLoaded', init);
@@ -28,7 +30,7 @@ function toggleSidebar() {
   sb.classList.toggle('pointer-events-none');
 }
 
-document.getElementById('hamburger').onclick   = toggleSidebar;
+document.getElementById('hamburger').onclick = toggleSidebar;
 document.getElementById('closeSidebar').onclick = toggleSidebar;
 async function init() {
   showSidebarSkeleton();
@@ -41,10 +43,45 @@ async function init() {
     .addEventListener('input', onSearch);
 
   currencyUsdPrice = (await api.getCurrencyPrice()).priceNow;
-  const rawPairs = (await api.getPairs({ limit:1031 })).pairs; // already sorted DESC
+  const rawPairs = (await api.getPairs({ limit: 1031 })).pairs; // already sorted DESC
   allPairs = normalisePairs(rawPairs);
 
   renderSidebar(allPairs);                         // first paint
+
+  // ── NEW: subscribe to live all-pairs feed
+  currentPairsWs = api.subscribePairs({
+    onData: payload => {
+    const live = normalisePairs(payload.pairs || []);
+    allPairs = live;
+
+    // For each incoming pair update…
+    live.forEach(p => {
+      // 1) Find the old in-memory model
+      const old = liveRows.find(r => r.id === p.pair);
+      if (old) {
+        // 2) Only update vol/price if they’ve changed
+        const newVol = toUsdVol(p);
+        const newPct = p.pricePct24h ?? 0;
+        if (old.vol !== newVol || old.pct !== newPct) {
+          // 3) Mutate your liveRows state
+          old.vol = newVol;
+          old.pct = newPct;
+          // 4) Re-draw that one button
+          refreshSidebarRow(p);
+        }
+      } else if (matchesSearch(p)) {
+        // It’s new: insert it
+        upsertRow(p);
+      }
+    });
+
+    // Finally, adjust the scroll pad & visible window
+    updateVisibleRows();
+  },
+    onError: err => console.error('Pairs WS error', err),
+    onOpen: () => console.log('Pairs WS connected'),
+  });
+
   // deep-link support
   const maybeId = getPairFromHash();
   if (maybeId && allPairs.some(p => p.pair === maybeId)) {
@@ -164,11 +201,11 @@ function makePairButton(p, volUSD) {
     <div class="text-xs text-gray-400 mt-1.5">
       $${volUSD.toLocaleString(undefined, { maximumFractionDigits: 0 })} vol
     </div>`;
-    btn.setAttribute('data-pair', p.pair);
+  btn.setAttribute('data-pair', p.pair);
 
   btn.onclick = () => {
     selectPair(p.pair);
-     // ── NEW ── only on <768 px
+    // ── NEW ── only on <768 px
     if (window.matchMedia('(max-width: 767px)').matches) {
       toggleSidebar();                // reuse your existing helper
     }
@@ -179,7 +216,7 @@ function makePairButton(p, volUSD) {
 function toUsdVol(p) {
   /* token-1 side is always the ‘dollar’ side in the new payload */
   return (p.volume24h ?? 0) * currencyUsdPrice;
- }
+}
 
 /* --------------------------- Pair page ----------------------------------*/
 async function selectPair(pairId) {
@@ -215,79 +252,229 @@ async function selectPair(pairId) {
     api.getPairReserves(pairId),
   ]);
 
-  /* 3) stats bar ---------------------------------------------------------*/
+  /* 3) stats bar initial paint -------------------------------------------*/
   const priceNow = priceD.priceNow ?? priceD.price ?? 0;
-  els.price.textContent = `${formatPrice(priceNow)} ${meta1.symbol}`;
-
   const pct = priceD.changePct ?? priceD.percentChange ?? 0;
-  els.delta.textContent = `${pct >= 0 ? '+' : ''}${pct.toFixed(2)}%`;
-  els.delta.className = `${pct >= 0 ? 'text-emerald-400' : 'text-rose-400'} font-medium`;
-
-  els.volume.textContent = `$${(volD.volume24h * currencyUsdPrice).toLocaleString()}`;
-
-  /* 4) liquidity ---------------------------------------------------------*/
+  const vol24h = volD.volume24h * currencyUsdPrice;
   const usdLiq = Number(resD.reserve1 || 0) * currencyUsdPrice * 2;
-  els.liquidity.textContent = `$${usdLiq.toLocaleString(undefined, { minFractionDigits: 2, maxFractionDigits: 2 })}`;
 
-  /* mobile mirrors */
-els.priceM.textContent     = els.price.textContent;
-els.deltaM.textContent     = els.delta.textContent;
-els.deltaM.classList.remove('text-emerald-400', 'text-rose-400');
-els.deltaM.classList.add(els.delta.className.split(' ')[0]); // copy class
-els.liquidityM.textContent = els.liquidity.textContent;
-els.volumeM.textContent    = els.volume.textContent;
+  function paintPrice(price, pct) {
+    if (price == null || pct == null) return;
+    els.price.textContent = `${formatPrice(price)} ${meta1.symbol}`;
+    els.delta.textContent = `${pct >= 0 ? '+' : ''}${pct.toFixed(2)}%`;
+    els.delta.className = `${pct >= 0 ? 'text-emerald-400' : 'text-rose-400'} font-medium`;
+    els.priceM.textContent = els.price.textContent;
+    els.deltaM.textContent = els.delta.textContent;
+    els.deltaM.classList.replace(
+      'text-emerald-400',
+      pct >= 0 ? 'text-emerald-400' : 'text-rose-400'
+    );
+  }
+
+  function paintVolume(vol) {
+    if (vol == null) return;
+    els.volume.textContent = `$${vol.toLocaleString()}`;
+    els.volumeM.textContent = els.volume.textContent;
+  }
+
+  function paintLiquidity(liq) {
+    if (liq == null) return;
+    els.liquidity.textContent = `$${liq.toLocaleString(undefined, {
+      minFractionDigits: 2, maxFractionDigits: 2
+    })}`;
+    els.liquidityM.textContent = els.liquidity.textContent;
+  }
+  paintPrice(priceNow, pct);
+  paintVolume(vol24h);
+  paintLiquidity(usdLiq);
 
   /* 5) chart -------------------------------------------------------------*/
   chart.initEmptyChart();
   await chart.loadInitialCandles(pairId, chartDenom);
 
-  updateTradeBox({
+
+  const tradeBoxState = {
     id: pairId,
     sym0: meta0.symbol,
     sym1: meta1.symbol,
-    price: priceNow.toLocaleString(undefined, { maximumFractionDigits: 6 }) + ' ' + meta1.symbol,
-    balance0: '—',            // fetch wallet balances if you like
-    balance1: '—',
     contract0: token0,
     contract1: token1,
-    currentPrice: priceNow,
+    price: priceNow,
     reserve0: resD.reserve0 || 0,
     reserve1: resD.reserve1 || 0,
+  };
+
+  // initial trade-box render
+  updateTradeBox({
+    ...tradeBoxState,
+    price: `${formatPrice(tradeBoxState.price)} ${meta1.symbol}`,
+    balance0: '—',
+    balance1: '—',
+    currentPrice: tradeBoxState.price,
+    resetInputs: true,
   });
+
   refreshBalanceLine();
 
+  /* 6) tear down any old sockets -----------------------------------------*/
+  [currentPriceChangeWs, currentVolumeWs, currentReservesWs].forEach(ws => {
+    if (ws) ws.close();
+  });
+
+  /* 7) wire up live updates ----------------------------------------------*/
+  currentPriceChangeWs = api.subscribePairPriceChange24h(pairId, denomPrice, {
+    onData: d => {
+      const newPrice = d.priceNow ?? d.price;
+      const newPct   = d.changePct ?? d.percentChange ?? 0;
+      tradeBoxState.price = newPrice;
+      paintPrice(newPrice, newPct);
+      // let updateTradeBox format + append symbol itself
+      updateTradeBox({
+        ...tradeBoxState,
+        currentPrice: newPrice,
+      });
+    }
+  });
+
+  currentVolumeWs = api.subscribePairVolume24h(pairId, denomVol, {
+    onData: d => {
+      // volume display only
+      paintVolume(d.volume24h * currencyUsdPrice);
+    }
+  });
+
+
+  currentReservesWs = api.subscribePairReserves(pairId, {
+    onData: d => {
+      tradeBoxState.reserve0 = d.reserve0 || 0;
+      tradeBoxState.reserve1 = d.reserve1 || 0;
+      updateTradeBox({
+        ...tradeBoxState,
+        currentPrice: tradeBoxState.price,
+      });
+      // still update liquidity display if desired
+      paintLiquidity(Number(d.reserve1) * currencyUsdPrice * 2);
+    },
+    onError: err => console.error('Reserves WS error', err),
+    onOpen: () => console.log('Reserves WS open'),
+  });
+
   /* 6) trades ------------------------------------------------------------*/
-  els.tradesList.innerHTML = '';
-  (tradesD.trades || []).forEach(t => {
-    let side = ((t.side || '').toLowerCase() === 'buy') ? 'Buy' : 'Sell';
-    let amountSymbol = t.amountSymbol || meta0.symbol;
-    let price;
-    let amount = t.amount || 0;
-    if (meta1.symbol === 'xUSDC') {
-      price = formatPrice(1 / t.price);  // xUSDC is a stablecoin, invert price
-    } else {
-      price = formatPrice(t.price);
-    }
-    if (meta1.symbol === 'xUSDC' && meta0.symbol === 'XIAN') {
-      side = (side === 'Buy') ? 'Sell' : 'Buy';  // reverse for USDC/currency
-    }
-    else{
-      amountSymbol = meta0.symbol;  // always use token0 symbol
-      amount = t.amount0 || t.amount1 || 0;  // prefer token0 amount
-    }
-    const sym0 = meta0.symbol;
-    const row = document.createElement('tr');
-    row.className = 'odd:bg-white/5 hover:bg-white/10 transition';
-    row.innerHTML = `
-      <td class="px-2 py-2 text-left ${side === 'Buy' ? 'text-emerald-400' : 'text-rose-400'} whitespace-nowrap">${side}</td>
-      <td class="px-2 py-2 text-right whitespace-nowrap">
-        ${amount.toLocaleString(undefined, { minFractionDigits: 2, maxFractionDigits: 4 })} ${amountSymbol}
-      </td>
-      <td class="px-2 py-2 text-right whitespace-nowrap">
-        ${price.toLocaleString(undefined, { minFractionDigits: 2, maxFractionDigits: 8 })} ${meta1.symbol}
-      </td>
-      <td class="px-2 py-2 text-right text-gray-400 whitespace-nowrap">${timeAgo(t.created)}</td>`;
-    els.tradesList.appendChild(row);
+
+
+  // ── NEW: tear down previous subscription if any
+  if (currentTradesWs) {
+    currentTradesWs.close();
+    currentTradesWs = null;
+  }
+
+  
+// interval length in ms
+const ivMs = { '5m': 5*60e3, '1h': 60*60e3 }[chart.currentInterval()] || 60*60e3;
+
+// seed from the last historical bar
+let liveBar = null;
+const last = chart.getLastBar();
+if (last) {
+  liveBar = { 
+    time:   last.time * 1000, // convert back to ms
+    open:   last.open,
+    high:   last.high,
+    low:    last.low,
+    close:  last.close,
+    volume: last.volume
+  };
+}
+
+  // ── NEW: subscribe to live trades
+  let firstTrade = true;
+  let lastTradeTs = 0; // watermark for filtering out old trades
+  currentTradesWs = api.subscribePairTrades(pairId, denomTrades, {
+
+    onData: payload => {
+      const incoming = (payload.trades || [])
+        // only take truly new ones
+        .filter(t => new Date(t.created).getTime() > lastTradeTs)
+        // sort newest-first for prependTrades
+        .sort((a, b) => new Date(b.created) - new Date(a.created));
+
+      if (!incoming.length) return;
+
+      if (firstTrade) {
+        els.tradesList.innerHTML = '';      // only once, at the very start
+        firstTrade = false;
+      }
+
+      // render the truly new trades
+      prependTrades(incoming, meta0, meta1);
+
+      // bump your watermark
+      lastTradeTs = Math.max(
+        lastTradeTs,
+        ...incoming.map(t => new Date(t.created).getTime())
+      );
+
+      for (const t of payload.trades || []) {
+         const ts      = new Date(t.created).getTime();
+      const bucketTs  = Math.floor(ts / ivMs) * ivMs;
+        let price;
+        let amount = t.amount || 0;
+        if (meta1.symbol === 'xUSDC') {
+          price = formatPrice(1 / t.price);  // xUSDC is a stablecoin, invert price
+        } else {
+          price = formatPrice(t.price);
+        }
+        if (meta1.symbol === 'xUSDC' && meta0.symbol === 'XIAN') {
+          side = (side === 'Buy') ? 'Sell' : 'Buy';  // reverse for USDC/currency
+        }
+        else {
+          amount = t.amount0 || t.amount1 || 0;  // prefer token0 amount
+        }
+
+        if (!liveBar || liveBar.time !== bucketTs) {
+          // close out previous bar in chart
+          // (we assume chart.upsertLastCandle handles update vs. append)
+          if (liveBar) chart.upsertLastCandle({
+            t: new Date(liveBar.time).toISOString(),
+            open: liveBar.open,
+            high: liveBar.high,
+            low: liveBar.low,
+            close: liveBar.close,
+            volume: liveBar.volume
+          });
+
+          // start a brand-new live bar
+          liveBar = {
+            time: bucketTs,
+            open: price,
+            high: price,
+            low: price,
+            close: price,
+            volume: amount
+          };
+        } else {
+          // same bucket → update in place
+          liveBar.high = Math.max(liveBar.high, price);
+          liveBar.low = Math.min(liveBar.low, price);
+          liveBar.close = price;
+          liveBar.volume = liveBar.volume + amount;
+        }
+      }
+
+      // and then update the chart for that in-flight bar
+      if (liveBar) {
+        chart.upsertLastCandle({
+          t: new Date(liveBar.time).toISOString(),
+          open: liveBar.open,
+          high: liveBar.high,
+          low: liveBar.low,
+          close: liveBar.close,
+          volume: liveBar.volume
+        });
+      }
+    },
+    onError: err => console.error('Trades WS error', err),
+    onOpen: () => console.log('Connected to live trades for', pairId),
   });
 }
 window.selectPair = selectPair;  // expose to global scope
@@ -296,8 +483,8 @@ function updateVisibleRows() {
   if (!hasRealData) return;
 
   const rawTop = els.pairsScroller.scrollTop;
-  const start  = Math.max(0, Math.floor(rawTop / rowH));
-  const end    = Math.min(start + Math.ceil(els.pairsScroller.clientHeight / rowH) + 4, liveRows.length);
+  const start = Math.max(0, Math.floor(rawTop / rowH));
+  const end = Math.min(start + Math.ceil(els.pairsScroller.clientHeight / rowH) + 4, liveRows.length);
 
   els.topPad.style.height = start * rowH + 'px';
   els.bottomPad.style.height = (liveRows.length - end) * rowH + 'px';
@@ -323,13 +510,13 @@ function onSearch(e) {
 function matchesSearch(pair) {
   if (!searchTerm) return true;           // empty box → show all
 
-    const meta0 = TOKEN_CACHE[pair.token0] || {};
+  const meta0 = TOKEN_CACHE[pair.token0] || {};
   const meta1 = TOKEN_CACHE[pair.token1] || {};
 
   const haystack = [
-   meta0.symbol, meta1.symbol,
-    meta0.name,   meta1.name,
-    pair.token0,  pair.token1           // ← raw contracts as fallback
+    meta0.symbol, meta1.symbol,
+    meta0.name, meta1.name,
+    pair.token0, pair.token1           // ← raw contracts as fallback
   ]
     .filter(Boolean)                    // drop undefined / null / ''
     .join(' ')
@@ -349,32 +536,32 @@ function prependTrades(list, meta0, meta1) {
 
 function buildTradeRow(t, meta0, meta1) {
   let side = ((t.side || '').toLowerCase() === 'buy') ? 'Buy' : 'Sell';
-    let amountSymbol = t.amountSymbol || meta0.symbol;
-    let price;
-    let amount = t.amount || 0;
-    if (meta1.symbol === 'xUSDC') {
-      price = formatPrice(1 / t.price);  // xUSDC is a stablecoin, invert price
-    } else {
-      price = formatPrice(t.price);
-    }
-    if (meta1.symbol === 'xUSDC' && meta0.symbol === 'XIAN') {
-      side = (side === 'Buy') ? 'Sell' : 'Buy';  // reverse for USDC/currency
-    }
-    else{
-      amountSymbol = meta0.symbol;  // always use token0 symbol
-      amount = t.amount0 || t.amount1 || 0;  // prefer token0 amount
-    }
-
+  let amountSymbol = t.amountSymbol || meta0.symbol;
+  let price;
+  let amount = t.amount || 0;
+  if (meta1.symbol === 'xUSDC') {
+    price = formatPrice(1 / t.price);  // xUSDC is a stablecoin, invert price
+  } else {
+    price = formatPrice(t.price);
+  }
+  if (meta1.symbol === 'xUSDC' && meta0.symbol === 'XIAN') {
+    side = (side === 'Buy') ? 'Sell' : 'Buy';  // reverse for USDC/currency
+  }
+  else {
+    amountSymbol = meta0.symbol;  // always use token0 symbol
+    amount = t.amount0 || t.amount1 || 0;  // prefer token0 amount
+  }
+  const sym0 = meta0.symbol;
   const row = document.createElement('tr');
   row.className = 'odd:bg-white/5 hover:bg-white/10 transition';
   row.innerHTML = `
-    <td class="px-2 py-2 text-left ${side==='Buy'?'text-emerald-400':'text-rose-400'} whitespace-nowrap">${side}</td>
-    <td class="px-2 py-2 text-right whitespace-nowrap">
-      ${amount.toLocaleString(undefined,{minFractionDigits:2,maxFractionDigits:4})} ${amountSymbol}
-    </td>
-    <td class="px-2 py-2 text-right whitespace-nowrap">
-      ${price.toLocaleString(undefined,{minFractionDigits:2,maxFractionDigits:8})} ${meta1.symbol}
-    </td>
-    <td class="px-2 py-2 text-right text-gray-400 whitespace-nowrap">${timeAgo(t.created)}</td>`;
+      <td class="px-2 py-2 text-left ${side === 'Buy' ? 'text-emerald-400' : 'text-rose-400'} whitespace-nowrap">${side}</td>
+      <td class="px-2 py-2 text-right whitespace-nowrap">
+        ${amount.toLocaleString(undefined, { minFractionDigits: 2, maxFractionDigits: 4 })} ${amountSymbol}
+      </td>
+      <td class="px-2 py-2 text-right whitespace-nowrap">
+        ${price.toLocaleString(undefined, { minFractionDigits: 2, maxFractionDigits: 8 })} ${meta1.symbol}
+      </td>
+      <td class="px-2 py-2 text-right text-gray-400 whitespace-nowrap">${timeAgo(t.created)}</td>`;
   return row;
 }

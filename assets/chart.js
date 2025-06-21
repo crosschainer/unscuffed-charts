@@ -140,20 +140,57 @@ function toBar(c) {
         volume: c.volume,
     };
 }
+export function getBarAt(unixMs) {
+  const t = Math.floor(unixMs/1000);
+  return allBars.find(b => b.time === t) || null;
+}
+export function getLastBar() {
+  return allBars.length ? allBars[allBars.length - 1] : null;
+}
+export function rawToBar(raw) {
+  return toBar(raw);
+}
 export function upsertLastCandle(raw) {
-  const bar = toBar(raw);                  // you already have toBar()
+   // 1) carry forward open if needed
+  if (raw.open == null) {
+    const prevClose = allBars.length
+      ? allBars[allBars.length - 1].close
+      : raw.close;
+    raw.open   = prevClose;
+    raw.high   = Math.max(prevClose, raw.close ?? prevClose);
+    raw.low    = Math.min(prevClose, raw.close ?? prevClose);
+    raw.close  = raw.close ?? prevClose;
+    raw.volume = raw.volume ?? 0;
+  }
+
+  // 2) build our bar object
+  const bar = toBar(raw);
   const last = allBars[allBars.length - 1];
 
+  // 3) insert or replace in our local array
   if (last && last.time === bar.time) {
-    // replace existing candle
     allBars[allBars.length - 1] = bar;
-    candleSeries.update(bar);
-    volumeSeries.update({ time: bar.time, value: bar.volume });
-  } else {
-    // push new candle
+  } else if (!last || bar.time > last.time) {
     allBars.push(bar);
+  } else {
+    // strictly older → we skip updating the chart, but keep our array unchanged
+    return;
+  }
+
+  // 4) now update the chart, catching & swallowing only the
+  //    “Cannot update oldest data” error
+  try {
+    // update both series with the same bar;
+    // .update() will append if it's a new time, else replace
     candleSeries.update(bar);
     volumeSeries.update({ time: bar.time, value: bar.volume });
+  } catch (err) {
+    if (!/Cannot update oldest data/.test(err.message)) {
+      // Unexpected errors bubble up
+      throw err;
+    }
+    // Otherwise: fine, we tried to update truly stale data and
+    // the chart rejected it—ignore.
   }
 }
 // unix-milliseconds of the newest bar we have

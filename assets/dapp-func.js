@@ -192,6 +192,20 @@ function setSide(s) {
     styleSubmitBtn();
     refreshBalanceLine();
     updateGetAmount(); 
+
+    // ── NEW: recalc price label on side switch ────────────────
+    if (_price) {
+      if (side === 'buy') {
+        // show "Price [price] [quote] per [base]"
+        priceL.textContent = 
+          `Price ${formatPrice(_price)} ${_sym1} per ${_sym0}`;
+      } else {
+        // invert: "Price [1/price] [base] per [quote]"
+        const inv = 1 / _price;
+        priceL.textContent = 
+          `Price ${formatPrice(inv)} ${_sym0} per ${_sym1}`;
+      }
+    }
 }
 
 function getAmountOut(amountIn, reserveIn, reserveOut) {
@@ -227,10 +241,27 @@ else if (side === 'buy' && _contract1 == "currency") {
     { maximumFractionDigits: 6 }
   ) + ' ' + (side === 'buy' ? _sym0 : _sym1);
 }
+function formatPrice(value) {
+    const num = typeof value === 'string' ? Number(value) : value;
+    if (!Number.isFinite(num)) return '—';
 
+    const abs = Math.abs(num);
+    let dp;                          // decimals to print
+
+    if (abs >= 1) dp = 2;   //  12.34
+    else if (abs >= 0.1) dp = 4;   //   0.1234
+    else if (abs >= 0.01) dp = 6;   //   0.012345
+    else if (abs >= 0.001) dp = 8;   //   0.00123456
+    else dp = 10;  //   0.0000123456
+
+    return num.toLocaleString(undefined, {
+        minimumFractionDigits: dp,
+        maximumFractionDigits: dp,
+    });
+}
 
 /* expose hook for your selectPair() */
-window.updateTradeBox = ({ id, sym0, sym1, price, balance0, balance1, contract0, contract1, currentPrice, reserve0, reserve1 }) => {
+window.updateTradeBox = ({ id, sym0, sym1, price, balance0 ="—", balance1="—", contract0, contract1, currentPrice, reserve0, reserve1, resetInputs = false }) => {
     /* update UI */
     _contract0 = contract0 || null; // optional token contracts
     _contract1 = contract1 || null;
@@ -238,16 +269,26 @@ window.updateTradeBox = ({ id, sym0, sym1, price, balance0, balance1, contract0,
     _sym1 = sym1;
     pairId = id;
     pairL.textContent = `${sym0} / ${sym1}`;
-    priceL.textContent = `Price ${price}`;
-    balL.textContent = `Balance ${side === 'buy' ? balance1 : balance0}`;
-    btn.textContent = side === 'buy' ? 'Buy' + ' ' + sym0 : 'Sell' + ' ' + sym0;
+    priceL.textContent = `Price ${formatPrice(price)} ${sym1} per ${sym0}`;
+    
+    
+    btn.textContent = side === 'buy' ? 'Buy ' + sym0 : 'Sell ' + sym0;
     amtIn.placeholder = `Amount of ${side === 'buy' ? sym1 : sym0}`;
-    amtIn.value = ''; // clear input on pair change
-    getOut.textContent = '—'; // reset output
+
+    if (resetInputs) {
+      // only wipe when explicitly requested (i.e. on pair change)
+      balL.textContent = `Balance ${side === 'buy' ? balance1 : balance0}`;
+      amtIn.value = '';
+      getOut.textContent = '—';
+    }
+
     _price = currentPrice || price; // optional current price
     _reserve0 = reserve0 || 0; // reserves (optional)
     _reserve1 = reserve1 || 0;
-    setSide("buy"); // default to buy side
+
+    if (resetInputs) {
+      setSide("buy"); // default to buy side
+    }
     console.log(_price);
 };
 
@@ -332,7 +373,6 @@ async function executeTrade({ side, pairId, amount }) {
   setTimeout(() => {
     /* refresh balance line after 2 s */
     refreshBalanceLine();
-    window.selectPair(pairId);
   }, 2000);
 }
 

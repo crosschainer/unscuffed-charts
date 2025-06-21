@@ -5,6 +5,7 @@ export { fetchJSON };   // ← add this
 export { throttledFetchJSON } from './utils.js';  // ← add this
 
 export const API_BASE = 'https://api.snaklytics.com';
+export const WS_BASE  = API_BASE.replace(/^http/, 'ws');  // "wss://api.snaklytics.com"
 
 const TOKEN_CACHE = {};      // contract → {symbol,name,logo}
 
@@ -112,3 +113,123 @@ export const getPairTrades = (
   return fetchJSON(`${API_BASE}/pairs/${id}/trades?${qs}`);
 };
 export const getPairReserves = id => fetchJSON(`${API_BASE}/pairs/${id}/reserves`);
+/* WebSocket subscription helpers --------------------------------------------------*/
+
+/**
+ * Open a WebSocket, JSON.parse each message, and call `onData`.
+ * Returns the WebSocket instance (so caller can .close()).
+ */
+/**
+ * Low-level helper to open a WS and wire up handlers.
+ * @param {string} path   – e.g. '/ws/pairs/1/reserves?token=0'
+ * @param {Function} onData
+ * @param {Function} onError
+ * @param {Function} onOpen
+ * @returns {WebSocket}
+ */
+export function _subscribe(path, onData, onError, onOpen) {
+  const ws = new WebSocket(WS_BASE + path);
+
+  ws.addEventListener('open', event => {
+    if (onOpen) onOpen(event);
+  });
+
+  ws.addEventListener('error', event => {
+    console.error('WebSocket error for', path, event);
+    if (onError) onError(event);
+  });
+
+  ws.addEventListener('message', event => {
+    let msg;
+    try {
+      msg = JSON.parse(event.data);
+    } catch (e) {
+      console.error('Malformed WS message', event.data);
+      return;
+    }
+    // forward *every* valid JSON message to your onData
+    if (onData) onData(msg);
+  });
+
+  return ws;
+}
+
+/**
+ * Subscribe to live candle updates for a pair.
+ * @returns WebSocket
+ */
+export function subscribePairCandles(
+  pairId, token, interval = '5m',
+  { onData, onError, onOpen } = {}
+) {
+  return _subscribe(
+    `/ws/pairs/${pairId}/candles?token=${token}&interval=${interval}`,
+    onData,
+    onError,
+    onOpen
+  );
+}
+
+/** Live 24h volume updates */
+export function subscribePairVolume24h(
+  pairId, token,
+  { onData, onError, onOpen } = {}
+) {
+  return _subscribe(
+    `/ws/pairs/${pairId}/volume24h?token=${token}`,
+    onData,
+    onError,
+    onOpen
+  );
+}
+
+/** Live 24h price-change & price updates */
+export function subscribePairPriceChange24h(
+  pairId, token,
+  { onData, onError, onOpen } = {}
+) {
+  return _subscribe(
+    `/ws/pairs/${pairId}/pricechange24h?token=${token}`,
+    onData,
+    onError,
+    onOpen
+  );
+}
+
+/** Live trades */
+export function subscribePairTrades(
+  pairId, token,
+  { onData, onError, onOpen } = {}
+) {
+  return _subscribe(
+    `/ws/pairs/${pairId}/trades?token=${token}&limit=25`,
+    onData,
+    onError,
+    onOpen
+  );
+}
+
+/** Live reserves */
+export function subscribePairReserves(
+  pairId,
+  { onData, onError, onOpen } = {}
+) {
+  return _subscribe(
+    `/ws/pairs/${pairId}/reserves`,
+    onData,
+    onError,
+    onOpen
+  );
+}
+
+/** Live new pairs listing */
+export function subscribePairs(
+  { onData, onError, onOpen } = {}
+) {
+  return _subscribe(
+    `/ws/pairs`,
+    onData,
+    onError,
+    onOpen
+  );
+}
