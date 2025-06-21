@@ -9,20 +9,75 @@ export const API_BASE = 'https://api.snaklytics.com';
 const TOKEN_CACHE = {};      // contract → {symbol,name,logo}
 
 export { TOKEN_CACHE };  // ← add this
+const _pendingContracts = new Set();
+const _pendingResolvers = Object.create(null);
+let _batchTimer = null;
 
 export async function fetchTokenMeta(contract) {
-    if (TOKEN_CACHE[contract]) return TOKEN_CACHE[contract];
+  // 1) Immediate cache hit
+  if (TOKEN_CACHE[contract]) {
+    return TOKEN_CACHE[contract];
+  }
 
-    const d = await fetchJSON(`${API_BASE}/tokens/${contract}`);
-    const meta = {
-        symbol: d.token_symbol || contract.slice(0, 6),
-        name: d.token_name || d.symbol || contract,
-        logo: d.token_logo_url || d.logo ||
-            './ph.png',
-    };
-    TOKEN_CACHE[contract] = meta;
-    return meta;
+  // 2) Otherwise, queue up a promise
+  const promise = new Promise((resolve, reject) => {
+    (_pendingResolvers[contract] ||= []).push({ resolve, reject });
+  });
+  _pendingContracts.add(contract);
+
+  // 3) Schedule a single batch request in 10 ms
+  if (!_batchTimer) {
+    _batchTimer = setTimeout(async () => {
+      const toFetch = Array.from(_pendingContracts);
+      _pendingContracts.clear();
+      _batchTimer = null;
+
+      try {
+        // 4) One HTTP call for all pending contracts
+        const raw = await fetchJSON(
+          `${API_BASE}/tokens/${toFetch.join(',')}`
+        );
+        const arr = Array.isArray(raw) ? raw : [raw];
+
+        // 5) Normalize, cache, and resolve each
+        arr.forEach(item => {
+          const key = item.contractName;
+          const meta = {
+            symbol: item.token_symbol    || key.slice(0,6),
+            name:   item.token_name      || item.token_symbol || key,
+            logo:   item.token_logo_url  || './ph.png',
+          };
+
+          TOKEN_CACHE[key] = meta;
+          ;(_pendingResolvers[key] || [])
+            .forEach(({ resolve }) => resolve(meta));
+          delete _pendingResolvers[key];
+        });
+
+        // 6) Reject any that never came back
+        toFetch
+          .filter(key => !TOKEN_CACHE[key])
+          .forEach(key => {
+            ;(_pendingResolvers[key] || [])
+              .forEach(({ reject }) =>
+                reject(new Error(`No metadata returned for ${key}`))
+              );
+            delete _pendingResolvers[key];
+          });
+      } catch (err) {
+        // 7) On network/parse error, reject everybody
+        toFetch.forEach(key => {
+          ;(_pendingResolvers[key] || [])
+            .forEach(({ reject }) => reject(err));
+          delete _pendingResolvers[key];
+        });
+      }
+    }, 10);
+  }
+
+  return promise;
 }
+
 
 /* High-level “endpoint” helpers — keep these pure, no DOM inside! */
 
