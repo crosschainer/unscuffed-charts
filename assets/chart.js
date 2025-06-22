@@ -111,17 +111,27 @@ async function onVisibleRangeChanged(range) {
     if (range.from > allBars[0].time + 1) return;       // not at the far left yet
 
     isLoadingBars = true;
+    console.log(oldestCursor, 'loading more candles…');
     const page = await getPairCandles(currentPairId, { before: oldestCursor, token: chartDenom });
     const more = page.candles.map(toBar);
 
+       // 1) filter out any exact‐time duplicates
+    const existTimes = new Set(allBars.map(b => b.time));
+    const moreFiltered = more.filter(b => !existTimes.has(b.time));
 
-       // ── remove the bucket we already have ────────────────────────────────
-   if (more.length && allBars.length &&
-      more[more.length - 1].time === allBars[0].time) {
-       more.pop();                     // drop the duplicate overlap bar
-   }
-
-    allBars = more.concat(allBars);
+    // 2) stitch the boundary so close→open is continuous
+    if (moreFiltered.length && allBars.length) {
+      const lastNew = moreFiltered[moreFiltered.length - 1];
+      const firstOld = allBars[0];
+      // if there’s a tiny price jump, force the open to equal last close
+      if (Math.abs(lastNew.close - firstOld.open) > 1e-12) {
+        firstOld.open = lastNew.close;
+        firstOld.high = Math.max(firstOld.high, firstOld.open);
+        firstOld.low  = Math.min(firstOld.low,  firstOld.open);
+      }
+    }
+    // 3) merge them
+    allBars = moreFiltered.concat(allBars);
 
     candleSeries.setData(allBars);
     volumeSeries.setData(allBars.map(b => ({ time: b.time, value: b.volume })));
