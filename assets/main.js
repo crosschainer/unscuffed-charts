@@ -317,7 +317,7 @@ async function selectPair(pairId) {
   refreshBalanceLine();
 
   /* 6) tear down any old sockets -----------------------------------------*/
-  [currentPriceChangeWs, currentVolumeWs, currentReservesWs].forEach(ws => {
+  [currentPriceChangeWs, currentVolumeWs, currentReservesWs, currentCandlesWs].forEach(ws => {
     if (ws) ws.close();
   });
 
@@ -358,6 +358,19 @@ async function selectPair(pairId) {
     onError: err => console.error('Reserves WS error', err),
     onOpen: () => console.log('Reserves WS open'),
   });
+
+
+  currentCandlesWs = api.subscribePairCandles(pairId, chartDenom, "5m", {
+  onOpen: () => console.log('Candles WS connected for', pairId),
+  onError: err => console.error('Candles WS error', err),
+  onData: candle => {
+    if (!candle || !candle.t || !candle.open || !candle.close) {
+      console.warn('Invalid candle received', candle);
+      return;
+    }
+   chart.upsertLastCandle(candle);
+  }
+});
 
   /* 6) trades ------------------------------------------------------------*/
 
@@ -414,64 +427,7 @@ if (last) {
         ...incoming.map(t => new Date(t.created).getTime())
       );
 
-      for (const t of payload.trades || []) {
-         const ts      = new Date(t.created).getTime();
-      const bucketTs  = Math.floor(ts / ivMs) * ivMs;
-        let price;
-        let amount = t.amount || 0;
-        if (meta1.symbol === 'xUSDC') {
-          price = formatPrice(1 / t.price);  // xUSDC is a stablecoin, invert price
-        } else {
-          price = formatPrice(t.price);
-        }
-        if (meta1.symbol === 'xUSDC' && meta0.symbol === 'XIAN') {
-          side = (side === 'Buy') ? 'Sell' : 'Buy';  // reverse for USDC/currency
-        }
-        else {
-          amount = t.amount0 || t.amount1 || 0;  // prefer token0 amount
-        }
-
-        if (!liveBar || liveBar.time !== bucketTs) {
-          // close out previous bar in chart
-          // (we assume chart.upsertLastCandle handles update vs. append)
-          if (liveBar) chart.upsertLastCandle({
-            t: new Date(liveBar.time).toISOString(),
-            open: liveBar.open,
-            high: liveBar.high,
-            low: liveBar.low,
-            close: liveBar.close,
-            volume: liveBar.volume
-          });
-
-          // start a brand-new live bar
-          liveBar = {
-            time: bucketTs,
-            open: price,
-            high: price,
-            low: price,
-            close: price,
-            volume: amount
-          };
-        } else {
-          // same bucket → update in place
-          liveBar.high = Math.max(liveBar.high, price);
-          liveBar.low = Math.min(liveBar.low, price);
-          liveBar.close = price;
-          liveBar.volume = liveBar.volume + amount;
-        }
-      }
-
-      // and then update the chart for that in-flight bar
-      if (liveBar) {
-        chart.upsertLastCandle({
-          t: new Date(liveBar.time).toISOString(),
-          open: liveBar.open,
-          high: liveBar.high,
-          low: liveBar.low,
-          close: liveBar.close,
-          volume: liveBar.volume
-        });
-      }
+    
     },
     onError: err => console.error('Trades WS error', err),
     onOpen: () => console.log('Connected to live trades for', pairId),
