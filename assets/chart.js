@@ -104,7 +104,10 @@ export async function loadInitialCandles(pairId, denom = '0') {
     isLoadingBars = false;
     chart.timeScale().subscribeVisibleTimeRangeChange(onVisibleRangeChanged);
 }
-
+export function getAllBars() {
+  // return a copy if you want to be safe
+  return allBars.slice();
+}
 /* ----------------------------------------------------------------------- */
 async function onVisibleRangeChanged(range) {
     if (isLoadingBars || !oldestCursor) return;

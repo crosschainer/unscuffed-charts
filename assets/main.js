@@ -293,6 +293,39 @@ async function selectPair(pairId) {
   chart.initEmptyChart();
   await chart.loadInitialCandles(pairId, chartDenom);
 
+    // ── NEW: back-fill any missing 5m bars up to the current slot
+  (function fillToNow() {
+    const bars = chart.getAllBars();       // assume this gives you the full array
+    for (let i = 1; i < bars.length; i++) {
+      const prevTs = bars[i-1].time * 1000;
+      const currTs = bars[i  ].time * 1000;
+      const missed = Math.floor((currTs - prevTs) / ivMs) - 1;
+      for (let j = 1; j <= missed; j++) {
+        chart.upsertLastCandle({
+          t:      prevTs + ivMs * j,
+          open:   bars[i-1].close,
+          high:   bars[i-1].close,
+          low:    bars[i-1].close,
+          close:  bars[i-1].close,
+          volume: 0,
+        });
+      }
+    }
+    // and fill the “incomplete” current interval
+    const last = chart.getLastBar();
+    const nextSlot = Math.floor(Date.now() / ivMs) * ivMs;
+    if (nextSlot > last.time * 1000) {
+      chart.upsertLastCandle({
+        t:      nextSlot,
+        open:   last.close,
+        high:   last.close,
+        low:    last.close,
+        close:  last.close,
+        volume: 0,
+      });
+    }
+  })();
+
 
   const tradeBoxState = {
     id: pairId,
@@ -439,6 +472,24 @@ async function selectPair(pairId) {
   });
 }
 window.selectPair = selectPair;  // expose to global scope
+
+// every minute, advance the “current” empty candle if needed
+setInterval(() => {
+  const last = chart.getLastBar();
+  if (!last) return;
+  const slot = Math.floor(Date.now() / ivMs) * ivMs;
+  if (slot > last.time * 1000) {
+    chart.upsertLastCandle({
+      t:      slot,
+      open:   last.close,
+      high:   last.close,
+      low:    last.close,
+      close:  last.close,
+      volume: 0
+    });
+  }
+}, 60 * 1000);
+
 
 function updateVisibleRows() {
   if (!hasRealData) return;
