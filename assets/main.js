@@ -39,6 +39,12 @@ function blinkLive() {
   if (dot) dot.classList.toggle('opacity-0');
 }
 
+function tickUpdated() {
+  const el = document.querySelector('#last-updated time');
+  if (!el) return;
+  el.textContent = new Date().toLocaleTimeString();
+}
+
 async function init() {
   showSidebarSkeleton();
   showMainSkeleton();
@@ -96,6 +102,9 @@ async function init() {
   } else if (allPairs.length) {
     selectPair(allPairs[0].pair);
   }
+
+  tickUpdated(); // initial time stamp
+  setInterval(tickUpdated, 1_000);     // every second
 }
 
 /* -------------------------- Sidebar ------------------------------------*/
