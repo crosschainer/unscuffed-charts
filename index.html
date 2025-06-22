@@ -110,10 +110,16 @@
 
   <!-- search box -->
   <div class="px-4">
-    <input id="pairSearch" type="text" placeholder="Search..."
-           class="w-full rounded-md bg-white/5 px-3 py-2 text-sm
-                  placeholder-gray-400 focus:outline-none
-                  focus:ring-2 focus:ring-brand-cyan" />
+    <input
+  id="pairSearch"
+  type="text"
+  placeholder="Search token contracts…"
+  class="w-full rounded-md bg-white/5 px-3 py-2 text-sm
+         placeholder-gray-400 focus:outline-none
+         focus:ring-2 focus:ring-brand-cyan" />
+<small class="block mt-1 text-xs text-gray-500">
+  Type contract address (e.g. con_usdc)
+</small>
   </div>
 
   <!-- virtualised list -->
@@ -137,7 +143,17 @@
       <img id="pairLogo" src="data:image/gif;base64,R0lGODlhAQABAAD/ACwAAAAAAQABAAACADs="
            class="h-7 w-7" alt="Logo"
            onerror="this.onerror=null;this.src=this.src">
+       <!-- live dot + pair name -->
+    <div class="flex items-center gap-2">
+      <!-- blinking green dot -->
+      <span
+  id="live-dot"
+  class="w-2 h-2 rounded-full bg-emerald-400 opacity-0"
+></span>
+
+      <!-- your existing pair name -->
       <h1 id="pairName" class="text-lg font-semibold">&nbsp;</h1>
+    </div>
     </div>
 
     <!-- inline stats — desktop only -->

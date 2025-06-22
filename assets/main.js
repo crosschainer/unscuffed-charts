@@ -33,6 +33,12 @@ function toggleSidebar() {
 
 document.getElementById('hamburger').onclick = toggleSidebar;
 document.getElementById('closeSidebar').onclick = toggleSidebar;
+
+function blinkLive() {
+  const dot = document.getElementById('live-dot');
+  if (dot) dot.classList.toggle('opacity-0');
+}
+
 async function init() {
   showSidebarSkeleton();
   showMainSkeleton();
@@ -265,11 +271,10 @@ async function selectPair(pairId) {
     els.delta.textContent = `${pct >= 0 ? '+' : ''}${pct.toFixed(2)}%`;
     els.delta.className = `${pct >= 0 ? 'text-emerald-400' : 'text-rose-400'} font-medium`;
     els.priceM.textContent = els.price.textContent;
+    
     els.deltaM.textContent = els.delta.textContent;
-    els.deltaM.classList.replace(
-      'text-emerald-400',
-      pct >= 0 ? 'text-emerald-400' : 'text-rose-400'
-    );
+    els.deltaM.classList.remove('text-emerald-400', 'text-rose-400');
+    els.deltaM.classList.add(`${pct >= 0 ? 'text-emerald-400' : 'text-rose-400'}`);
   }
 
   function paintVolume(vol) {
@@ -357,6 +362,16 @@ async function selectPair(pairId) {
 
   /* 7) wire up live updates ----------------------------------------------*/
   currentPriceChangeWs = api.subscribePairPriceChange24h(pairId, denomPrice, {
+    onOpen: () => {
+    console.log('Price WS open for', pairId);
+    document.getElementById('live-dot')
+      .classList.add('connected');
+  },
+    onError: err => {
+      console.error('Price WS error', err);
+      document.getElementById('live-dot')
+        .classList.remove('connected');
+    },
     onData: d => {
       const newPrice = d.priceNow ?? d.price;
       const newPct   = d.changePct ?? d.percentChange ?? 0;
@@ -509,15 +524,41 @@ function updateVisibleRows() {
     hydrateMetadataIfNeeded(pair); // 👈 Lazy hydrate here
   }
 }
-function onSearch(e) {
+async function onSearch(e) {
   searchTerm = e.target.value.trim().toLowerCase();
-  // wipe current view
+
+  // 1) Raw + cache‐based prefilter
+  const rawMatches = allPairs.filter(pair => {
+    return (
+      pair.token0.includes(searchTerm) ||
+      pair.token1.includes(searchTerm) ||
+      (TOKEN_CACHE[pair.token0]?.symbol || '')
+        .toLowerCase().includes(searchTerm) ||
+      (TOKEN_CACHE[pair.token1]?.symbol || '')
+        .toLowerCase().includes(searchTerm)
+    );
+  });
+
+  // 2) Refresh UI immediately with rawMatches
   liveRows.length = 0;
   els.rowHost.innerHTML = '';
-  updateVisibleRows();                 // reset padders
-  // re-insert only matches
-  const visiblePairs = allPairs.filter(matchesSearch);
-  visiblePairs.forEach(upsertRow);
+  rawMatches.forEach(upsertRow);
+
+  // 3) Hydrate only *uncached* tokens from rawMatches
+  const tokensToHydrate = Array.from(new Set(
+    rawMatches.flatMap(p => [p.token0, p.token1])
+  )).filter(t => !TOKEN_CACHE[t]);
+
+  // 4) Fire & forget hydration, letting per-row refresh handle the redraw
+  tokensToHydrate.forEach(async (token) => {
+    try {
+      await api.fetchTokenMeta(token);
+      // Once metadata is in cache, each visible row will call
+      // hydrateMetadataIfNeeded → refreshSidebarRow → update UI.
+    } catch (err) {
+      console.warn(`Failed to load metadata for ${token}`, err);
+    }
+  });
 }
 function matchesSearch(pair) {
   if (!searchTerm) return true;           // empty box → show all

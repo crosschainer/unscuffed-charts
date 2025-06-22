@@ -10,6 +10,22 @@ body::before {
     pointer-events: none;
     z-index: -1;
 }
+@keyframes live-pulse {
+  0%   { opacity: 0.2; transform: scale(0.8); }
+  50%  { opacity: 1;   transform: scale(1.2); }
+  100% { opacity: 0.2; transform: scale(0.8); }
+}
+
+/* hidden by default */
+#live-dot {
+  opacity: 0;
+}
+
+/* only show + animate when this class is present */
+#live-dot.connected {
+  opacity: 1;
+  animation: live-pulse 2s ease-in-out infinite;
+}
 /* subtle diagonal grid for the chart area */
 .chart-bg {
     background-image: linear-gradient(
@@ -24,6 +40,7 @@ body::before {
     );
     background-size: 16px 16px;
 }
+
 /* same dark scrollbar for WebKit + Firefox */
 #pairsScroller::-webkit-scrollbar      { width: 8px; }
 #pairsScroller::-webkit-scrollbar-track{ background:transparent; }
