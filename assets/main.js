@@ -21,6 +21,7 @@ let currentVolumeWs = null;
 let currentReservesWs = null;
 let currentPairsWs = null;   // ← NEW: sidebar pairs feed
 let currentCandlesWs = null;  // ← NEW: live candles feed
+const ivMs = 5 * 60 * 1000; // 5 minutes in ms
 
 /* --------------------------- Start-up -----------------------------------*/
 document.addEventListener('DOMContentLoaded', init);
@@ -363,12 +364,32 @@ async function selectPair(pairId) {
   currentCandlesWs = api.subscribePairCandles(pairId, chartDenom, "5m", {
   onOpen: () => console.log('Candles WS connected for', pairId),
   onError: err => console.error('Candles WS error', err),
-  onData: candle => {
-    if (!candle || !candle.t || !candle.open || !candle.close) {
-      console.warn('Invalid candle received', candle);
-      return;
+  onData: incomingCandle => {
+    if (!incomingCandle || !incomingCandle.t) return;
+
+    // 1) pull your last bar (time in seconds)
+    const last = chart.getLastBar();
+    if (last) {
+      const lastTs = last.time * 1000;          // to ms
+      const newTs  = incomingCandle.t;          // already in ms
+
+      // 2) how many *full* intervals elapsed?
+      const missed = Math.floor((newTs - lastTs) / ivMs) - 1;
+      for (let i = 1; i <= missed; i++) {
+        const emptyTs = lastTs + ivMs * i;
+        chart.upsertLastCandle({
+          t:      emptyTs,
+          open:   last.close,
+          high:   last.close,
+          low:    last.close,
+          close:  last.close,
+          volume: 0
+        });
+      }
     }
-   chart.upsertLastCandle(candle);
+
+    // 3) now add the real candle
+    chart.upsertLastCandle(incomingCandle);
   }
 });
 
@@ -381,23 +402,7 @@ async function selectPair(pairId) {
     currentTradesWs = null;
   }
 
-  
-// interval length in ms
-const ivMs = { '5m': 5*60e3, '1h': 60*60e3 }[chart.currentInterval()] || 60*60e3;
 
-// seed from the last historical bar
-let liveBar = null;
-const last = chart.getLastBar();
-if (last) {
-  liveBar = { 
-    time:   last.time * 1000, // convert back to ms
-    open:   last.open,
-    high:   last.high,
-    low:    last.low,
-    close:  last.close,
-    volume: last.volume
-  };
-}
 
   // ── NEW: subscribe to live trades
   let firstTrade = true;
