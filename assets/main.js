@@ -56,6 +56,17 @@ async function init() {
     .addEventListener('input', onSearch);
 
   currencyUsdPrice = (await api.getCurrencyPrice()).priceNow;
+
+  // 2) start polling every minute
+  setInterval(async () => {
+    try {
+      const { priceNow } = await api.getCurrencyPrice();
+      if (priceNow != null) currencyUsdPrice = priceNow;
+    } catch (err) {
+      console.warn('Failed to refresh XIAN→USD rate', err);
+    }
+  }, 60_000);
+  
   const rawPairs = (await api.getPairs({ limit: 1031 })).pairs; // already sorted DESC
   allPairs = normalisePairs(rawPairs);
 
