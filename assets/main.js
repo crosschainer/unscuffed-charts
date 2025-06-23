@@ -317,6 +317,8 @@ async function selectPair(pairId) {
   /* 5) chart -------------------------------------------------------------*/
   chart.initEmptyChart();
   await chart.loadInitialCandles(pairId, chartDenom);
+  document.querySelector('.tf-btn.active')?.classList.remove('active');
+document.querySelector('.tf-btn[data-tf=\"5m\"]')?.classList.add('active');
 
     // ── NEW: back-fill any missing 5m bars up to the current slot
   (function fillToNow() {
@@ -349,6 +351,7 @@ async function selectPair(pairId) {
         volume: 0,
       });
     }
+    chart.getChartInstance?.().timeScale().fitContent?.();   // ← helper below
   })();
 
 

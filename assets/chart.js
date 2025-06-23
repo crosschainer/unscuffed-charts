@@ -163,6 +163,7 @@ export async function loadInitialCandles(pairId, denom = '0') {
   isLoadingBars = false;
   chart.timeScale().subscribeVisibleTimeRangeChange(onVisibleRangeChanged);
 }
+export const getChartInstance = () => chart;
 
 /* ────────────────────────── Time‑frame switching ───────────────────── */
 export function changeTimeframe(tf) {
