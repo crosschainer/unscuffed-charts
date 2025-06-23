@@ -629,16 +629,29 @@ function buildTradeRow(t, meta0, meta1) {
   }
   const sym0 = meta0.symbol;
   const row = document.createElement('tr');
-  row.className = 'odd:bg-white/5 hover:bg-white/10 transition';
+ row.className = `
+    odd:bg-white/5 hover:bg-white/10
+    transition cursor-pointer select-none`;      // new classes
+
   row.innerHTML = `
-      <td class="px-2 py-2 text-left ${side === 'Buy' ? 'text-emerald-400' : 'text-rose-400'} whitespace-nowrap">${side}</td>
-      <td class="px-2 py-2 text-right whitespace-nowrap">
-        ${amount.toLocaleString(undefined, { minFractionDigits: 2, maxFractionDigits: 4 })} ${amountSymbol}
-      </td>
-      <td class="px-2 py-2 text-right whitespace-nowrap">
-        ${price.toLocaleString(undefined, { minFractionDigits: 2, maxFractionDigits: 8 })} ${meta1.symbol}
-      </td>
-      <td class="px-2 py-2 text-right text-gray-400 whitespace-nowrap">${timeAgo(t.created)}</td>`;
+    <td class="px-2 py-2 text-left ${side === 'Buy' ? 'text-emerald-400' : 'text-rose-400'} whitespace-nowrap">
+      ${side}
+    </td>
+    <td class="px-2 py-2 text-right whitespace-nowrap">
+      ${amount.toLocaleString(undefined,{minFractionDigits:2,maxFractionDigits:4})} ${amountSymbol}
+    </td>
+    <td class="px-2 py-2 text-right whitespace-nowrap">
+      ${price.toLocaleString(undefined,{minFractionDigits:2,maxFractionDigits:8})} ${meta1.symbol}
+    </td>
+    <td class="px-2 py-2 text-right text-gray-400 whitespace-nowrap">
+      ${timeAgo(t.created)}
+    </td>`;
+
+  /* ───── click → explorer ───── */
+  const url = `https://explorer.xian.org/tx/${t.txHash}`;
+  row.addEventListener('click', () =>
+    window.open(url, '_blank', 'noopener'));
+
   return row;
 }
 
