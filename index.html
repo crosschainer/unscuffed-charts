@@ -41,7 +41,7 @@
   <!-- Inter font -->
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
   <!-- Custom CSS -->
-  <link href="assets/styles.css?v=4" rel="stylesheet" />
+  <link href="assets/styles.css?v=5" rel="stylesheet" />
 </head>
 
 <body class="font-inter bg-brand-base text-gray-200 min-h-screen
@@ -175,6 +175,14 @@
 </header>
 
         <!-- Chart -->
+<div id="tfToolbar" class="flex gap-1 px-4 py-1 text-xs select-none">
+  <button data-tf="5m"  class="tf-btn active">5m</button>
+  <button data-tf="15m" class="tf-btn">15m</button>
+  <button data-tf="30m" class="tf-btn">30m</button>
+  <button data-tf="1h"  class="tf-btn">1h</button>
+  <button data-tf="4h"  class="tf-btn">4h</button>
+  <button data-tf="1d"  class="tf-btn">1d</button>
+</div>
         <div id="chartContainer" class="h-[45vh]  md:flex-1 min-h-0 chart-bg relative "></div>
       </div>
 
@@ -264,7 +272,7 @@
   </script>
   <script src="assets/dapp.js"></script>
   <script src="assets/dapp-func.js?v=3"></script>
-  <script src="assets/main.js?v=11" type="module"></script>
+  <script src="assets/main.js?v=12" type="module"></script>
 </body>
 
 </html>

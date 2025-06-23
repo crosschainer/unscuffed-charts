@@ -638,3 +638,11 @@ function buildTradeRow(t, meta0, meta1) {
       <td class="px-2 py-2 text-right text-gray-400 whitespace-nowrap">${timeAgo(t.created)}</td>`;
   return row;
 }
+
+document.querySelectorAll('#tfToolbar .tf-btn').forEach(btn=>{
+  btn.onclick = ()=> {
+    document.querySelector('.tf-btn.active')?.classList.remove('active');
+    btn.classList.add('active');
+    chart.changeTimeframe(btn.dataset.tf);   // new helper you just exported
+  };
+});

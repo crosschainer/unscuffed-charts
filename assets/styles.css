@@ -75,6 +75,18 @@ body::before {
 .btn-neon:hover {
   box-shadow: 0 0 8px #08FBD6, 0 0 12px #C400FF;
 }
+.tf-btn           { padding: 2px 6px; border-radius: 4px; }
+.tf-btn.active,
+.tf-btn:hover     { background:#08FBD615; }
+
+/* mobile touch comfort */
+@media (max-width: 767px) {
+  .tf-btn        {
+    padding: 6px 12px;        /* bigger tap target */
+    font-size: 0.75rem;       /* ~12 px */
+    border-radius: 6px;
+  }
+}
 
 /* same dark scrollbar for WebKit + Firefox */
 aside::-webkit-scrollbar      { width: 8px; }
