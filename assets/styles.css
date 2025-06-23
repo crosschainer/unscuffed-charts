@@ -27,18 +27,37 @@ body::before {
   animation: live-pulse 2s ease-in-out infinite;
 }
 /* subtle diagonal grid for the chart area */
+/* styles.css  ─ overwrite the old .chart-bg rule */
 .chart-bg {
-    background-image: linear-gradient(
+  /* base colour */
+  background: #060708;
+
+  /* 1️⃣ vignette (radial) */
+  background-image:
+    radial-gradient(800px at 50% 50%, rgba(255,255,255,0.03), transparent 70%),
+
+  /* 2️⃣ very light speckled noise (embedded PNG) */
+    url("data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR4nGNgYAIAAAUAAarVyFEAAAAASUVORK5CYII="),
+
+  /* 3️⃣ cross-hatched grid */
+    repeating-linear-gradient(
+        45deg,
+        rgba(255,255,255,0.035) 0 1px,
+        transparent 1px 16px
+    ),
+    repeating-linear-gradient(
         135deg,
-        rgba(255, 255, 255, 0.04) 10%,
-        transparent 10%,
-        transparent 50%,
-        rgba(255, 255, 255, 0.04) 50%,
-        rgba(255, 255, 255, 0.04) 60%,
-        transparent 60%,
-        transparent 100%
+        rgba(255,255,255,0.035) 0 1px,
+        transparent 1px 16px
     );
-    background-size: 16px 16px;
+
+  /* make sure layers stack nicely */
+  background-blend-mode: normal, overlay, overlay;
+  background-size:
+    auto,                   /* vignette        */
+    200px 200px,            /* noise tile      */
+    16px 16px,              /* diag grid 1     */
+    16px 16px;              /* diag grid 2     */
 }
 
 /* same dark scrollbar for WebKit + Firefox */
