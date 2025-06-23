@@ -18,9 +18,25 @@ const PRECISION = 6;                     // price precision shown on axis
 
 // Convert API candle to our bar shape
 function toBar(c) {
-  const iso = c.t.endsWith('Z') ? c.t : c.t + 'Z';
+  let seconds;                           // final timestamp in seconds
+
+  if (typeof c.t === 'string') {         // REST history payload
+    const iso = c.t.endsWith('Z') ? c.t : c.t + 'Z';
+    seconds = Math.floor(Date.parse(iso) / 1000);
+
+  } else if (typeof c.t === 'number') {  // WS or gap-filler gives epoch
+    // If it looks like milliseconds, down-convert
+    seconds = c.t > 9_999_999_999 ? Math.floor(c.t / 1000) : c.t;
+
+  } else if (typeof c.time === 'number') { // helper already passed secs
+    seconds = c.time;
+
+  } else {
+    throw new TypeError('Candle missing valid time property');
+  }
+
   return {
-    time:   Math.floor(Date.parse(iso) / 1000), // LightCharts wants secs
+    time:   seconds,
     open:   c.open,
     high:   c.high,
     low:    c.low,
