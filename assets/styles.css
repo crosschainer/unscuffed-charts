@@ -32,25 +32,6 @@ body::before {
   /* base colour */
   background: #060708;
 
-  /* 1️⃣ vignette (radial) */
-  background-image:
-    radial-gradient(800px at 50% 50%, rgba(255,255,255,0.03), transparent 70%),
-
-  /* 2️⃣ very light speckled noise (embedded PNG) */
-    url("data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR4nGNgYAIAAAUAAarVyFEAAAAASUVORK5CYII="),
-
-  /* 3️⃣ cross-hatched grid */
-    repeating-linear-gradient(
-        45deg,
-        rgba(255,255,255,0.035) 0 1px,
-        transparent 1px 16px
-    ),
-    repeating-linear-gradient(
-        135deg,
-        rgba(255,255,255,0.035) 0 1px,
-        transparent 1px 16px
-    );
-
   /* make sure layers stack nicely */
   background-blend-mode: normal, overlay, overlay;
   background-size:
