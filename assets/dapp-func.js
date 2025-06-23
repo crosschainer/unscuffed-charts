@@ -23,10 +23,33 @@ let _reserve0 = 0, _reserve1 = 0; // reserves (optional)
 
 connectBtn.addEventListener('click', connectWallet);
 
+const walletModal = document.getElementById('walletModal');
+const wmClose     = document.getElementById('wmClose');
+const wmRetry     = document.getElementById('wmRetry');
+
+function openWalletModal()  { walletModal.classList.remove('hidden'); }
+function closeWalletModal() { walletModal.classList.add('hidden'); }
+
+wmClose.onclick  = closeWalletModal;
+wmRetry.onclick  = () => { closeWalletModal(); connectWallet(); };
+window.addEventListener('keydown', e => {
+  if (e.key === 'Escape') closeWalletModal();
+});
+
+
 /* ————————— core logic ————————— */
 async function connectWallet() {
     try {
-
+        // Loading state
+        connectBtn.innerHTML =
+            `<svg class="w-5 h-5 animate-spin text-brand-cyan" 
+       xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+    <circle class="opacity-20" cx="12" cy="12" r="10" 
+            stroke="currentColor" stroke-width="4"/>
+    <path  class="opacity-90" fill="currentColor"
+           d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"/>
+  </svg>
+  <span class="text-sm font-medium">Connecting…</span>`;
         const info = await XianWalletUtils.requestWalletInfo();
 
         if (info.locked) {
@@ -44,7 +67,7 @@ async function connectWallet() {
         toast(`Connected to ${userAddress}`, 'success');
 
     } catch (err) {
-        toast('Wallet not found or user rejected', 'error');
+        openWalletModal();
         console.error(err);
         resetBtn();
     }

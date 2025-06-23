@@ -263,7 +263,67 @@
 <!-- Toasts land here -->
 <div id="toastContainer"
      class="fixed top-4 right-4 z-50 space-y-2 pointer-events-none"></div>
+<!-- Wallet-missing modal -->
+ <div id="walletModal"
+      class="fixed inset-0 z-50 hidden flex items-center justify-center">
+  <!-- backdrop -->
+  <div class="absolute inset-0 bg-black/60 backdrop-blur-sm"></div>
 
+  <!-- panel -->
+  <div class="relative w-[92%] max-w-sm rounded-lg bg-brand-card
+              border border-white/10 shadow-xl px-6 py-5
+              text-gray-200 animate-scale-in">
+    <!-- close “×” -->
+    <button id="wmClose"
+            class="absolute top-2 right-2 p-1 rounded hover:bg-white/10">
+      <svg class="w-4 h-4" viewBox="0 0 24 24">
+        <path stroke="currentColor" stroke-linecap="round"
+              stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+      </svg>
+    </button>
+
+    <h2 class="text-lg font-semibold mb-3 flex items-center gap-2">
+      <svg class="w-5 h-5 shrink-0" viewBox="0 0 24 24" fill="none">
+        <path stroke="#08FBD6" stroke-width="2" 
+              d="M12 2L2 7l10 5 10-5-10-5z
+                 M2 17l10 5 10-5M2 12l10 5 10-5"/>
+      </svg>
+      Xian Wallet required
+    </h2>
+
+    <p class="text-sm leading-relaxed mb-4">
+      To trade on Snaklytics you need the Xian Wallet browser
+      extension or Android app.
+    </p>
+
+    <div class="space-y-2">
+      <a href="https://chromewebstore.google.com/detail/xian-wallet/kcimjjhplbcgkcnanijkolfillgfanlc?pli=1"
+         target="_blank" rel="noopener"
+         class="flex items-center gap-2 w-full px-3 py-2 rounded-md
+                bg-emerald-600/10 hover:bg-emerald-600/20">
+        <img src="assets/chrome.svg"
+             class="w-5 h-5" alt="">
+        <span class="text-sm">Get Chrome extension</span>
+      </a>
+
+      <a href="https://play.google.com/store/apps/details?id=net.xian.xianwalletapp"
+         target="_blank" rel="noopener"
+         class="flex items-center gap-2 w-full px-3 py-2 rounded-md
+                bg-emerald-600/10 hover:bg-emerald-600/20">
+        <img src="assets/playstore.svg"
+             class="w-5 h-5" alt="">
+        <span class="text-sm">Get Android wallet</span>
+      </a>
+    </div>
+
+    <p class="text-center mt-5 text-xs text-gray-400">
+      Already installed?&nbsp;
+      <button id="wmRetry" class="underline underline-offset-2 hover:text-gray-200">
+        Retry connection
+      </button>
+    </p>
+  </div>
+</div>
   <script>
     // hamburger toggle
     document.getElementById('hamburger').onclick = () => {
