@@ -26,6 +26,9 @@ connectBtn.addEventListener('click', connectWallet);
 const walletModal = document.getElementById('walletModal');
 const wmClose     = document.getElementById('wmClose');
 const wmRetry     = document.getElementById('wmRetry');
+let SLIPPAGE_TOLERANCE = 0.01;    // 1 %
+let userSlippage = 0.10;         // 10 % in decimal
+let expectedOut = 0;                // add near top (module-scope)
 
 function openWalletModal()  { walletModal.classList.remove('hidden'); }
 function closeWalletModal() { walletModal.classList.add('hidden'); }
@@ -258,7 +261,7 @@ else if (side === 'buy' && _contract1 == "currency") {
     out = getAmountOut(amountIn, _reserve0, _reserve1);
 }    
 
-
+  expectedOut = out;                // store the numeric amount
   getOut.textContent = out.toLocaleString(
     undefined,
     { maximumFractionDigits: 6 }
@@ -347,6 +350,7 @@ amtIn.addEventListener('input', updateGetAmount);
 async function executeTrade({ side, pairId, amount }) {
   /* ---------- 0. user must be connected ---------- */
   if (!userAddress) throw new Error('wallet not connected');
+  const minOut = expectedOut * (1 - userSlippage); // slippage tolerance
 
   /* ---------- 1. approve router to pull <amount> ---------- */
   /* If you BUY base → you spend quote (token1). If you SELL → spend base.   *
@@ -376,7 +380,7 @@ async function executeTrade({ side, pairId, amount }) {
 
   const kwargs = {
     amountIn      : amount,
-    amountOutMin  : 0,
+    amountOutMin  : minOut, // min output after slippage
     pair          : parseInt(pairId), // pair index
     src           : side === 'buy' ? _contract1 : _contract0, // token to spend
     to            : userAddress,               // receives output here
@@ -440,3 +444,9 @@ function toast(message, type = 'success') {
 }
 
 
+/* slippage selector */
+const slipInput = document.getElementById('tbSlippage');
+slipInput.addEventListener('input', () => {
+  const v = parseFloat(slipInput.value);
+  userSlippage = Number.isFinite(v) && v >= 0 ? v / 100 : 0;  // fallback 0 %
+});

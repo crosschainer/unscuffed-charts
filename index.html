@@ -219,10 +219,22 @@
       <div class="flex flex-col text-xs text-gray-400">
         <span id="tbPrice">Price —</span>
         <span id="tbBalance">Balance —</span>
-        <span id="tbGet">
-          <span class="text-gray-200">You approx. get</span>
-          <span id="tbGetAmount" class="font-medium">—</span>
       </div>
+      <!-- expected out / slippage -->
+  <div class="flex justify-between items-end">
+    <div class="text-xs">
+      <span class="text-gray-400">You approx. get</span><br>
+      <span id="tbGetAmount" class="font-medium text-base">—</span>
+    </div>
+
+    <label class="flex items-center gap-1 text-xs text-gray-400">
+    <span class="hidden sm:inline">Slip %</span>
+  <span class="sm:hidden">Slip %</span>
+      <input id="tbSlippage" type="number"
+             class="w-16 rounded bg-white/5 px-2 py-1 text-right
+                 focus:outline-none focus:ring-2 focus:ring-brand-cyan" value="10" min="0" step="0.1" />
+    </label>
+  </div> 
 
       <button id="tbSubmit"
               class="mt-2 py-2 rounded-md font-medium disabled
@@ -331,7 +343,7 @@
     };
   </script>
   <script src="assets/dapp.js"></script>
-  <script src="assets/dapp-func.js?v=3"></script>
+  <script src="assets/dapp-func.js?v=4"></script>
   <script src="assets/main.js?v=14" type="module"></script>
 </body>
 
