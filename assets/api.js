@@ -57,7 +57,7 @@ export async function fetchTokenMeta(contract) {
             name     : item.token_name     || item.token_symbol || key,
             logo     : item.token_logo_url || './ph.png',
             operator : item.operator       || '—',
-            supply   : item.total_supply   || '—',
+            supply   : item.total_supply   || 'Unknown',
             marketCap: item.market_cap     || '—',
             explorer : item.explorer_url   ||
                       `https://explorer.xian.org/tokens/${key}`,
