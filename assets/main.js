@@ -66,7 +66,7 @@ async function init() {
       console.warn('Failed to refresh XIAN→USD rate', err);
     }
   }, 60_000);
-  
+
   const rawPairs = (await api.getPairs({ limit: 1031 })).pairs; // already sorted DESC
   allPairs = normalisePairs(rawPairs);
 
@@ -75,33 +75,33 @@ async function init() {
   // ── NEW: subscribe to live all-pairs feed
   currentPairsWs = api.subscribePairs({
     onData: payload => {
-    const live = normalisePairs(payload.pairs || []);
-    allPairs = live;
+      const live = normalisePairs(payload.pairs || []);
+      allPairs = live;
 
-    // For each incoming pair update…
-    live.forEach(p => {
-      // 1) Find the old in-memory model
-      const old = liveRows.find(r => r.id === p.pair);
-      if (old) {
-        // 2) Only update vol/price if they’ve changed
-        const newVol = toUsdVol(p);
-        const newPct = p.pricePct24h ?? 0;
-        if (old.vol !== newVol || old.pct !== newPct) {
-          // 3) Mutate your liveRows state
-          old.vol = newVol;
-          old.pct = newPct;
-          // 4) Re-draw that one button
-          refreshSidebarRow(p);
+      // For each incoming pair update…
+      live.forEach(p => {
+        // 1) Find the old in-memory model
+        const old = liveRows.find(r => r.id === p.pair);
+        if (old) {
+          // 2) Only update vol/price if they’ve changed
+          const newVol = toUsdVol(p);
+          const newPct = p.pricePct24h ?? 0;
+          if (old.vol !== newVol || old.pct !== newPct) {
+            // 3) Mutate your liveRows state
+            old.vol = newVol;
+            old.pct = newPct;
+            // 4) Re-draw that one button
+            refreshSidebarRow(p);
+          }
+        } else if (matchesSearch(p)) {
+          // It’s new: insert it
+          upsertRow(p);
         }
-      } else if (matchesSearch(p)) {
-        // It’s new: insert it
-        upsertRow(p);
-      }
-    });
+      });
 
-    // Finally, adjust the scroll pad & visible window
-    updateVisibleRows();
-  },
+      // Finally, adjust the scroll pad & visible window
+      updateVisibleRows();
+    },
     onError: err => console.error('Pairs WS error', err),
     onOpen: () => console.log('Pairs WS connected'),
   });
@@ -319,7 +319,7 @@ async function selectPair(pairId) {
     els.delta.textContent = `${pct >= 0 ? '+' : ''}${pct.toFixed(2)}%`;
     els.delta.className = `${pct >= 0 ? 'text-emerald-400' : 'text-rose-400'} font-medium`;
     els.priceM.textContent = els.price.textContent;
-    
+
     els.deltaM.textContent = els.delta.textContent;
     els.deltaM.classList.remove('text-emerald-400', 'text-rose-400');
     els.deltaM.classList.add(`${pct >= 0 ? 'text-emerald-400' : 'text-rose-400'}`);
@@ -346,23 +346,23 @@ async function selectPair(pairId) {
   chart.initEmptyChart();
   await chart.loadInitialCandles(pairId, chartDenom);
   document.querySelector('.tf-btn.active')?.classList.remove('active');
-document.querySelector('.tf-btn[data-tf=\"5m\"]')?.classList.add('active');
+  document.querySelector('.tf-btn[data-tf=\"5m\"]')?.classList.add('active');
 
-    // ── NEW: back-fill any missing 5m bars up to the current slot
+  // ── NEW: back-fill any missing 5m bars up to the current slot
   (function fillToNow() {
     const bars = chart.getAllBars();       // assume this gives you the full array
     if (bars.length < 2) return; // nothing to fill
     for (let i = 1; i < bars.length; i++) {
-      const prevTs = bars[i-1].time * 1000;
-      const currTs = bars[i  ].time * 1000;
+      const prevTs = bars[i - 1].time * 1000;
+      const currTs = bars[i].time * 1000;
       const missed = Math.floor((currTs - prevTs) / ivMs) - 1;
       for (let j = 1; j <= missed; j++) {
         chart.upsertLastCandle({
-          t:      prevTs + ivMs * j,
-          open:   bars[i-1].close,
-          high:   bars[i-1].close,
-          low:    bars[i-1].close,
-          close:  bars[i-1].close,
+          t: prevTs + ivMs * j,
+          open: bars[i - 1].close,
+          high: bars[i - 1].close,
+          low: bars[i - 1].close,
+          close: bars[i - 1].close,
           volume: 0,
         });
       }
@@ -372,11 +372,11 @@ document.querySelector('.tf-btn[data-tf=\"5m\"]')?.classList.add('active');
     const nextSlot = Math.floor(Date.now() / ivMs) * ivMs;
     if (nextSlot > last.time * 1000) {
       chart.upsertLastCandle({
-        t:      nextSlot,
-        open:   last.close,
-        high:   last.close,
-        low:    last.close,
-        close:  last.close,
+        t: nextSlot,
+        open: last.close,
+        high: last.close,
+        low: last.close,
+        close: last.close,
         volume: 0,
       });
     }
@@ -415,10 +415,10 @@ document.querySelector('.tf-btn[data-tf=\"5m\"]')?.classList.add('active');
   /* 7) wire up live updates ----------------------------------------------*/
   currentPriceChangeWs = api.subscribePairPriceChange24h(pairId, denomPrice, {
     onOpen: () => {
-    console.log('Price WS open for', pairId);
-    document.getElementById('live-dot')
-      .classList.add('connected');
-  },
+      console.log('Price WS open for', pairId);
+      document.getElementById('live-dot')
+        .classList.add('connected');
+    },
     onError: err => {
       console.error('Price WS error', err);
       document.getElementById('live-dot')
@@ -426,7 +426,7 @@ document.querySelector('.tf-btn[data-tf=\"5m\"]')?.classList.add('active');
     },
     onData: d => {
       const newPrice = d.priceNow ?? d.price;
-      const newPct   = d.changePct ?? d.percentChange ?? 0;
+      const newPct = d.changePct ?? d.percentChange ?? 0;
       tradeBoxState.price = newPrice;
       paintPrice(newPrice, newPct);
       // let updateTradeBox format + append symbol itself
@@ -434,6 +434,17 @@ document.querySelector('.tf-btn[data-tf=\"5m\"]')?.classList.add('active');
         ...tradeBoxState,
         currentPrice: newPrice,
       });
+      /* ── update market-cap ─────────────────────────── */
+      const mcap = (meta1.symbol === 'xUSDC')
+        ? newPrice * meta0.supply                 // XIAN/usdc pair
+        : newPrice * currencyUsdPrice * meta0.supply;
+
+      els.infoTokenMarketCap.textContent = isFinite(mcap)
+        ? '$' + mcap.toLocaleString(undefined, {
+          minimumFractionDigits: 2,
+          maximumFractionDigits: 2
+        })
+        : 'Unknown';
     }
   });
 
@@ -462,36 +473,36 @@ document.querySelector('.tf-btn[data-tf=\"5m\"]')?.classList.add('active');
 
 
   currentCandlesWs = api.subscribePairCandles(pairId, chartDenom, "5m", {
-  onOpen: () => console.log('Candles WS connected for', pairId),
-  onError: err => console.error('Candles WS error', err),
-  onData: incomingCandle => {
-    if (!incomingCandle || !incomingCandle.t) return;
+    onOpen: () => console.log('Candles WS connected for', pairId),
+    onError: err => console.error('Candles WS error', err),
+    onData: incomingCandle => {
+      if (!incomingCandle || !incomingCandle.t) return;
 
-    // 1) pull your last bar (time in seconds)
-    const last = chart.getLastBar();
-    if (last) {
-      const lastTs = last.time * 1000;          // to ms
-      const newTs  = incomingCandle.t;          // already in ms
+      // 1) pull your last bar (time in seconds)
+      const last = chart.getLastBar();
+      if (last) {
+        const lastTs = last.time * 1000;          // to ms
+        const newTs = incomingCandle.t;          // already in ms
 
-      // 2) how many *full* intervals elapsed?
-      const missed = Math.floor((newTs - lastTs) / ivMs) - 1;
-      for (let i = 1; i <= missed; i++) {
-        const emptyTs = lastTs + ivMs * i;
-        chart.upsertLastCandle({
-          t:      emptyTs,
-          open:   last.close,
-          high:   last.close,
-          low:    last.close,
-          close:  last.close,
-          volume: 0
-        });
+        // 2) how many *full* intervals elapsed?
+        const missed = Math.floor((newTs - lastTs) / ivMs) - 1;
+        for (let i = 1; i <= missed; i++) {
+          const emptyTs = lastTs + ivMs * i;
+          chart.upsertLastCandle({
+            t: emptyTs,
+            open: last.close,
+            high: last.close,
+            low: last.close,
+            close: last.close,
+            volume: 0
+          });
+        }
       }
-    }
 
-    // 3) now add the real candle
-    chart.upsertLastCandle(incomingCandle);
-  }
-});
+      // 3) now add the real candle
+      chart.upsertLastCandle(incomingCandle);
+    }
+  });
 
   /* 6) trades ------------------------------------------------------------*/
 
@@ -532,7 +543,7 @@ document.querySelector('.tf-btn[data-tf=\"5m\"]')?.classList.add('active');
         ...incoming.map(t => new Date(t.created).getTime())
       );
 
-    
+
     },
     onError: err => console.error('Trades WS error', err),
     onOpen: () => console.log('Connected to live trades for', pairId),
@@ -547,11 +558,11 @@ setInterval(() => {
   const slot = Math.floor(Date.now() / ivMs) * ivMs;
   if (slot > last.time * 1000) {
     chart.upsertLastCandle({
-      t:      slot,
-      open:   last.close,
-      high:   last.close,
-      low:    last.close,
-      close:  last.close,
+      t: slot,
+      open: last.close,
+      high: last.close,
+      low: last.close,
+      close: last.close,
       volume: 0
     });
   }
@@ -658,7 +669,7 @@ function buildTradeRow(t, meta0, meta1) {
   }
   const sym0 = meta0.symbol;
   const row = document.createElement('tr');
- row.className = `
+  row.className = `
     odd:bg-white/5 hover:bg-white/10
     transition cursor-pointer select-none`;      // new classes
 
@@ -667,10 +678,10 @@ function buildTradeRow(t, meta0, meta1) {
       ${side}
     </td>
     <td class="px-2 py-2 text-right whitespace-nowrap">
-      ${amount.toLocaleString(undefined,{minFractionDigits:2,maxFractionDigits:4})} ${amountSymbol}
+      ${amount.toLocaleString(undefined, { minFractionDigits: 2, maxFractionDigits: 4 })} ${amountSymbol}
     </td>
     <td class="px-2 py-2 text-right whitespace-nowrap">
-      ${price.toLocaleString(undefined,{minFractionDigits:2,maxFractionDigits:8})} ${meta1.symbol}
+      ${price.toLocaleString(undefined, { minFractionDigits: 2, maxFractionDigits: 8 })} ${meta1.symbol}
     </td>
     <td class="px-2 py-2 text-right text-gray-400 whitespace-nowrap">
       ${timeAgo(t.created)}
@@ -684,8 +695,8 @@ function buildTradeRow(t, meta0, meta1) {
   return row;
 }
 
-document.querySelectorAll('#tfToolbar .tf-btn').forEach(btn=>{
-  btn.onclick = ()=> {
+document.querySelectorAll('#tfToolbar .tf-btn').forEach(btn => {
+  btn.onclick = () => {
     document.querySelector('.tf-btn.active')?.classList.remove('active');
     btn.classList.add('active');
     chart.changeTimeframe(btn.dataset.tf);   // new helper you just exported
