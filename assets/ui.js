@@ -12,11 +12,18 @@ export const els = {
     volume: document.getElementById('volume'),
     tradesList: document.getElementById('tradesList'),
     chartWrap: document.getElementById('chartContainer'),
+    infoTokenName: document.getElementById('tiName'),
+    infoTokenSymbol: document.getElementById('tiSymbol'),
+    infoTokenSupply: document.getElementById('tiSupply'),
+    infoTokenOperator: document.getElementById('tiOperator'),
+    infoTokenExplorer: document.getElementById('tiExplorer'),
+    infoTokenMarketCap: document.getElementById('tiMarketCap'),
+
     /* ▼ mobile copies ▼ */
-  priceM     : document.getElementById('priceM'),
-  deltaM     : document.getElementById('deltaM'),
-  liquidityM : document.getElementById('liquidityM'),
-  volumeM    : document.getElementById('volumeM'),
+    priceM     : document.getElementById('priceM'),
+    deltaM     : document.getElementById('deltaM'),
+    liquidityM : document.getElementById('liquidityM'),
+    volumeM    : document.getElementById('volumeM'),
 };
 
 export function showSidebarSkeleton(count = 22) {
@@ -69,4 +76,12 @@ export function showMainSkeleton() {
       <td class="px-4 py-2">${pulse} w-12 h-4"></td>`;
         els.tradesList.appendChild(tr);
     });
+
+    const pulse2 = '<span class="bg-gray-700 rounded animate-pulse block ';
+    els.infoTokenName.innerHTML      = `${pulse2} w-12 h-4"></span>`;
+    els.infoTokenSymbol.innerHTML    = `${pulse2} w-12 h-4"></span>`;
+    els.infoTokenSupply.innerHTML    =  `${pulse2} w-24 h-4"></span>`;
+    els.infoTokenOperator.innerHTML  =  `${pulse2} w-24 h-4"></span>`;
+    els.infoTokenExplorer.innerHTML  =  `${pulse2} w-24 h-4"></span>`;
+    els.infoTokenMarketCap.innerHTML = `${pulse2} w-24 h-4"></span>`;
 }

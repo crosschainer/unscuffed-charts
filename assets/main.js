@@ -261,6 +261,8 @@ async function selectPair(pairId) {
   const meta0 = await api.fetchTokenMeta(token0);
   const meta1 = await api.fetchTokenMeta(token1);
 
+  console.log(meta0);
+
   /* pair logo -------------------------------------------------------- */
   els.pairLogo.src = meta0.logo ||                          // main logo
     './assets/ph.png'; // 1×1 GIF fallback
@@ -270,6 +272,14 @@ async function selectPair(pairId) {
   };
 
   els.pairName.textContent = `${meta0.symbol} / ${meta1.symbol}`;
+  els.infoTokenName.textContent = meta0.name || meta0.symbol;
+  els.infoTokenSymbol.textContent = meta0.symbol;
+  els.infoTokenSupply.textContent = meta0.supply.toLocaleString(undefined, {
+    minimumFractionDigits: 2, maximumFractionDigits: 2
+  }) || 'Unknown';
+  els.infoTokenOperator.innerHTML = `<a href="https://xian.org/addresses/${meta0.operator}" target="_blank" rel="noopener" class="hover:underline">${meta0.operator}</a>` || 'Unknown';
+  els.infoTokenExplorer.innerHTML = `<a href="${meta0.explorer}" target="_blank" rel="noopener" class="hover:underline">${meta0.explorer}</a>`;
+
 
   /* 2) concurrent data ---------------------------------------------------*/
   const [priceD, volD, tradesD, resD] = await Promise.all([
@@ -281,6 +291,24 @@ async function selectPair(pairId) {
 
   /* 3) stats bar initial paint -------------------------------------------*/
   const priceNow = priceD.priceNow ?? priceD.price ?? 0;
+
+  // currencyUsdPrice * priceNow * meta0.supply is the market cap but some tokens have no supply in metadata
+  let marketCap;
+  if (meta1.symbol === 'xUSDC') {
+    // Special case for the native currency (XIAN)
+    marketCap = priceNow * meta0.supply;
+  } else {
+    marketCap = currencyUsdPrice * priceNow * (meta0.supply || 0);
+  }
+  if (isNaN(marketCap) || !isFinite(marketCap)) {
+    marketCap = 'Unknown';
+  } else {
+    marketCap = `$${marketCap.toLocaleString(undefined, {
+      minimumFractionDigits: 2, maximumFractionDigits: 2
+    })}`;
+  }
+  els.infoTokenMarketCap.textContent = marketCap;
+
   const pct = priceD.changePct ?? priceD.percentChange ?? 0;
   const vol24h = volD.volume24h * currencyUsdPrice;
   const usdLiq = Number(resD.reserve1 || 0) * currencyUsdPrice * 2;
@@ -323,6 +351,7 @@ document.querySelector('.tf-btn[data-tf=\"5m\"]')?.classList.add('active');
     // ── NEW: back-fill any missing 5m bars up to the current slot
   (function fillToNow() {
     const bars = chart.getAllBars();       // assume this gives you the full array
+    if (bars.length < 2) return; // nothing to fill
     for (let i = 1; i < bars.length; i++) {
       const prevTs = bars[i-1].time * 1000;
       const currTs = bars[i  ].time * 1000;

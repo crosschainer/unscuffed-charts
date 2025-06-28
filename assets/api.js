@@ -41,20 +41,32 @@ export async function fetchTokenMeta(contract) {
         const arr = Array.isArray(raw) ? raw : [raw];
 
         // 5) Normalize, cache, and resolve each
-        arr.forEach(item => {
+        for (const item of arr) {
           const key = item.contractName;
+
+          /* ── native-currency special case ── */
+          if (key === 'currency' && !item.total_supply) {
+            try {
+              const { total_supply } = await fetchJSON(`${API_BASE}/total-supply`);
+              item.total_supply = total_supply;
+            } catch { /* network error?  leave supply as '—' */ }
+          }
+
           const meta = {
-            symbol: item.token_symbol    || key.slice(0,6),
-            name:   item.token_name      || item.token_symbol || key,
-            logo:   item.token_logo_url  || './ph.png',
+            symbol   : item.token_symbol   || key.slice(0,6),
+            name     : item.token_name     || item.token_symbol || key,
+            logo     : item.token_logo_url || './ph.png',
+            operator : item.operator       || '—',
+            supply   : item.total_supply   || '—',
+            marketCap: item.market_cap     || '—',
+            explorer : item.explorer_url   ||
+                      `https://explorer.xian.org/tokens/${key}`,
           };
 
           TOKEN_CACHE[key] = meta;
-          ;(_pendingResolvers[key] || [])
-            .forEach(({ resolve }) => resolve(meta));
+          (_pendingResolvers[key] || []).forEach(({ resolve }) => resolve(meta));
           delete _pendingResolvers[key];
-        });
-
+        }
         // 6) Reject any that never came back
         toFetch
           .filter(key => !TOKEN_CACHE[key])
