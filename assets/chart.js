@@ -201,7 +201,15 @@ async function onVisibleRangeChanged(range) {
   const moreRaw = page.candles.map(toBar);
 
   const existingTimes = new Set(baseBars.map(b => b.time));
-  const unique = moreRaw.filter(b => !existingTimes.has(b.time));
+  let unique = moreRaw.filter(b => !existingTimes.has(b.time));
+  // last unique bar has to be updated to connect to the first bar
+  if (unique.length && unique[unique.length - 1].time < baseBars[0].time) {
+    unique[unique.length - 1] = {
+      ...unique[unique.length - 1],
+      open:   baseBars[0].close,
+      
+    };
+  }
   baseBars = unique.concat(baseBars);              // prepend older data
 
   oldestCursor = page.page.before;
