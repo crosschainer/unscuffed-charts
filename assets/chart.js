@@ -161,6 +161,45 @@ export function initEmptyChart() {
     chart.applyOptions({ width, height });
   }).observe(els.chartWrap);
 }
+const SLOT = 300;                    // 5-min bucket, in seconds
+
+function bridgeOlderChunk(older, currentView) {
+  if (!older.length || !currentView.length) return older;
+
+  const lastOlder   = older[older.length - 1];   // right-most of new page
+  const firstView   = currentView[0];            // left-most on screen
+
+  const prevClose   = lastOlder.close ?? lastOlder.open ??
+                      lastOlder.high  ?? lastOlder.low;
+
+  const nextOpen    = firstView.open  ?? firstView.close ??
+                      firstView.high  ?? firstView.low;
+
+  const gapSlots    = (firstView.time - lastOlder.time) / SLOT - 1;
+  const bridgeBars  = [];
+
+
+
+  /* 2️⃣  single “bridge” bar one slot before firstView */
+  if (gapSlots >= 0) {
+    const ts = firstView.time - SLOT;
+    bridgeBars.push({
+      time  : ts,
+      open  : prevClose,
+      high  : Math.max(prevClose, nextOpen),
+      low   : Math.min(prevClose, nextOpen),
+      close : nextOpen,
+      volume: 0,
+    });
+
+    /* 3️⃣  guarantee continuity: firstView starts at prevClose */
+    firstView.open = prevClose;
+    firstView.low  = Math.min(firstView.low,  prevClose);
+    firstView.high = Math.max(firstView.high, prevClose);
+  }
+
+  return older.concat(bridgeBars);
+}
 
 /* ────────────────────────── Initial load ───────────────────────────── */
 export async function loadInitialCandles(pairId, denom = '0') {
@@ -202,7 +241,8 @@ async function onVisibleRangeChanged(range) {
 
   const existingTimes = new Set(baseBars.map(b => b.time));
   const unique = moreRaw.filter(b => !existingTimes.has(b.time));
-  baseBars = unique.concat(baseBars);              // prepend older data
+  const bridged = bridgeOlderChunk(unique, viewBars);
+baseBars = bridged.concat(baseBars);
 
   oldestCursor = page.page.before;
   viewBars = (currentTf === '5m') ? baseBars.slice()
