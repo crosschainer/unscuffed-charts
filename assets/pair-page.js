@@ -104,7 +104,7 @@ export async function selectPair(pairId) {
   closePairWebSockets();
 
   /* 6) wire up live updates ----------------------------------------------*/
-  setupPairWebSockets(pairId, denomPrice, denomVol, denomTrades, meta0, meta1, tradeBoxState);
+  setupPairWebSockets(pairId, denomPrice, denomVol, denomTrades, chartDenom, meta0, meta1, tradeBoxState);
 }
 
 function fillMissingCandles() {
@@ -143,7 +143,7 @@ function fillMissingCandles() {
   chart.getChartInstance?.().timeScale().fitContent?.();
 }
 
-function setupPairWebSockets(pairId, denomPrice, denomVol, denomTrades, meta0, meta1, tradeBoxState) {
+function setupPairWebSockets(pairId, denomPrice, denomVol, denomTrades, chartDenom, meta0, meta1, tradeBoxState) {
   // Price change WebSocket
   setCurrentPriceChangeWs(api.subscribePairPriceChange24h(pairId, denomPrice, {
     onOpen: () => {
