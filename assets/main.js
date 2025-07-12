@@ -9,7 +9,7 @@ import { TOKEN_CACHE } from './api.js';
 let currencyUsdPrice = 0;
 const liveRows = [];
 const ROW_HEIGHT = 56; // px – real height of 1 sidebar row
-
+const ivMs = 5 * 60 * 1000; // 5 minutes in ms – interval for candles
 // Search state
 let searchTerm = '';
 let allPairs = [];
@@ -26,7 +26,6 @@ let currentPairsWs = null;
 let currentCandlesWs = null;
 
 // Constants
-const INTERVAL_MS = 5 * 60 * 1000; // 5 minutes in ms
 const CURRENCY_UPDATE_INTERVAL = 60_000; // 1 minute
 const UI_UPDATE_INTERVAL = 1_000; // 1 second
 
