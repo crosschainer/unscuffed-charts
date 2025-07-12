@@ -27,6 +27,8 @@ export async function hydrateMetadataIfNeeded(pair) {
   // Already done? We're good.
   if (hydratedPairs.has(key)) return;
 
+  console.log(`🔄 Hydrating metadata for pair ${key} (${pair.token0}/${pair.token1})`);
+
   // Wait for both tokens
   await Promise.all(
     [pair.token0, pair.token1].map(async (token) => {
@@ -36,6 +38,7 @@ export async function hydrateMetadataIfNeeded(pair) {
       if (!hydratingContracts.has(token)) {
         hydratingContracts.add(token);
         try {
+          console.log(`📡 Fetching metadata for token ${token}`);
           const meta = await api.fetchTokenMeta(token);
           TOKEN_CACHE[token] = meta;
         } catch (err) {
@@ -55,6 +58,7 @@ export async function hydrateMetadataIfNeeded(pair) {
   // At this point: both token0 + token1 are in cache
   if (!hydratedPairs.has(key)) {
     hydratedPairs.add(key);
+    console.log(`✅ Hydrated pair ${key}`);
     refreshSidebarRow(pair); // trigger UI update
   }
 }
@@ -72,8 +76,34 @@ export function refreshSidebarRow(pair) {
 }
 
 export function renderSidebar(pairs) {
-  pairs.forEach(upsertRow);
-  updateVisibleRows(); // only safe now
+  // Clear existing rows
+  liveRows.length = 0;
+  
+  // Add all pairs to liveRows but don't hydrate yet
+  pairs.forEach(pair => {
+    if (!pair || !matchesSearch(pair)) return;
+    
+    try {
+      const volUSD = toUsdVol(pair);
+      
+      // Create button without hydration (will be hydrated when visible)
+      const btn = makePairButton(pair, volUSD);
+      liveRows.push({ 
+        id: pair.pair, 
+        vol: volUSD, 
+        pct: pair.pricePct24h ?? 0,
+        btn 
+      });
+    } catch (err) {
+      console.warn('Failed to add row for pair:', pair.pair, err);
+    }
+  });
+  
+  // Sort by volume descending
+  liveRows.sort((a, b) => b.vol - a.vol);
+  
+  // Only render visible rows (this will trigger hydration only for visible pairs)
+  updateVisibleRows();
 }
 
 export function upsertRow(pair) {
@@ -97,10 +127,11 @@ export function upsertRow(pair) {
       btn 
     });
 
-    // Update visible rows if not currently scrolling
-    if (!isScrolling) {
-      updateVisibleRows();
-    }
+    // Sort to maintain order
+    liveRows.sort((a, b) => b.vol - a.vol);
+    
+    // Note: Don't call updateVisibleRows() here to avoid hydrating all pairs
+    // updateVisibleRows() should be called externally when needed
   } catch (err) {
     console.warn('Failed to upsert row for pair:', pair.pair, err);
   }
@@ -173,6 +204,8 @@ export function updateVisibleRows() {
   const buffer = 3; // Increased buffer for smoother scrolling
   const end = Math.min(start + visibleCount + buffer, liveRows.length);
 
+  console.log(`📊 Updating visible rows: ${start}-${end} (${end - start} pairs) out of ${liveRows.length} total`);
+
   // Store current scroll position to prevent jumping
   const currentScrollTop = scroller.scrollTop;
 
@@ -216,12 +249,16 @@ export async function onSearch(e) {
     liveRows.length = 0;
     els.rowHost.innerHTML = '';
     
-    // Add filtered pairs to the list
+    // Add filtered pairs to the list (without calling updateVisibleRows for each)
     filteredPairs.forEach(upsertRow);
+    
+    // Now update visible rows once (this will trigger hydration only for visible pairs)
+    updateVisibleRows();
 
-    // Hydrate uncached tokens for better search results
+    // Hydrate uncached tokens for better search results (but only for visible ones)
+    const visiblePairs = filteredPairs.slice(0, Math.ceil(els.pairsScroller.clientHeight / 60) + 5);
     const tokensToHydrate = Array.from(new Set(
-      filteredPairs.flatMap(pair => [pair.token0, pair.token1])
+      visiblePairs.flatMap(pair => [pair.token0, pair.token1])
     )).filter(token => !TOKEN_CACHE[token]);
 
     // Load metadata for uncached tokens

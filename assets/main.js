@@ -110,6 +110,9 @@ async function init() {
       const live = normalisePairs(payload.pairs || []);
       setAllPairs(live);
 
+      // Track if any changes were made
+      let hasChanges = false;
+      
       // For each incoming pair update…
       live.forEach(p => {
         // 1) Find the old in-memory model
@@ -124,15 +127,17 @@ async function init() {
             old.pct = newPct;
             // 4) Re-draw that one button
             refreshSidebarRow(p);
+            hasChanges = true;
           }
         } else if (matchesSearch(p)) {
           // It's new: insert it
           upsertRow(p);
+          hasChanges = true;
         }
       });
 
-      // Finally, adjust the scroll pad & visible window (but not during active scrolling)
-      if (!isScrolling) {
+      // Only update visible rows if there were changes and not during active scrolling
+      if (hasChanges && !isScrolling) {
         updateVisibleRows();
       }
     },
