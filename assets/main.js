@@ -4,24 +4,34 @@ import * as api from './api.js';
 import * as chart from './chart.js';
 import { timeAgo, getPairFromHash, setPairHash, formatPrice } from './utils.js';
 import { TOKEN_CACHE } from './api.js';
-let currencyUsdPrice = 0;    // USD per Xian
+
+// Global state
+let currencyUsdPrice = 0;
 const liveRows = [];
-const rowH = 56;              // px – real height of 1 sidebar row
+const ROW_HEIGHT = 56; // px – real height of 1 sidebar row
+const ivMs = 5 * 60 * 1000; // 5 minutes in ms – interval for candles
+// Search state
+let searchTerm = '';
+let allPairs = [];
+let hasRealData = false;
+const hydratingContracts = new Set();
+const hydratedPairs = new Set();
 
-/* ─── search state ────────────────────────────────────────── */
-let searchTerm = '';          // current lowercase query
-let allPairs = [];          // master list (set in init)
-let hasRealData = false; // top-level flag
-const hydratingContracts = new Set();          // in-progress fetches
-const hydratedPairs = new Set();               // pair.pair → fully hydrated
-
-let currentTradesWs = null;  // ← track the active socket
+// WebSocket connections
+let currentTradesWs = null;
 let currentPriceChangeWs = null;
 let currentVolumeWs = null;
 let currentReservesWs = null;
-let currentPairsWs = null;   // ← NEW: sidebar pairs feed
-let currentCandlesWs = null;  // ← NEW: live candles feed
-const ivMs = 5 * 60 * 1000; // 5 minutes in ms
+let currentPairsWs = null;
+let currentCandlesWs = null;
+
+// Constants
+const CURRENCY_UPDATE_INTERVAL = 60_000; // 1 minute
+const UI_UPDATE_INTERVAL = 1_000; // 1 second
+
+// Scrolling state
+let isScrolling = false;
+let scrollTimeout = null;
 
 /* --------------------------- Start-up -----------------------------------*/
 document.addEventListener('DOMContentLoaded', init);
@@ -45,27 +55,57 @@ function tickUpdated() {
   el.textContent = new Date().toLocaleTimeString();
 }
 
+async function updateCurrencyPrice() {
+  try {
+    const { priceNow } = await api.getCurrencyPrice();
+    if (priceNow != null) currencyUsdPrice = priceNow;
+  } catch (err) {
+    console.warn('Failed to refresh XIAN→USD rate', err);
+  }
+}
+
+function handleScroll() {
+  isScrolling = true;
+  
+  // Clear existing timeout
+  if (scrollTimeout) {
+    clearTimeout(scrollTimeout);
+  }
+  
+  // Only update after scroll stops to prevent jumping
+  scrollTimeout = setTimeout(() => {
+    isScrolling = false;
+    updateVisibleRows();
+  }, 50); // Increased delay to prevent conflicts
+}
+
+function handleResize() {
+  if (!isScrolling) {
+    updateVisibleRows();
+  }
+}
+
 async function init() {
   showSidebarSkeleton();
   showMainSkeleton();
-  els.pairsScroller.addEventListener('scroll', updateVisibleRows);
-  const ro = new ResizeObserver(updateVisibleRows);
-  ro.observe(els.pairsScroller);
+  
+  // Setup scrolling with debouncing
+  els.pairsScroller.addEventListener('scroll', handleScroll);
+  const resizeObserver = new ResizeObserver(handleResize);
+  resizeObserver.observe(els.pairsScroller);
 
   document.getElementById('pairSearch')
     .addEventListener('input', onSearch);
 
-  currencyUsdPrice = (await api.getCurrencyPrice()).priceNow;
+  try {
+    currencyUsdPrice = (await api.getCurrencyPrice()).priceNow;
+  } catch (err) {
+    console.warn('Failed to get initial XIAN→USD rate', err);
+    currencyUsdPrice = 0;
+  }
 
-  // 2) start polling every minute
-  setInterval(async () => {
-    try {
-      const { priceNow } = await api.getCurrencyPrice();
-      if (priceNow != null) currencyUsdPrice = priceNow;
-    } catch (err) {
-      console.warn('Failed to refresh XIAN→USD rate', err);
-    }
-  }, 60_000);
+  // Start polling for currency price updates
+  setInterval(updateCurrencyPrice, CURRENCY_UPDATE_INTERVAL);
 
   const rawPairs = (await api.getPairs({ limit: 1031 })).pairs; // already sorted DESC
   allPairs = normalisePairs(rawPairs);
@@ -99,8 +139,10 @@ async function init() {
         }
       });
 
-      // Finally, adjust the scroll pad & visible window
-      updateVisibleRows();
+      // Finally, adjust the scroll pad & visible window (but not during active scrolling)
+      if (!isScrolling) {
+        updateVisibleRows();
+      }
     },
     onError: err => console.error('Pairs WS error', err),
     onOpen: () => console.log('Pairs WS connected'),
@@ -185,64 +227,79 @@ function renderSidebar(pairs) {
 }
 
 function upsertRow(pair) {
-  if (!matchesSearch(pair)) return;   // skip if filtered out
-  const volUSD = toUsdVol(pair);      // ← helper below
+  if (!pair || !matchesSearch(pair)) return;
+  
+  try {
+    const volUSD = toUsdVol(pair);
+    
+    // Remove existing entry if present
+    const oldIdx = liveRows.findIndex(r => r.id === pair.pair);
+    if (oldIdx !== -1) {
+      liveRows.splice(oldIdx, 1);
+    }
+    
+    // Create new button and add to rows
+    const btn = makePairButton(pair, volUSD);
+    liveRows.push({ 
+      id: pair.pair, 
+      vol: volUSD, 
+      pct: pair.pricePct24h ?? 0,
+      btn 
+    });
 
-  /* 1) de-duplicate ---------------------------------------------------- */
-  const oldIdx = liveRows.findIndex(r => r.id === pair.pair);
-  if (oldIdx !== -1) {
-    liveRows.splice(oldIdx, 1);          // remove old record only
+    // Update visible rows if not currently scrolling
+    if (!isScrolling) {
+      updateVisibleRows();
+    }
+  } catch (err) {
+    console.warn('Failed to upsert row for pair:', pair.pair, err);
   }
-  /* already volume-sorted from the API → just push in order */
-  const btn = makePairButton(pair, volUSD);
-  liveRows.push({ id: pair.pair, vol: volUSD, btn });
-
-  /* 4) repaint the visible window ------------------------------------- */
-  updateVisibleRows();
 }
 
 
-function makePairButton(p, volUSD) {
-  const pct = p.pricePct24h ?? 0;
-
-  const meta0 = TOKEN_CACHE[p.token0] ?? { symbol: p.token0, logo: '' };
-  const meta1 = TOKEN_CACHE[p.token1] ?? { symbol: p.token1, logo: '' };
-  const t0 = meta0.symbol;
-  const t1 = meta1.symbol;
-
+function makePairButton(pair, volUSD) {
+  const pct = pair.pricePct24h ?? 0;
+  const meta0 = TOKEN_CACHE[pair.token0] ?? { symbol: pair.token0, logo: '' };
+  const meta1 = TOKEN_CACHE[pair.token1] ?? { symbol: pair.token1, logo: '' };
+  
   const btn = document.createElement('button');
-  btn.className = `
-    flex flex-col items-start w-full px-4 py-2 text-left
-    hover:bg-white/5 active:bg-white/10 transition`;
+  btn.className = 'flex flex-col items-start w-full px-4 py-2 text-left hover:bg-white/5 active:bg-white/10 transition';
+  btn.setAttribute('data-pair', pair.pair);
+  
+  // Use safer innerHTML construction
+  const logoSrc = meta0.logo || './assets/ph.png';
+  const pctClass = pct >= 0 ? 'text-emerald-400' : 'text-rose-400';
+  const formattedVol = volUSD.toLocaleString(undefined, { maximumFractionDigits: 0 });
+  
   btn.innerHTML = `
     <div class="flex items-center justify-between w-full">
       <span class="flex items-center gap-2">
-        <img src="${meta0.logo}" width="20" height="20"
-             onerror="this.onerror=null;this.src='./assets/ph.png';" />
-        <span>${t0} / ${t1}</span>
+        <img src="${logoSrc}" width="20" height="20" 
+             onerror="this.onerror=null;this.src='./assets/ph.png';" 
+             alt="${meta0.symbol} logo" />
+        <span>${meta0.symbol} / ${meta1.symbol}</span>
       </span>
-      <span class="text-xs ${pct >= 0 ? 'text-emerald-400' : 'text-rose-400'}">
+      <span class="text-xs ${pctClass}">
         ${pct.toFixed(2)}%
       </span>
     </div>
     <div class="text-xs text-gray-400 mt-1.5">
-      $${volUSD.toLocaleString(undefined, { maximumFractionDigits: 0 })} vol
+      $${formattedVol} vol
     </div>`;
-  btn.setAttribute('data-pair', p.pair);
 
   btn.onclick = () => {
-    selectPair(p.pair);
-    // ── NEW ── only on <768 px
+    selectPair(pair.pair);
     if (window.matchMedia('(max-width: 767px)').matches) {
-      toggleSidebar();                // reuse your existing helper
+      toggleSidebar();
     }
-  }
+  };
+  
   return btn;
 }
 
-function toUsdVol(p) {
+function toUsdVol(pair) {
   /* token-1 side is always the ‘dollar’ side in the new payload */
-  return (p.volume24h ?? 0) * currencyUsdPrice;
+  return (pair.volume24h ?? 0) * currencyUsdPrice;
 }
 
 /* --------------------------- Pair page ----------------------------------*/
@@ -570,58 +627,79 @@ setInterval(() => {
 
 
 function updateVisibleRows() {
-  if (!hasRealData) return;
+  if (!hasRealData || !liveRows.length) return;
 
-  const rawTop = els.pairsScroller.scrollTop;
-  const start = Math.max(0, Math.floor(rawTop / rowH));
-  const end = Math.min(start + Math.ceil(els.pairsScroller.clientHeight / rowH) + 4, liveRows.length);
+  const scroller = els.pairsScroller;
+  const scrollTop = scroller.scrollTop;
+  const clientHeight = scroller.clientHeight;
+  
+  // Calculate visible range with buffer
+  const start = Math.max(0, Math.floor(scrollTop / ROW_HEIGHT));
+  const visibleCount = Math.ceil(clientHeight / ROW_HEIGHT);
+  const buffer = 3; // Increased buffer for smoother scrolling
+  const end = Math.min(start + visibleCount + buffer, liveRows.length);
 
-  els.topPad.style.height = start * rowH + 'px';
-  els.bottomPad.style.height = (liveRows.length - end) * rowH + 'px';
-  els.rowHost.innerHTML = '';
+  // Store current scroll position to prevent jumping
+  const currentScrollTop = scroller.scrollTop;
 
+  // Update padding to maintain scroll position
+  els.topPad.style.height = `${start * ROW_HEIGHT}px`;
+  els.bottomPad.style.height = `${(liveRows.length - end) * ROW_HEIGHT}px`;
+
+  // Clear and rebuild visible rows
+  const fragment = document.createDocumentFragment();
+  
   for (let i = start; i < end; i++) {
+    if (i >= liveRows.length) break;
+    
     const { id, btn } = liveRows[i];
     const pair = allPairs.find(p => p.pair === id);
-    els.rowHost.appendChild(btn);
-    hydrateMetadataIfNeeded(pair); // 👈 Lazy hydrate here
+    
+    if (btn && pair) {
+      fragment.appendChild(btn);
+      hydrateMetadataIfNeeded(pair);
+    }
+  }
+
+  // Replace content in one operation to reduce reflows
+  els.rowHost.innerHTML = '';
+  els.rowHost.appendChild(fragment);
+  
+  // Restore scroll position if it changed during DOM manipulation
+  if (scroller.scrollTop !== currentScrollTop) {
+    scroller.scrollTop = currentScrollTop;
   }
 }
 async function onSearch(e) {
   searchTerm = e.target.value.trim().toLowerCase();
 
-  // 1) Raw + cache‐based prefilter
-  const rawMatches = allPairs.filter(pair => {
-    return (
-      pair.token0.includes(searchTerm) ||
-      pair.token1.includes(searchTerm) ||
-      (TOKEN_CACHE[pair.token0]?.symbol || '')
-        .toLowerCase().includes(searchTerm) ||
-      (TOKEN_CACHE[pair.token1]?.symbol || '')
-        .toLowerCase().includes(searchTerm)
-    );
-  });
+  try {
+    // Filter pairs based on search term
+    const filteredPairs = allPairs.filter(matchesSearch);
 
-  // 2) Refresh UI immediately with rawMatches
-  liveRows.length = 0;
-  els.rowHost.innerHTML = '';
-  rawMatches.forEach(upsertRow);
+    // Clear and rebuild the list
+    liveRows.length = 0;
+    els.rowHost.innerHTML = '';
+    
+    // Add filtered pairs to the list
+    filteredPairs.forEach(upsertRow);
 
-  // 3) Hydrate only *uncached* tokens from rawMatches
-  const tokensToHydrate = Array.from(new Set(
-    rawMatches.flatMap(p => [p.token0, p.token1])
-  )).filter(t => !TOKEN_CACHE[t]);
+    // Hydrate uncached tokens for better search results
+    const tokensToHydrate = Array.from(new Set(
+      filteredPairs.flatMap(pair => [pair.token0, pair.token1])
+    )).filter(token => !TOKEN_CACHE[token]);
 
-  // 4) Fire & forget hydration, letting per-row refresh handle the redraw
-  tokensToHydrate.forEach(async (token) => {
-    try {
-      await api.fetchTokenMeta(token);
-      // Once metadata is in cache, each visible row will call
-      // hydrateMetadataIfNeeded → refreshSidebarRow → update UI.
-    } catch (err) {
-      console.warn(`Failed to load metadata for ${token}`, err);
-    }
-  });
+    // Load metadata for uncached tokens
+    tokensToHydrate.forEach(async (token) => {
+      try {
+        await api.fetchTokenMeta(token);
+      } catch (err) {
+        console.warn(`Failed to load metadata for ${token}`, err);
+      }
+    });
+  } catch (err) {
+    console.error('Search failed:', err);
+  }
 }
 function matchesSearch(pair) {
   if (!searchTerm) return true;           // empty box → show all

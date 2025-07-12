@@ -1,85 +1,119 @@
- :root { --brandbar-h: 48px; }   /* matches h-12 */
- 
-/* cosmic radial backdrop */
-body::before {
-    content: "";
-    position: fixed;
-    inset: 0;
-    background: radial-gradient(800px at 20% 30%, rgba(8, 251, 214, 0.08), transparent 70%),
-    radial-gradient(800px at 80% 70%, rgba(196, 0, 255, 0.08), transparent 70%);
-    pointer-events: none;
-    z-index: -1;
+:root { 
+  --brandbar-h: 48px; /* matches h-12 */
 }
+
+/* Cosmic radial backdrop */
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  background: 
+    radial-gradient(800px at 20% 30%, rgba(8, 251, 214, 0.08), transparent 70%),
+    radial-gradient(800px at 80% 70%, rgba(196, 0, 255, 0.08), transparent 70%);
+  pointer-events: none;
+  z-index: -1;
+}
+/* Live indicator animation */
 @keyframes live-pulse {
   0%   { opacity: 0.2; transform: scale(0.8); }
   50%  { opacity: 1;   transform: scale(1.2); }
   100% { opacity: 0.2; transform: scale(0.8); }
 }
 
-/* hidden by default */
 #live-dot {
-  opacity: 0;
+  opacity: 0; /* hidden by default */
 }
 
-/* only show + animate when this class is present */
 #live-dot.connected {
   opacity: 1;
   animation: live-pulse 2s ease-in-out infinite;
 }
-/* subtle diagonal grid for the chart area */
-/* styles.css  ─ overwrite the old .chart-bg rule */
+/* Chart background with subtle diagonal grid */
 .chart-bg {
-  /* base colour */
   background: #060708;
-
-  /* make sure layers stack nicely */
   background-blend-mode: normal, overlay, overlay;
   background-size:
-    auto,                   /* vignette        */
-    200px 200px,            /* noise tile      */
-    16px 16px,              /* diag grid 1     */
-    16px 16px;              /* diag grid 2     */
+    auto,        /* vignette */
+    200px 200px, /* noise tile */
+    16px 16px,   /* diag grid 1 */
+    16px 16px;   /* diag grid 2 */
 }
 
-/* same dark scrollbar for WebKit + Firefox */
-#pairsScroller::-webkit-scrollbar      { width: 8px; }
-#pairsScroller::-webkit-scrollbar-track{ background:transparent; }
-#pairsScroller::-webkit-scrollbar-thumb{
-  background:#4b5563; border-radius:4px;
+/* Custom scrollbar styling for pairs list */
+#pairsScroller::-webkit-scrollbar {
+  width: 8px;
 }
-#pairsScroller:hover::-webkit-scrollbar-thumb{ background:#9ca3af; }
 
-#pairsScroller {                       /* Firefox */
-  scrollbar-width: thin;
-  scrollbar-color:#4b5563 transparent;
+#pairsScroller::-webkit-scrollbar-track {
+  background: transparent;
 }
+
+#pairsScroller::-webkit-scrollbar-thumb {
+  background: #4b5563;
+  border-radius: 4px;
+}
+
+#pairsScroller:hover::-webkit-scrollbar-thumb {
+  background: #9ca3af;
+}
+
+#pairsScroller {
+  scrollbar-width: thin; /* Firefox */
+  scrollbar-color: #4b5563 transparent;
+}
+/* Button styling */
 .btn-neon:hover {
   box-shadow: 0 0 8px #08FBD6, 0 0 12px #C400FF;
 }
-.tf-btn           { padding: 2px 6px; border-radius: 4px; }
-.tf-btn.active,
-.tf-btn:hover     { background:#08FBD615; }
 
-/* mobile touch comfort */
+.tf-btn {
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+
+.tf-btn.active,
+.tf-btn:hover {
+  background: #08FBD615;
+}
+
+/* Mobile touch comfort */
 @media (max-width: 767px) {
-  .tf-btn        {
-    padding: 6px 12px;        /* bigger tap target */
-    font-size: 0.75rem;       /* ~12 px */
+  .tf-btn {
+    padding: 6px 12px; /* bigger tap target */
+    font-size: 0.75rem; /* ~12px */
     border-radius: 6px;
   }
 }
 
-/* same dark scrollbar for WebKit + Firefox */
-aside::-webkit-scrollbar      { width: 8px; }
-aside::-webkit-scrollbar-track{ background:transparent; }
-aside::-webkit-scrollbar-thumb{
-  background:#4b5563; border-radius:4px;
+/* Aside scrollbar styling */
+aside::-webkit-scrollbar {
+  width: 8px;
 }
-aside:hover::-webkit-scrollbar-thumb{ background:#9ca3af; }
-aside {                       /* Firefox */
-  scrollbar-width: thin;
-  scrollbar-color:#4b5563 transparent;
+
+aside::-webkit-scrollbar-track {
+  background: transparent;
 }
-@keyframes scale-in { from{opacity:0; transform:scale(.9)}
-                      to  {opacity:1; transform:scale(1)} }
-.animate-scale-in { animation: scale-in .15s ease-out both; }
+
+aside::-webkit-scrollbar-thumb {
+  background: #4b5563;
+  border-radius: 4px;
+}
+
+aside:hover::-webkit-scrollbar-thumb {
+  background: #9ca3af;
+}
+
+aside {
+  scrollbar-width: thin; /* Firefox */
+  scrollbar-color: #4b5563 transparent;
+}
+
+/* Animation utilities */
+@keyframes scale-in {
+  from { opacity: 0; transform: scale(0.9); }
+  to   { opacity: 1; transform: scale(1); }
+}
+
+.animate-scale-in {
+  animation: scale-in 0.15s ease-out both;
+}
