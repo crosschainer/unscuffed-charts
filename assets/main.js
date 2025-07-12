@@ -637,8 +637,11 @@ function updateVisibleRows() {
   // Calculate visible range with buffer
   const start = Math.max(0, Math.floor(scrollTop / ROW_HEIGHT));
   const visibleCount = Math.ceil(clientHeight / ROW_HEIGHT);
-  const buffer = 2; // Smaller buffer to reduce conflicts
+  const buffer = 3; // Increased buffer for smoother scrolling
   const end = Math.min(start + visibleCount + buffer, liveRows.length);
+
+  // Store current scroll position to prevent jumping
+  const currentScrollTop = scroller.scrollTop;
 
   // Update padding to maintain scroll position
   els.topPad.style.height = `${start * ROW_HEIGHT}px`;
@@ -662,6 +665,11 @@ function updateVisibleRows() {
   // Replace content in one operation to reduce reflows
   els.rowHost.innerHTML = '';
   els.rowHost.appendChild(fragment);
+  
+  // Restore scroll position if it changed during DOM manipulation
+  if (scroller.scrollTop !== currentScrollTop) {
+    scroller.scrollTop = currentScrollTop;
+  }
 }
 async function onSearch(e) {
   searchTerm = e.target.value.trim().toLowerCase();
