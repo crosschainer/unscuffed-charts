@@ -634,10 +634,36 @@ function updateVisibleRows() {
   const scrollTop = scroller.scrollTop;
   const clientHeight = scroller.clientHeight;
   
-  // Calculate visible range with buffer
-  const start = Math.max(0, Math.floor(scrollTop / ROW_HEIGHT));
+  // Calculate how many rows can fit in the visible area
   const visibleCount = Math.ceil(clientHeight / ROW_HEIGHT);
-  const buffer = 2; // Smaller buffer to reduce conflicts
+  
+  // If we have fewer items than can fit in the visible area, show all items without virtual scrolling
+  if (liveRows.length <= visibleCount + 2) {
+    // Reset padding
+    els.topPad.style.height = '0px';
+    els.bottomPad.style.height = '0px';
+    
+    // Show all items
+    const fragment = document.createDocumentFragment();
+    
+    for (let i = 0; i < liveRows.length; i++) {
+      const { id, btn } = liveRows[i];
+      const pair = allPairs.find(p => p.pair === id);
+      
+      if (btn && pair) {
+        fragment.appendChild(btn);
+        hydrateMetadataIfNeeded(pair);
+      }
+    }
+    
+    els.rowHost.innerHTML = '';
+    els.rowHost.appendChild(fragment);
+    return;
+  }
+  
+  // Virtual scrolling for large lists
+  const start = Math.max(0, Math.floor(scrollTop / ROW_HEIGHT));
+  const buffer = 2;
   const end = Math.min(start + visibleCount + buffer, liveRows.length);
 
   // Update padding to maintain scroll position
