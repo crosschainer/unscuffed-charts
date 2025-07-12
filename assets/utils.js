@@ -3,29 +3,32 @@ export async function fetchJSON(url, opts = {}, retries = 10, backoff = 200, tim
 
   for (let i = 0; i <= retries; i++) {
     const controller = new AbortController();
-    const id = setTimeout(() => controller.abort(), timeout);
+    const timeoutId = setTimeout(() => controller.abort(), timeout);
 
     try {
-      const res = await fetch(url, {
+      const response = await fetch(url, {
         ...opts,
         signal: controller.signal,
       });
 
-      clearTimeout(id);
+      clearTimeout(timeoutId);
 
-      if (!res.ok) throw new Error(`${url} → HTTP ${res.status}`);
-      return await res.json();
+      if (!response.ok) {
+        throw new Error(`${url} → HTTP ${response.status}`);
+      }
+      
+      return await response.json();
     } catch (err) {
-      clearTimeout(id);
+      clearTimeout(timeoutId);
       lastErr = err;
 
       const isAbort = err.name === 'AbortError';
-      const isNetworkOr5xx = isAbort || !err.response || (err.message && err.message.includes('HTTP 5'));
+      const isRetryable = isAbort || !err.response || (err.message && err.message.includes('HTTP 5'));
 
-      if (i === retries || (!isNetworkOr5xx && !isAbort)) break;
+      if (i === retries || !isRetryable) break;
 
       console.warn(`Retry ${i + 1} for ${url}:`, err.message);
-      await new Promise(r => setTimeout(r, backoff));
+      await new Promise(resolve => setTimeout(resolve, backoff));
       backoff *= 2; // exponential backoff
     }
   }
@@ -34,62 +37,79 @@ export async function fetchJSON(url, opts = {}, retries = 10, backoff = 200, tim
 }
 
 
-// ─── throttle_N_parallel_requests ──────────────────────────────
+// Throttle parallel requests to prevent overwhelming the server
 const inFlight = new Set();
+
 export async function throttledFetchJSON(url, opts, limit = 12) {
-    while (inFlight.size >= limit) await Promise.race(inFlight);
-    const p = fetchJSON(url, opts).finally(() => inFlight.delete(p));
-    inFlight.add(p);
-    return p;
+  while (inFlight.size >= limit) {
+    await Promise.race(inFlight);
+  }
+  
+  const promise = fetchJSON(url, opts).finally(() => inFlight.delete(promise));
+  inFlight.add(promise);
+  return promise;
 }
 
 export function chunk(arr, size = 16) {
-    return Array.from({ length: Math.ceil(arr.length / size) }, (_, i) =>
-        arr.slice(i * size, i * size + size),
-    );
+  return Array.from({ length: Math.ceil(arr.length / size) }, (_, i) =>
+    arr.slice(i * size, i * size + size)
+  );
 }
 
 export function timeAgo(iso) {
-    if (!iso.endsWith('Z') && !iso.includes('+')) iso += 'Z';     // assume UTC
-    const then = new Date(iso).getTime();
-    const mins = Math.floor((Date.now() - then) / 60_000);
-    if (mins < 1) return 'just now';
-    if (mins < 60) return `${mins} m ago`;
-    const hrs = Math.floor(mins / 60);
-    if (hrs < 24) return `${hrs} h ago`;
-    return `${Math.floor(hrs / 24)} d ago`;
+  if (!iso.endsWith('Z') && !iso.includes('+')) {
+    iso += 'Z'; // assume UTC
+  }
+  
+  const then = new Date(iso).getTime();
+  const mins = Math.floor((Date.now() - then) / 60_000);
+  
+  if (mins < 1) return 'just now';
+  if (mins < 60) return `${mins} m ago`;
+  
+  const hrs = Math.floor(mins / 60);
+  if (hrs < 24) return `${hrs} h ago`;
+  
+  return `${Math.floor(hrs / 24)} d ago`;
 }
-export function binarySearch(arr, key, sel = x => x) {
-    let lo = 0, hi = arr.length;
-    while (lo < hi) {
-        const mid = (lo + hi) >>> 1;
-        if (sel(arr[mid]) < key) hi = mid; else lo = mid + 1; // DESC
+export function binarySearch(arr, key, selector = x => x) {
+  let lo = 0;
+  let hi = arr.length;
+  
+  while (lo < hi) {
+    const mid = (lo + hi) >>> 1;
+    if (selector(arr[mid]) < key) {
+      hi = mid;
+    } else {
+      lo = mid + 1;
     }
-    return lo;
+  }
+  
+  return lo;
 }
 export function getPairFromHash() {
-    const m = location.hash.match(/pair=(\d+)/);
-    return m ? m[1] : null;               // returns "42" or null
+  const match = location.hash.match(/pair=(\d+)/);
+  return match ? match[1] : null;
 }
 
 export function setPairHash(id) {
-    history.replaceState(null, '', `#pair=${id}`);
+  history.replaceState(null, '', `#pair=${id}`);
 }
 export function formatPrice(value) {
-    const num = typeof value === 'string' ? Number(value) : value;
-    if (!Number.isFinite(num)) return '—';
+  const num = typeof value === 'string' ? Number(value) : value;
+  if (!Number.isFinite(num)) return '—';
 
-    const abs = Math.abs(num);
-    let dp;                          // decimals to print
+  const abs = Math.abs(num);
+  let decimals;
 
-    if (abs >= 1) dp = 2;   //  12.34
-    else if (abs >= 0.1) dp = 4;   //   0.1234
-    else if (abs >= 0.01) dp = 6;   //   0.012345
-    else if (abs >= 0.001) dp = 8;   //   0.00123456
-    else dp = 10;  //   0.0000123456
+  if (abs >= 1) decimals = 2;        // 12.34
+  else if (abs >= 0.1) decimals = 4; // 0.1234
+  else if (abs >= 0.01) decimals = 6; // 0.012345
+  else if (abs >= 0.001) decimals = 8; // 0.00123456
+  else decimals = 10;                 // 0.0000123456
 
-    return num.toLocaleString(undefined, {
-        minimumFractionDigits: dp,
-        maximumFractionDigits: dp,
-    });
+  return num.toLocaleString(undefined, {
+    minimumFractionDigits: decimals,
+    maximumFractionDigits: decimals,
+  });
 }
