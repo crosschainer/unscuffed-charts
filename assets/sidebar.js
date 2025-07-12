@@ -27,8 +27,6 @@ export async function hydrateMetadataIfNeeded(pair) {
   // Already done? We're good.
   if (hydratedPairs.has(key)) return;
 
-  console.log(`🔄 Hydrating metadata for pair ${key} (${pair.token0}/${pair.token1})`);
-
   // Wait for both tokens
   await Promise.all(
     [pair.token0, pair.token1].map(async (token) => {
@@ -38,7 +36,6 @@ export async function hydrateMetadataIfNeeded(pair) {
       if (!hydratingContracts.has(token)) {
         hydratingContracts.add(token);
         try {
-          console.log(`📡 Fetching metadata for token ${token}`);
           const meta = await api.fetchTokenMeta(token);
           TOKEN_CACHE[token] = meta;
         } catch (err) {
@@ -58,7 +55,6 @@ export async function hydrateMetadataIfNeeded(pair) {
   // At this point: both token0 + token1 are in cache
   if (!hydratedPairs.has(key)) {
     hydratedPairs.add(key);
-    console.log(`✅ Hydrated pair ${key}`);
     refreshSidebarRow(pair); // trigger UI update
   }
 }
@@ -203,8 +199,6 @@ export function updateVisibleRows() {
   const visibleCount = Math.ceil(clientHeight / ROW_HEIGHT);
   const buffer = 3; // Increased buffer for smoother scrolling
   const end = Math.min(start + visibleCount + buffer, liveRows.length);
-
-  console.log(`📊 Updating visible rows: ${start}-${end} (${end - start} pairs) out of ${liveRows.length} total`);
 
   // Store current scroll position to prevent jumping
   const currentScrollTop = scroller.scrollTop;
