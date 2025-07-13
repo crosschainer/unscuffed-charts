@@ -102,6 +102,7 @@ export function getPairs({ offset = 0, limit = 100, order = "desc" } = {}) {
 export const getPair = id => fetchJSON(`${API_BASE}/pairs/${id}`);
 export const get24hPriceChange = (id, t = 1) => fetchJSON(`${API_BASE}/pairs/${id}/pricechange24h?token=${t}`);
 export const get24hVolume = (id, t = 1) => fetchJSON(`${API_BASE}/pairs/${id}/volume24h?token=${t}`);
+export const getUserLiquidity = (id, address) => fetchJSON(`${API_BASE}/pairs/${id}/liquidity${address}`);
 export const getPairCandles = (
   id,
   { interval = '5m', range = '7d', before, limit,
