@@ -191,9 +191,12 @@
 
             <button id="tbSell" class="flex-1 py-2 text-center text-xs
                border-b-2 border-transparent hover:bg-white/5">Sell</button>
+               
+            <button id="tbLiquidity" class="flex-1 py-2 text-center text-xs
+               border-b-2 border-transparent hover:bg-white/5">Liquidity</button>
           </div>
 
-          <!-- form -->
+          <!-- Trade form (Buy/Sell) -->
           <form id="tbForm" class="flex flex-col gap-3">
             <input id="tbAmount" type="number" min="0" step="any" inputmode="decimal" placeholder="Amount" class="w-full rounded bg-white/5 px-3 py-2 text-right
               focus:outline-none focus:ring-2 focus:ring-brand-cyan">
@@ -222,6 +225,36 @@
               Buy
             </button>
           </form>
+          
+          <!-- liquidity content -->
+          <div id="tbLiquidityContent" class="hidden flex flex-col gap-3">
+            <div class="flex flex-col text-xs">
+              <span class="text-gray-400 mb-1">Your Liquidity Position</span>
+              <div id="liquidityInfo" class="bg-white/5 rounded p-3">
+                <div class="flex justify-between mb-2">
+                  <span class="text-gray-400">Token 0 (Base)</span>
+                  <span id="liqToken0" class="font-medium">—</span>
+                </div>
+                <div class="flex justify-between mb-2">
+                  <span class="text-gray-400">Token 1 (Quote)</span>
+                  <span id="liqToken1" class="font-medium">—</span>
+                </div>
+                <div class="flex justify-between mb-2">
+                  <span class="text-gray-400">Share of Pool</span>
+                  <span id="liqShare" class="font-medium">—</span>
+                </div>
+                <div class="flex justify-between">
+                  <span class="text-gray-400">Value (USD)</span>
+                  <span id="liqValue" class="font-medium">—</span>
+                </div>
+              </div>
+            </div>
+            
+            <button id="tbRefreshLiquidity" class="mt-2 py-2 rounded-md font-medium
+                     bg-indigo-600 text-white hover:bg-indigo-700 transition-colors duration-150">
+              Refresh Liquidity
+            </button>
+          </div>
         </section>
         <!-- ░░ Token information ░░ -->
         <section id="tokenInfo" class="p-4 border-b border-white/5 bg-brand-card/80">

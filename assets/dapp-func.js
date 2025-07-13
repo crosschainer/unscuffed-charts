@@ -8,12 +8,19 @@ const box = document.getElementById('tradeBox');
 const pairL = document.getElementById('tbPair');
 const buyT = document.getElementById('tbBuy');
 const sellT = document.getElementById('tbSell');
+const liquidityT = document.getElementById('tbLiquidity');
 const form = document.getElementById('tbForm');
+const liquidityContent = document.getElementById('tbLiquidityContent');
 const amtIn = document.getElementById('tbAmount');
 const priceL = document.getElementById('tbPrice');
 const balL = document.getElementById('tbBalance');
 const btn = document.getElementById('tbSubmit');
 const getOut = document.getElementById('tbGetAmount');
+const refreshLiquidityBtn = document.getElementById('tbRefreshLiquidity');
+const liqToken0 = document.getElementById('liqToken0');
+const liqToken1 = document.getElementById('liqToken1');
+const liqShare = document.getElementById('liqShare');
+const liqValue = document.getElementById('liqValue');
 const FEE = 0.003;  
 let side = 'buy', pairId = null;
 let _contract0 = null, _contract1 = null; // token contracts (optional)
@@ -67,6 +74,12 @@ async function connectWallet() {
         updateTradeBtn();
         styleSubmitBtn();
         refreshBalanceLine();
+        
+        // If on liquidity tab, fetch liquidity data
+        if (side === 'liquidity') {
+            fetchUserLiquidity();
+        }
+        
         toast(`Connected to ${userAddress}`, 'success');
 
     } catch (err) {
@@ -200,6 +213,8 @@ function styleSubmitBtn() {
 /* tab switch */
 buyT.onclick = () => setSide('buy');
 sellT.onclick = () => setSide('sell');
+liquidityT.onclick = () => setSide('liquidity');
+
 function setSide(s) {
     side = s;
 
@@ -210,27 +225,111 @@ function setSide(s) {
     /* SELL tab */
     sellT.classList.toggle('border-brand-magenta', side === 'sell');
     sellT.classList.toggle('border-transparent', side !== 'sell');
+    
+    /* LIQUIDITY tab */
+    liquidityT.classList.toggle('border-indigo-500', side === 'liquidity');
+    liquidityT.classList.toggle('border-transparent', side !== 'liquidity');
+    
+    /* Show/hide content based on selected tab */
+    form.classList.toggle('hidden', side === 'liquidity');
+    liquidityContent.classList.toggle('hidden', side !== 'liquidity');
 
-    btn.textContent = side === 'buy' ? 'Buy' + ' ' + _sym0 : 'Sell' + ' ' + _sym0;
-    amtIn.placeholder = `Amount of ${side === 'buy' ? _sym1 : _sym0}`;
-    amtIn.value = ''; // clear input on switch
+    if (side === 'buy' || side === 'sell') {
+        btn.textContent = side === 'buy' ? 'Buy' + ' ' + _sym0 : 'Sell' + ' ' + _sym0;
+        amtIn.placeholder = `Amount of ${side === 'buy' ? _sym1 : _sym0}`;
+        amtIn.value = ''; // clear input on switch
 
-    styleSubmitBtn();
-    refreshBalanceLine();
-    updateGetAmount(); 
+        styleSubmitBtn();
+        refreshBalanceLine();
+        updateGetAmount(); 
 
-    // ── NEW: recalc price label on side switch ────────────────
-    if (_price) {
-      if (side === 'buy') {
-        // show "Price [price] [quote] per [base]"
-        priceL.textContent = 
-          `Price ${formatPrice(_price)} ${_sym1} per ${_sym0}`;
-      } else {
-        // invert: "Price [1/price] [base] per [quote]"
-        const inv = 1 / _price;
-        priceL.textContent = 
-          `Price ${formatPrice(inv)} ${_sym0} per ${_sym1}`;
-      }
+        // ── recalc price label on side switch ────────────────
+        if (_price) {
+          if (side === 'buy') {
+            // show "Price [price] [quote] per [base]"
+            priceL.textContent = 
+              `Price ${formatPrice(_price)} ${_sym1} per ${_sym0}`;
+          } else {
+            // invert: "Price [1/price] [base] per [quote]"
+            const inv = 1 / _price;
+            priceL.textContent = 
+              `Price ${formatPrice(inv)} ${_sym0} per ${_sym1}`;
+          }
+        }
+    } else if (side === 'liquidity' && userAddress) {
+        // Fetch liquidity data when switching to liquidity tab
+        fetchUserLiquidity();
+    }
+}
+
+// Function to fetch and display user's liquidity
+async function fetchUserLiquidity() {
+    if (!userAddress || !pairId) {
+        liqToken0.textContent = '—';
+        liqToken1.textContent = '—';
+        liqShare.textContent = '—';
+        liqValue.textContent = '—';
+        return;
+    }
+    
+    try {
+        refreshLiquidityBtn.disabled = true;
+        refreshLiquidityBtn.textContent = 'Loading...';
+        
+        // Fetch user's liquidity data directly
+        const response = await fetch(`https://api.snaklytics.com/pairs/${pairId}/liquidity/${userAddress}`);
+        const liquidityData = await response.json();
+        
+        if (liquidityData && liquidityData.userLP && liquidityData.totalLP && !liquidityData.error) {
+            // Calculate share percentage from userLP and totalLP
+            const sharePercentage = (liquidityData.userLP / liquidityData.totalLP) * 100;
+            liqShare.textContent = `${sharePercentage.toFixed(6)}%`;
+            
+            // Calculate user's token amounts based on their LP share and current reserves
+            const userToken0Amount = (_reserve0 * liquidityData.userLP) / liquidityData.totalLP;
+            const userToken1Amount = (_reserve1 * liquidityData.userLP) / liquidityData.totalLP;
+            
+            liqToken0.textContent = `${userToken0Amount.toLocaleString(undefined, {maximumFractionDigits: 6})} ${_sym0}`;
+            liqToken1.textContent = `${userToken1Amount.toLocaleString(undefined, {maximumFractionDigits: 6})} ${_sym1}`;
+            
+            // Calculate USD value (assuming token1 is the quote token with known price)
+            // For XIAN/xUSDC pair, if _sym1 is xUSDC, then userToken1Amount is already in USD
+            // If _sym1 is XIAN, then we need to convert using the current price
+            let usdValue;
+            if (_sym1 === 'xUSDC' || _sym1 === 'USDC') {
+                // Quote token is USD-pegged, so token1 amount + token0 value in USD
+                usdValue = userToken1Amount + (userToken0Amount * _price);
+            } else {
+                // Both tokens need conversion, assume total value = 2 * token1 value in USD
+                usdValue = userToken1Amount * _price * 2;
+            }
+            
+            liqValue.textContent = `$${usdValue.toLocaleString(undefined, {maximumFractionDigits: 2})}`;
+            
+            toast('Liquidity data updated', 'success');
+        } else {
+            liqToken0.textContent = '0 ' + _sym0;
+            liqToken1.textContent = '0 ' + _sym1;
+            liqShare.textContent = '0%';
+            liqValue.textContent = '$0';
+            
+            if (liquidityData && liquidityData.userLP === 0) {
+                toast('No liquidity position found for this pair', 'info');
+            } else {
+                toast('No liquidity found for this pair', 'info');
+            }
+        }
+    } catch (error) {
+        console.error('Error fetching liquidity:', error);
+        liqToken0.textContent = '—';
+        liqToken1.textContent = '—';
+        liqShare.textContent = '—';
+        liqValue.textContent = '—';
+        
+        toast('Failed to fetch liquidity data', 'error');
+    } finally {
+        refreshLiquidityBtn.disabled = false;
+        refreshLiquidityBtn.textContent = 'Refresh Liquidity';
     }
 }
 
@@ -306,6 +405,12 @@ window.updateTradeBox = ({ id, sym0, sym1, price, balance0 ="—", balance1="—
       balL.textContent = `Balance ${side === 'buy' ? balance1 : balance0}`;
       amtIn.value = '';
       getOut.textContent = '—';
+      
+      // Reset liquidity content
+      liqToken0.textContent = '—';
+      liqToken1.textContent = '—';
+      liqShare.textContent = '—';
+      liqValue.textContent = '—';
     }
 
     _price = currentPrice || price; // optional current price
@@ -315,7 +420,11 @@ window.updateTradeBox = ({ id, sym0, sym1, price, balance0 ="—", balance1="—
     if (resetInputs) {
       setSide("buy"); // default to buy side
     }
-    console.log(_price);
+    
+    // If we're on the liquidity tab and have a user address, fetch liquidity data
+    if (side === 'liquidity' && userAddress) {
+      fetchUserLiquidity();
+    }
 };
 
 /* submit */
@@ -339,6 +448,7 @@ form.onsubmit = async e => {
 };
 
 amtIn.addEventListener('input', updateGetAmount);
+refreshLiquidityBtn.addEventListener('click', fetchUserLiquidity);
 
 
 /* --------------------------------------------------------------- *
@@ -450,3 +560,6 @@ slipInput.addEventListener('input', () => {
   const v = parseFloat(slipInput.value);
   userSlippage = Number.isFinite(v) && v >= 0 ? v / 100 : 0;  // fallback 0 %
 });
+
+/* liquidity refresh button */
+refreshLiquidityBtn.addEventListener('click', fetchUserLiquidity);
