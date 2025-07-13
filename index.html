@@ -254,6 +254,96 @@
                      bg-indigo-600 text-white hover:bg-indigo-700 transition-colors duration-150">
               Refresh Liquidity
             </button>
+
+            
+            <!-- Liquidity Operations Tabs -->
+            <div class="mt-4 border-t border-white/10 pt-4">
+              <div class="flex mb-3">
+                <button id="addLiquidityTab" class="flex-1 py-2 text-center text-xs
+                   border-b-2 border-emerald-500 hover:bg-white/5">Add Liquidity</button>
+                <button id="removeLiquidityTab" class="flex-1 py-2 text-center text-xs
+                   border-b-2 border-transparent hover:bg-white/5">Remove Liquidity</button>
+              </div>
+              
+              <!-- Add Liquidity Form -->
+              <div id="addLiquidityForm" class="flex flex-col gap-3">
+                <div class="flex flex-col gap-2">
+                  <label class="text-xs text-gray-400">Amount of Token 0 (Base)</label>
+                  <input id="addToken0Amount" type="number" min="0" step="any" inputmode="decimal" 
+                    placeholder="0.0" class="w-full rounded bg-white/5 px-3 py-2 text-right
+                    focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                  <div class="flex justify-between text-xs text-gray-400">
+                    <span>Balance:</span>
+                    <span id="token0Balance">—</span>
+                  </div>
+                </div>
+                
+                <div class="flex flex-col gap-2">
+                  <label class="text-xs text-gray-400">Amount of Token 1 (Quote)</label>
+                  <input id="addToken1Amount" type="number" min="0" step="any" inputmode="decimal" 
+                    placeholder="0.0" class="w-full rounded bg-white/5 px-3 py-2 text-right
+                    focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                  <div class="flex justify-between text-xs text-gray-400">
+                    <span>Balance:</span>
+                    <span id="token1Balance">—</span>
+                  </div>
+                </div>
+                
+                <div class="flex justify-between text-xs text-gray-400 mt-1">
+                  <span>Slippage Tolerance:</span>
+                  <span>
+                    <input id="addLiquiditySlippage" type="number" class="w-12 rounded bg-white/5 px-2 py-1 text-right
+                     focus:outline-none focus:ring-2 focus:ring-emerald-500" value="10" min="0" step="0.1" />%
+                  </span>
+                </div>
+                
+                <button id="addLiquidityBtn" class="mt-2 py-2 rounded-md font-medium
+                         bg-emerald-600 text-white hover:bg-emerald-700 transition-colors duration-150">
+                  Add Liquidity
+                </button>
+              </div>
+              
+              <!-- Remove Liquidity Form -->
+              <div id="removeLiquidityForm" class="flex flex-col gap-3 hidden">
+                <div class="flex flex-col gap-2">
+                  <label class="text-xs text-gray-400">Amount to Remove (%)</label>
+                  <input id="removePercentage" type="range" min="1" max="100" value="50" 
+                    class="w-full accent-rose-500">
+                  <div class="flex justify-between text-xs">
+                    <span>1%</span>
+                    <span id="removePercentageValue" class="font-medium">50%</span>
+                    <span>100%</span>
+                  </div>
+                </div>
+                
+                <div class="bg-white/5 rounded p-3 text-xs">
+                  <div class="flex justify-between mb-2">
+                    <span class="text-gray-400">You will receive:</span>
+                  </div>
+                  <div class="flex justify-between mb-2">
+                    <span id="removeToken0Label" class="text-gray-400">—</span>
+                    <span id="removeToken0Amount" class="font-medium">—</span>
+                  </div>
+                  <div class="flex justify-between">
+                    <span id="removeToken1Label" class="text-gray-400">—</span>
+                    <span id="removeToken1Amount" class="font-medium">—</span>
+                  </div>
+                </div>
+                
+                <div class="flex justify-between text-xs text-gray-400 mt-1">
+                  <span>Slippage Tolerance:</span>
+                  <span>
+                    <input id="removeLiquiditySlippage" type="number" class="w-12 rounded bg-white/5 px-2 py-1 text-right
+                     focus:outline-none focus:ring-2 focus:ring-rose-500" value="10" min="0" step="0.1" />%
+                  </span>
+                </div>
+                
+                <button id="removeLiquidityBtn" class="mt-2 py-2 rounded-md font-medium
+                         bg-rose-600 text-white hover:bg-rose-700 transition-colors duration-150">
+                  Remove Liquidity
+                </button>
+              </div>
+            </div>
           </div>
         </section>
         <!-- ░░ Token information ░░ -->
@@ -380,8 +470,8 @@
     };
   </script>
   <script src="assets/dapp.js"></script>
-  <script src="assets/dapp-func.js?v=5"></script>
-  <script src="assets/main.js?v=1772" type="module"></script>
+  <script src="assets/dapp-func.js?v=11"></script>
+  <script src="assets/main.js?v=17721" type="module"></script>
 </body>
 
 </html>
