@@ -365,11 +365,7 @@ async function fetchUserLiquidity() {
             // Update the remove liquidity form
             updateRemoveLiquidityForm();
             
-            if (liquidityData && liquidityData.userLP === 0) {
-                toast('No liquidity position found for this pair', 'info');
-            } else {
-                toast('No liquidity found for this pair', 'info');
-            }
+            
         }
         
         // Update token balances
