@@ -78,29 +78,9 @@ function handleResize() {
 
 // Function to show the farms placeholder
 function showFarmsPlaceholder() {
-  // Hide the chart container
-  document.getElementById('chartContainer').style.display = 'none';
-  
-  // Hide the trade box
-  document.getElementById('tradeBox').style.display = 'none';
-  
-  // Create placeholder if it doesn't exist
-  if (!document.getElementById('farmsPlaceholder')) {
-    const main = document.querySelector('main');
-    const placeholder = document.createElement('div');
-    placeholder.id = 'farmsPlaceholder';
-    placeholder.className = 'flex flex-col items-center justify-center h-full w-full p-8';
-    placeholder.innerHTML = `
-      <img src="/ph.png" alt="Placeholder" class="w-32 h-32 mb-4 opacity-50">
-      <h2 class="text-2xl font-bold text-gray-300 mb-2">Farms Coming Soon</h2>
-      <p class="text-gray-400 text-center max-w-md">
-        This feature is currently under development. Check back later for farming opportunities.
-      </p>
-    `;
-    main.appendChild(placeholder);
-  } else {
-    document.getElementById('farmsPlaceholder').style.display = 'flex';
-  }
+  // Hide the trade container
+  document.getElementById('tradeView').style.display = 'none';
+  document.getElementById('farmsView').style.display = 'flex';
   
   // Update navigation highlighting
   document.querySelector('a[href="/#pair=1"]').classList.remove('text-brand-cyan', 'border-brand-cyan');
@@ -111,23 +91,15 @@ function showFarmsPlaceholder() {
 
 // Function to show the pairs view
 function showPairsView() {
-  // Show the chart container
-  document.getElementById('chartContainer').style.display = 'block';
-  
-  // Show the trade box
-  document.getElementById('tradeBox').style.display = 'block';
-  
-  // Hide farms placeholder if it exists
-  const placeholder = document.getElementById('farmsPlaceholder');
-  if (placeholder) {
-    placeholder.style.display = 'none';
-  }
+  // Show the trade container
+  document.getElementById('tradeView').style.display = 'flex';
+  document.getElementById('farmsView').style.display = 'none';
   
   // Update navigation highlighting
-  document.querySelector('a[href="/#farms"]').classList.remove('text-brand-cyan', 'border-brand-cyan');
-  document.querySelector('a[href="/#farms"]').classList.add('text-gray-300', 'border-transparent');
-  document.querySelector('a[href="/#pair=1"]').classList.remove('text-gray-300', 'border-transparent');
   document.querySelector('a[href="/#pair=1"]').classList.add('text-brand-cyan', 'border-brand-cyan');
+  document.querySelector('a[href="/#pair=1"]').classList.remove('text-gray-300', 'border-transparent');
+  document.querySelector('a[href="/#farms"]').classList.add('text-gray-300', 'border-transparent');
+  document.querySelector('a[href="/#farms"]').classList.remove('text-brand-cyan', 'border-brand-cyan');
 }
 
 // Function to handle hash changes

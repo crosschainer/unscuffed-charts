@@ -106,7 +106,7 @@
     <span class="ml-2 text-lg font-semibold">Pairs</span>
   </div>
 
-  <div class="flex flex-1 md:overflow-hidden">
+  <div class="flex flex-1 md:overflow-hidden" id="tradeView">
 
     <!-- Sidebar on md+; toggled offcanvas on mobile -->
     <aside id="sidebar" class="fixed md:static inset-y-0 left-0 z-40 w-64
@@ -446,6 +446,11 @@
 
     </main>
   </div>
+  <div class="flex flex-1 md:overflow-hidden" id="farmsView">
+    <!-- Main panel -->
+    <main class="flex-1 flex flex-col md:flex-row md:overflow-hidden relative">
+    </main>
+  </div>
   <!-- Toasts land here -->
   <div id="toastContainer" class="fixed top-4 right-4 z-50 space-y-2 pointer-events-none"></div>
 
@@ -601,7 +606,7 @@
   </script>
   <script src="assets/dapp.js"></script>
   <script src="assets/dapp-func.js?v=100"></script>
-  <script src="assets/main.js?v=100" type="module"></script>
+  <script src="assets/main.js?v=2100" type="module"></script>
 </body>
 
 </html>
