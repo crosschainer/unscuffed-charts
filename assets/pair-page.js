@@ -235,7 +235,13 @@ function setupTradesWebSocket(pairId, denomTrades, meta0, meta1) {
         .filter(t => new Date(t.created).getTime() > lastTradeTs)
         .sort((a, b) => new Date(b.created) - new Date(a.created));
 
-      if (!incoming.length) return;
+      if (!incoming.length) {
+        if (firstTrade) {
+          els.tradesList.innerHTML = '';
+          firstTrade = false;
+        }
+        return;
+      }
 
       if (firstTrade) {
         els.tradesList.innerHTML = '';
