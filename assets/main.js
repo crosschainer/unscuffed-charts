@@ -2,7 +2,7 @@
 import { els, showSidebarSkeleton, showMainSkeleton } from './ui.js';
 import * as api from './api.js';
 import * as chart from './chart.js';
-import { getPairFromHash } from './utils.js';
+import { getPairFromHash, isFarmsHash } from './utils.js';
 import { 
   currencyUsdPrice, 
   setCurrencyUsdPrice, 
@@ -76,6 +76,75 @@ function handleResize() {
   }
 }
 
+// Function to show the farms placeholder
+function showFarmsPlaceholder() {
+  // Hide the chart container
+  document.getElementById('chartContainer').style.display = 'none';
+  
+  // Hide the trade box
+  document.getElementById('tradeBox').style.display = 'none';
+  
+  // Create placeholder if it doesn't exist
+  if (!document.getElementById('farmsPlaceholder')) {
+    const main = document.querySelector('main');
+    const placeholder = document.createElement('div');
+    placeholder.id = 'farmsPlaceholder';
+    placeholder.className = 'flex flex-col items-center justify-center h-full w-full p-8';
+    placeholder.innerHTML = `
+      <img src="/ph.png" alt="Placeholder" class="w-32 h-32 mb-4 opacity-50">
+      <h2 class="text-2xl font-bold text-gray-300 mb-2">Farms Coming Soon</h2>
+      <p class="text-gray-400 text-center max-w-md">
+        This feature is currently under development. Check back later for farming opportunities.
+      </p>
+    `;
+    main.appendChild(placeholder);
+  } else {
+    document.getElementById('farmsPlaceholder').style.display = 'flex';
+  }
+  
+  // Update navigation highlighting
+  document.querySelector('a[href="/#pair=1"]').classList.remove('text-brand-cyan', 'border-brand-cyan');
+  document.querySelector('a[href="/#pair=1"]').classList.add('text-gray-300', 'border-transparent');
+  document.querySelector('a[href="/#farms"]').classList.remove('text-gray-300', 'border-transparent');
+  document.querySelector('a[href="/#farms"]').classList.add('text-brand-cyan', 'border-brand-cyan');
+}
+
+// Function to show the pairs view
+function showPairsView() {
+  // Show the chart container
+  document.getElementById('chartContainer').style.display = 'block';
+  
+  // Show the trade box
+  document.getElementById('tradeBox').style.display = 'block';
+  
+  // Hide farms placeholder if it exists
+  const placeholder = document.getElementById('farmsPlaceholder');
+  if (placeholder) {
+    placeholder.style.display = 'none';
+  }
+  
+  // Update navigation highlighting
+  document.querySelector('a[href="/#farms"]').classList.remove('text-brand-cyan', 'border-brand-cyan');
+  document.querySelector('a[href="/#farms"]').classList.add('text-gray-300', 'border-transparent');
+  document.querySelector('a[href="/#pair=1"]').classList.remove('text-gray-300', 'border-transparent');
+  document.querySelector('a[href="/#pair=1"]').classList.add('text-brand-cyan', 'border-brand-cyan');
+}
+
+// Function to handle hash changes
+function handleHashChange() {
+  if (isFarmsHash()) {
+    showFarmsPlaceholder();
+  } else {
+    showPairsView();
+    const maybeId = getPairFromHash();
+    if (maybeId && allPairs.some(p => p.pair === maybeId)) {
+      selectPair(maybeId);
+    } else if (allPairs.length) {
+      selectPair(allPairs[0].pair);
+    }
+  }
+}
+
 async function init() {
   showSidebarSkeleton();
   showMainSkeleton();
@@ -145,13 +214,11 @@ async function init() {
     onOpen: () => console.log('Pairs WS connected'),
   }));
 
-  // deep-link support
-  const maybeId = getPairFromHash();
-  if (maybeId && allPairs.some(p => p.pair === maybeId)) {
-    selectPair(maybeId);
-  } else if (allPairs.length) {
-    selectPair(allPairs[0].pair);
-  }
+  // Add hash change event listener
+  window.addEventListener('hashchange', handleHashChange);
+  
+  // Initial route handling
+  handleHashChange();
 
   tickUpdated(); // initial time stamp
   setInterval(tickUpdated, 1_000);     // every second

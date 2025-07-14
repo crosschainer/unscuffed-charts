@@ -92,6 +92,10 @@ export function getPairFromHash() {
   return match ? match[1] : null;
 }
 
+export function isFarmsHash() {
+  return location.hash === '#farms';
+}
+
 export function setPairHash(id) {
   history.replaceState(null, '', `#pair=${id}`);
 }
