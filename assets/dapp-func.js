@@ -597,10 +597,10 @@ addToken0Amount.addEventListener('input', () => {
   if (addToken0Amount.value) {
     const amount0 = parseAmount(addToken0Amount.value);
     if (amount0 > 0) {
-      let amount1;
-      
-      // If pool has liquidity, use the pool ratio
+      // Only auto-calculate if pool has existing liquidity
       if (_reserve0 > 0 && _reserve1 > 0) {
+        let amount1;
+        
         // Special case for pair ID 1 (XIAN/USDC) where sides might be reversed in UI
         if ( _contract0 === 'currency' && _contract1 === 'con_usdc') {
           // For this special pair, we need to use the inverted ratio
@@ -609,12 +609,10 @@ addToken0Amount.addEventListener('input', () => {
           // Use the actual pool ratio instead of just the price
           amount1 = amount0 * (_reserve1 / _reserve0);
         }
-      } else {
-        // For new pools, use the current price
-        amount1 = amount0 * _price;
+        
+        addToken1Amount.value = amount1.toFixed(6);
       }
-      
-      addToken1Amount.value = amount1.toFixed(6);
+      // For new pools with no liquidity, don't auto-calculate - let user set their own ratio
     }
   }
 });
@@ -623,10 +621,10 @@ addToken1Amount.addEventListener('input', () => {
   if (addToken1Amount.value) {
     const amount1 = parseAmount(addToken1Amount.value);
     if (amount1 > 0) {
-      let amount0;
-      
-      // If pool has liquidity, use the pool ratio
+      // Only auto-calculate if pool has existing liquidity
       if (_reserve0 > 0 && _reserve1 > 0) {
+        let amount0;
+        
         // Special case for pair ID 1 (XIAN/USDC) where sides might be reversed in UI
         if (pairId === 1 && _contract0 === 'currency' && _contract1 === 'con_usdc') {
           // For this special pair, we need to use the inverted ratio
@@ -635,12 +633,10 @@ addToken1Amount.addEventListener('input', () => {
           // Use the actual pool ratio instead of just the price
           amount0 = amount1 / (_reserve1 / _reserve0);
         }
-      } else {
-        // For new pools, use the current price
-        amount0 = amount1 / _price;
+        
+        addToken0Amount.value = amount0.toFixed(6);
       }
-      
-      addToken0Amount.value = amount0.toFixed(6);
+      // For new pools with no liquidity, don't auto-calculate - let user set their own ratio
     }
   }
 });
@@ -1043,3 +1039,221 @@ async function removeLiquidity() {
     removeLiquidityBtn.textContent = 'Remove Liquidity';
   }
 }
+
+/* Create Pair Functionality */
+async function createPair(tokenA, tokenB) {
+  if (!userAddress) {
+    toast('Please connect your wallet first', 'error');
+    return;
+  }
+
+  if (!tokenA || !tokenB) {
+    toast('Both token contracts are required', 'error');
+    return;
+  }
+
+  if (tokenA === tokenB) {
+    toast('Token A and Token B must be different', 'error');
+    return;
+  }
+
+  // Sort tokens alphabetically for consistent ordering
+  // This ensures the contract receives tokens in the expected order
+  const sortedTokens = [tokenA, tokenB].sort();
+  const sortedTokenA = sortedTokens[0];  // First alphabetically
+  const sortedTokenB = sortedTokens[1];  // Second alphabetically
+
+  try {
+    // Show loading state
+    const submitBtn = document.getElementById('submitCreatePair');
+    submitBtn.disabled = true;
+    submitBtn.textContent = 'Creating Pair...';
+
+    // Call the createPair function on con_pairs contract with sorted tokens
+    const result = await XianWalletUtils.sendTransaction(
+      'con_pairs',
+      'createPair',
+      { tokenA: sortedTokenA, tokenB: sortedTokenB }
+    );
+
+    if (result.errors) {
+      throw new Error(result.errors.join(', '));
+    }
+
+    toast(`Pair created successfully! ${sortedTokenA}/${sortedTokenB}`, 'success');
+    
+    // Close modal
+    closeCreatePairModal();
+    
+    // Refresh pairs list after a short delay
+    setTimeout(() => {
+      window.location.reload();
+    }, 2000);
+
+  } catch (error) {
+    console.error('Create pair error:', error);
+    toast('Failed to create pair: ' + error.message, 'error');
+  } finally {
+    const submitBtn = document.getElementById('submitCreatePair');
+    submitBtn.disabled = false;
+    submitBtn.textContent = 'Create Pair';
+  }
+}
+
+/* Modal Management */
+function openCreatePairModal() {
+  const modal = document.getElementById('createPairModal');
+  modal.classList.remove('hidden');
+  
+  // Focus first input
+  setTimeout(() => {
+    document.getElementById('tokenAInput').focus();
+  }, 100);
+}
+
+function closeCreatePairModal() {
+  const modal = document.getElementById('createPairModal');
+  modal.classList.add('hidden');
+  
+  // Reset form
+  document.getElementById('createPairForm').reset();
+  
+  // Hide info panels and errors
+  document.getElementById('tokenAInfo').classList.add('hidden');
+  document.getElementById('tokenBInfo').classList.add('hidden');
+  document.getElementById('tokenAError').classList.add('hidden');
+  document.getElementById('tokenBError').classList.add('hidden');
+}
+
+/* Token Validation and Info Display */
+async function validateAndShowTokenInfo(tokenContract, infoElementId, errorElementId) {
+  const infoEl = document.getElementById(infoElementId);
+  const errorEl = document.getElementById(errorElementId);
+  
+  // Hide previous states
+  infoEl.classList.add('hidden');
+  errorEl.classList.add('hidden');
+  
+  if (!tokenContract.trim()) {
+    return false;
+  }
+  
+  try {
+    // Fetch token metadata using the global function
+    const tokenMeta = await window.fetchTokenMetadata(tokenContract);
+    
+    if (tokenMeta) {
+      // Show token info
+      const isTokenA = infoElementId === 'tokenAInfo';
+      const prefix = isTokenA ? 'tokenA' : 'tokenB';
+      
+      document.getElementById(prefix + 'Logo').src = tokenMeta.logo || './assets/ph.png';
+      document.getElementById(prefix + 'Symbol').textContent = tokenMeta.symbol || tokenContract;
+      document.getElementById(prefix + 'Name').textContent = tokenMeta.name || 'Unknown';
+      document.getElementById(prefix + 'Supply').textContent = tokenMeta.supply ? 
+        new Intl.NumberFormat().format(tokenMeta.supply) : 'Unknown';
+      
+      infoEl.classList.remove('hidden');
+      return true;
+    } else {
+      throw new Error('Token metadata not found');
+    }
+  } catch (error) {
+    console.warn('Token validation error:', error);
+    errorEl.textContent = 'Invalid token contract or metadata not available';
+    errorEl.classList.remove('hidden');
+    return false;
+  }
+}
+
+/* Event Listeners Setup */
+document.addEventListener('DOMContentLoaded', function() {
+  // Create Pair button event listeners
+  const createPairBtn = document.getElementById('createPairBtn');
+  const createPairBtnMobile = document.getElementById('createPairBtnMobile');
+  
+  if (createPairBtn) {
+    createPairBtn.addEventListener('click', openCreatePairModal);
+  }
+  
+  if (createPairBtnMobile) {
+    createPairBtnMobile.addEventListener('click', openCreatePairModal);
+  }
+  
+  // Modal close event listeners
+  const closeModalBtn = document.getElementById('closeCreatePairModal');
+  const cancelBtn = document.getElementById('cancelCreatePair');
+  const modal = document.getElementById('createPairModal');
+  
+  if (closeModalBtn) {
+    closeModalBtn.addEventListener('click', closeCreatePairModal);
+  }
+  
+  if (cancelBtn) {
+    cancelBtn.addEventListener('click', closeCreatePairModal);
+  }
+  
+  // Close modal when clicking backdrop
+  if (modal) {
+    modal.addEventListener('click', function(e) {
+      if (e.target === modal) {
+        closeCreatePairModal();
+      }
+    });
+  }
+  
+  // Form submission
+  const form = document.getElementById('createPairForm');
+  if (form) {
+    form.addEventListener('submit', async function(e) {
+      e.preventDefault();
+      
+      const tokenA = document.getElementById('tokenAInput').value.trim();
+      const tokenB = document.getElementById('tokenBInput').value.trim();
+      
+      // Validate both tokens before creating pair
+      const tokenAValid = await validateAndShowTokenInfo(tokenA, 'tokenAInfo', 'tokenAError');
+      const tokenBValid = await validateAndShowTokenInfo(tokenB, 'tokenBInfo', 'tokenBError');
+      
+      if (tokenAValid && tokenBValid) {
+        await createPair(tokenA, tokenB);
+      } else {
+        toast('Please enter valid token contracts', 'error');
+      }
+    });
+  }
+  
+  // Real-time token validation
+  const tokenAInput = document.getElementById('tokenAInput');
+  const tokenBInput = document.getElementById('tokenBInput');
+  
+  let tokenATimeout, tokenBTimeout;
+  
+  if (tokenAInput) {
+    tokenAInput.addEventListener('input', function() {
+      clearTimeout(tokenATimeout);
+      tokenATimeout = setTimeout(() => {
+        validateAndShowTokenInfo(this.value.trim(), 'tokenAInfo', 'tokenAError');
+      }, 500);
+    });
+  }
+  
+  if (tokenBInput) {
+    tokenBInput.addEventListener('input', function() {
+      clearTimeout(tokenBTimeout);
+      tokenBTimeout = setTimeout(() => {
+        validateAndShowTokenInfo(this.value.trim(), 'tokenBInfo', 'tokenBError');
+      }, 500);
+    });
+  }
+  
+  // Close modal with Escape key
+  document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+      const modal = document.getElementById('createPairModal');
+      if (modal && !modal.classList.contains('hidden')) {
+        closeCreatePairModal();
+      }
+    }
+  });
+});

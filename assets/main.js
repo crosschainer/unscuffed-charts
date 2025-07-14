@@ -160,6 +160,16 @@ async function init() {
 // Export selectPair for global access
 window.selectPair = selectPair;
 
+// Export token validation function for global access
+window.fetchTokenMetadata = async function(tokenContract) {
+  try {
+    return await api.fetchTokenMeta(tokenContract);
+  } catch (error) {
+    console.warn('Token metadata fetch failed:', error);
+    return null;
+  }
+};
+
 // every minute, advance the "current" empty candle if needed
 setInterval(() => {
   const last = chart.getLastBar();

@@ -96,15 +96,33 @@
       <!-- header row with close “X” (mobile only) -->
       <div class="flex items-center justify-between p-4 md:hidden">
         <span class="text-lg font-medium">Pairs</span>
-        <button id="closeSidebar" class="p-2">
-          <svg class="w-5 h-5" viewBox="0 0 24 24" stroke="currentColor" fill="none">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-          </svg>
-        </button>
+        <div class="flex items-center gap-2">
+          <button id="createPairBtnMobile" class="px-2 py-1 text-xs font-medium rounded-md
+                   bg-brand-cyan/20 text-brand-cyan border border-brand-cyan/30
+                   hover:bg-brand-cyan/30 active:bg-brand-cyan/40
+                   focus:outline-none focus:ring-2 focus:ring-brand-cyan
+                   transition">
+            + Create
+          </button>
+          <button id="closeSidebar" class="p-2">
+            <svg class="w-5 h-5" viewBox="0 0 24 24" stroke="currentColor" fill="none">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
       </div>
 
       <!-- header row (desktop) -->
-      <div class="hidden md:block p-4 text-lg font-semibold">Pairs</div>
+      <div class="hidden md:flex items-center justify-between p-4">
+        <span class="text-lg font-semibold">Pairs</span>
+        <button id="createPairBtn" class="px-3 py-1 text-xs font-medium rounded-md
+                 bg-brand-cyan/20 text-brand-cyan border border-brand-cyan/30
+                 hover:bg-brand-cyan/30 active:bg-brand-cyan/40
+                 focus:outline-none focus:ring-2 focus:ring-brand-cyan
+                 transition">
+          + Create Pair
+        </button>
+      </div>
 
       <!-- search box -->
       <div class="px-4">
@@ -410,6 +428,99 @@
   </div>
   <!-- Toasts land here -->
   <div id="toastContainer" class="fixed top-4 right-4 z-50 space-y-2 pointer-events-none"></div>
+
+  <!-- Create Pair Modal -->
+  <div id="createPairModal" class="fixed inset-0 z-50 hidden">
+    <!-- Backdrop -->
+    <div class="absolute inset-0 bg-black/50 backdrop-blur-sm"></div>
+    
+    <!-- Modal Content -->
+    <div class="relative flex items-center justify-center min-h-screen p-4">
+      <div class="bg-brand-card border border-white/10 rounded-lg shadow-xl w-full max-w-md">
+        <!-- Header -->
+        <div class="flex items-center justify-between p-4 border-b border-white/10">
+          <h3 class="text-lg font-semibold text-gray-100">Create New Pair</h3>
+          <button id="closeCreatePairModal" class="p-1 hover:bg-white/10 rounded">
+            <svg class="w-5 h-5" viewBox="0 0 24 24" stroke="currentColor" fill="none">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+        
+        <!-- Form -->
+        <form id="createPairForm" class="p-4 space-y-4">
+          <!-- Token A Input -->
+          <div class="space-y-2">
+            <label class="block text-sm font-medium text-gray-300">Token A Contract</label>
+            <input id="tokenAInput" type="text" placeholder="e.g. currency, con_usdc" 
+                   class="w-full rounded-md bg-white/5 px-3 py-2 text-sm
+                          placeholder-gray-400 focus:outline-none
+                          focus:ring-2 focus:ring-brand-cyan border border-white/10" />
+            <div id="tokenAInfo" class="hidden bg-white/5 rounded p-2 text-xs">
+              <div class="flex items-center gap-2 mb-1">
+                <img id="tokenALogo" src="" alt="" class="w-4 h-4 rounded" />
+                <span id="tokenASymbol" class="font-medium"></span>
+              </div>
+              <div class="text-gray-400">
+                <div>Name: <span id="tokenAName"></span></div>
+                <div>Supply: <span id="tokenASupply"></span></div>
+              </div>
+            </div>
+            <div id="tokenAError" class="hidden text-xs text-red-400"></div>
+          </div>
+          
+          <!-- Token B Input -->
+          <div class="space-y-2">
+            <label class="block text-sm font-medium text-gray-300">Token B Contract</label>
+            <input id="tokenBInput" type="text" placeholder="e.g. currency, con_usdc" 
+                   class="w-full rounded-md bg-white/5 px-3 py-2 text-sm
+                          placeholder-gray-400 focus:outline-none
+                          focus:ring-2 focus:ring-brand-cyan border border-white/10" />
+            <div id="tokenBInfo" class="hidden bg-white/5 rounded p-2 text-xs">
+              <div class="flex items-center gap-2 mb-1">
+                <img id="tokenBLogo" src="" alt="" class="w-4 h-4 rounded" />
+                <span id="tokenBSymbol" class="font-medium"></span>
+              </div>
+              <div class="text-gray-400">
+                <div>Name: <span id="tokenBName"></span></div>
+                <div>Supply: <span id="tokenBSupply"></span></div>
+              </div>
+            </div>
+            <div id="tokenBError" class="hidden text-xs text-red-400"></div>
+          </div>
+          
+          <!-- Warning -->
+          <div class="bg-yellow-500/10 border border-yellow-500/20 rounded p-3 text-xs text-yellow-200">
+            <div class="flex items-start gap-2">
+              <svg class="w-4 h-4 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd" />
+              </svg>
+              <div>
+                <div class="font-medium mb-1">Important:</div>
+                <div>Creating a pair requires wallet connection and will execute a transaction on the blockchain. Make sure both token contracts are valid.</div>
+              </div>
+            </div>
+          </div>
+          
+          <!-- Buttons -->
+          <div class="flex gap-3 pt-2">
+            <button type="button" id="cancelCreatePair" 
+                    class="flex-1 py-2 px-4 rounded-md border border-white/20 text-gray-300
+                           hover:bg-white/5 focus:outline-none focus:ring-2 focus:ring-white/20
+                           transition">
+              Cancel
+            </button>
+            <button type="submit" id="submitCreatePair" 
+                    class="flex-1 py-2 px-4 rounded-md bg-brand-cyan text-brand-base font-medium
+                           hover:bg-brand-cyan/90 focus:outline-none focus:ring-2 focus:ring-brand-cyan
+                           disabled:opacity-50 disabled:cursor-not-allowed transition">
+              Create Pair
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
   <!-- Wallet-missing modal -->
   <div id="walletModal" class="fixed inset-0 z-50 hidden flex items-center justify-center">
     <!-- backdrop -->
