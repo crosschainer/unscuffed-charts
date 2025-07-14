@@ -79,6 +79,7 @@ function handleResize() {
 // Function to show the farms placeholder
 function showFarmsPlaceholder() {
   // Hide the trade container
+  document.getElementById('loadingView').style.display = 'none';
   document.getElementById('tradeView').style.display = 'none';
   document.getElementById('farmsView').style.display = 'flex';
   
@@ -92,6 +93,7 @@ function showFarmsPlaceholder() {
 // Function to show the pairs view
 function showPairsView() {
   // Show the trade container
+  document.getElementById('loadingView').style.display = 'none';
   document.getElementById('tradeView').style.display = 'flex';
   document.getElementById('farmsView').style.display = 'none';
   

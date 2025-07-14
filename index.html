@@ -82,7 +82,8 @@
            order-3 w-full justify-center
            md:order-2 md:w-auto md:justify-start">
 
-      <a href="/#pair=1" aria-current="page" class="px-1 pb-0.5 border-b-2 text-brand-cyan border-brand-cyan">
+      <a href="/#pair=1" aria-current="page" class="px-1 pb-0.5 border-b-2 border-transparent
+              text-gray-300 hover:text-brand-cyan hover:border-brand-cyan">
         Trade
       </a>
 
@@ -105,8 +106,12 @@
     </button>
     <span class="ml-2 text-lg font-semibold">Pairs</span>
   </div>
-
-  <div class="flex flex-1 md:overflow-hidden" id="tradeView">
+  <div class="flex flex-1 items-center justify-center h-full md:overflow-hidden" id="loadingView">
+    <div class="flex items-center justify-center h-full">
+      <div class="animate-spin rounded-full h-12 w-12 border-t-2 border-brand-cyan"></div>
+    </div>
+  </div>
+  <div class="flex flex-1 md:overflow-hidden" id="tradeView" style="display: none;">
 
     <!-- Sidebar on md+; toggled offcanvas on mobile -->
     <aside id="sidebar" class="fixed md:static inset-y-0 left-0 z-40 w-64
@@ -446,9 +451,10 @@
 
     </main>
   </div>
-  <div class="flex flex-1 md:overflow-hidden" id="farmsView">
+  <div class="flex flex-1 md:overflow-hidden" id="farmsView" style="display: none;">
     <!-- Main panel -->
     <main class="flex-1 flex flex-col md:flex-row md:overflow-hidden relative">
+      
     </main>
   </div>
   <!-- Toasts land here -->
@@ -606,7 +612,7 @@
   </script>
   <script src="assets/dapp.js"></script>
   <script src="assets/dapp-func.js?v=100"></script>
-  <script src="assets/main.js?v=2100" type="module"></script>
+  <script src="assets/main.js?v=21020" type="module"></script>
 </body>
 
 </html>
