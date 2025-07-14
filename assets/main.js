@@ -82,6 +82,9 @@ function showFarmsPlaceholder() {
   document.getElementById('loadingView').style.display = 'none';
   document.getElementById('tradeView').style.display = 'none';
   document.getElementById('farmsView').style.display = 'flex';
+  if(!document.getElementById('mobilePairHeader').classList.contains('hidden')) {
+    document.getElementById('mobilePairHeader').classList.add('hidden');
+  }
   
   // Update navigation highlighting
   document.querySelector('a[href="/#pair=1"]').classList.remove('text-brand-cyan', 'border-brand-cyan');
@@ -96,6 +99,9 @@ function showPairsView() {
   document.getElementById('loadingView').style.display = 'none';
   document.getElementById('tradeView').style.display = 'flex';
   document.getElementById('farmsView').style.display = 'none';
+  if(document.getElementById('mobilePairHeader').classList.contains('hidden')) {
+    document.getElementById('mobilePairHeader').classList.remove('hidden');
+  }
   
   // Update navigation highlighting
   document.querySelector('a[href="/#pair=1"]').classList.add('text-brand-cyan', 'border-brand-cyan');
