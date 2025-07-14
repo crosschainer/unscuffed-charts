@@ -80,7 +80,7 @@ function createCard(meta) {
         </div>
 
         <p class="text-xs text-gray-400 pb-4">
-          Harvestable: <span class="earned text-gray-200 font-medium">0</span>
+          Harvestable: <span class="earned text-gray-200 font-medium">0</span> ${meta.reward}
         </p>
       </div>
     </details>
