@@ -905,6 +905,7 @@ async function addLiquidity() {
     setTimeout(() => {
       fetchUserLiquidity();
       updateTokenBalances();
+      window.refreshFarms();
     }, 2000);
     
   } catch (error) {
