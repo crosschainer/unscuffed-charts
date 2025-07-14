@@ -1,7 +1,7 @@
 /* Assumes XianWalletUtils.init(RPC) was called somewhere earlier */
 XianWalletUtils.init("https://node.xian.org");
 const connectBtn = document.getElementById('connectBtn');
-let userAddress = '';               // global for other calls
+var userAddress = '';               // global for other calls
 
 /* element refs */
 const box = document.getElementById('tradeBox');
@@ -99,7 +99,7 @@ async function connectWallet() {
         if (side === 'liquidity') {
             fetchUserLiquidity();
         }
-        
+        window.refreshFarms();
         toast(`Connected to ${userAddress}`, 'success');
 
     } catch (err) {
@@ -591,49 +591,32 @@ removeLiquidityTab.addEventListener('click', () => {
 // Update token balances when input changes
 addToken0Amount.addEventListener('input', () => {
   if (addToken0Amount.value) {
+    if (_reserve0 > 0 && _reserve1 > 0) {
     const amount0 = parseAmount(addToken0Amount.value);
-    if (amount0 > 0) {
-      // Only auto-calculate if pool has existing liquidity
-      if (_reserve0 > 0 && _reserve1 > 0) {
-        let amount1;
-        
-        // Special case for pair ID 1 (XIAN/USDC) where sides might be reversed in UI
-        if ( _contract0 === 'currency' && _contract1 === 'con_usdc') {
-          // For this special pair, we need to use the inverted ratio
-          amount1 = amount0 * (_reserve0 / _reserve1);
-        } else {
-          // Use the actual pool ratio instead of just the price
-          amount1 = amount0 * (_reserve1 / _reserve0);
-        }
-        
-        addToken1Amount.value = amount1.toFixed(6);
-      }
-      // For new pools with no liquidity, don't auto-calculate - let user set their own ratio
-    }
+    const optim = calculateOptimalAmounts(
+      amount0,
+      parseAmount(addToken1Amount.value) || 0
+    );
+    addToken0Amount.value = optim.amount0;
+    addToken1Amount.value = optim.amount1;
+  }
+
   }
 });
 
 addToken1Amount.addEventListener('input', () => {
   if (addToken1Amount.value) {
+    if (_reserve0 > 0 && _reserve1 > 0) {
     const amount1 = parseAmount(addToken1Amount.value);
     if (amount1 > 0) {
-      // Only auto-calculate if pool has existing liquidity
-      if (_reserve0 > 0 && _reserve1 > 0) {
-        let amount0;
-        
-        // Special case for pair ID 1 (XIAN/USDC) where sides might be reversed in UI
-        if (pairId === 1 && _contract0 === 'currency' && _contract1 === 'con_usdc') {
-          // For this special pair, we need to use the inverted ratio
-          amount0 = amount1 / (_reserve0 / _reserve1);
-        } else {
-          // Use the actual pool ratio instead of just the price
-          amount0 = amount1 / (_reserve1 / _reserve0);
-        }
-        
-        addToken0Amount.value = amount0.toFixed(6);
-      }
-      // For new pools with no liquidity, don't auto-calculate - let user set their own ratio
+      const optim = calculateOptimalAmounts(
+        parseAmount(addToken0Amount.value) || 0,
+        amount1
+      );
+      addToken0Amount.value = optim.amount0;
+      addToken1Amount.value = optim.amount1;
     }
+  }
   }
 });
 

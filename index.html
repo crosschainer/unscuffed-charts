@@ -98,7 +98,8 @@
 
 
   <!-- Mobile header with hamburger -->
-  <div class="md:hidden flex items-center space-x-2 px-4 py-2 border-b border-white/5 bg-brand-card hidden" id="mobilePairHeader">
+  <div class="md:hidden flex items-center space-x-2 px-4 py-2 border-b border-white/5 bg-brand-card hidden"
+    id="mobilePairHeader">
     <button id="hamburger" class="p-2">
       <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
@@ -454,7 +455,13 @@
   <div class="flex flex-1 md:overflow-hidden" id="farmsView" style="display: none;">
     <!-- Main panel -->
     <main class="flex-1 flex flex-col md:flex-row md:overflow-hidden relative">
+      <section class="grid gap-6 p-6 w-full
+              sm:grid-cols-2
+              lg:grid-cols-2
+              xl:grid-cols-3 items-start">
+
       
+      </section>
     </main>
   </div>
   <!-- Toasts land here -->
@@ -610,9 +617,11 @@
       document.getElementById('sidebar').classList.toggle('hidden');
     };
   </script>
+  <script src="assets/rpc.js?v=1"></script>
   <script src="assets/dapp.js"></script>
-  <script src="assets/dapp-func.js?v=1020"></script>
-  <script src="assets/main.js?v=212020" type="module"></script>
+  <script src="assets/dapp-func.js?v=10320"></script>
+  <script src="assets/main.js?v=2120320" type="module"></script>
+  <script src="assets/farms.js?v=2"></script>
 </body>
 
 </html>
