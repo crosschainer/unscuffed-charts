@@ -52,10 +52,10 @@ function createCard(meta) {
       <div class="body px-4 pt-4 space-y-4">
         <p class="text-xs text-gray-400 font-medium">
           Your Stake:
-            <span class="mystake text-gray-200 font-medium">—</span>
+            <span class="mystake text-gray-200 font-medium">—</span> LP
         </p>
         <p class="text-xs text-gray-400">
-          Balance: <span class="bal text-gray-200 font-medium">—</span>
+          Balance: <span class="bal text-gray-200 font-medium">—</span> LP
         </p>
 
         <div class="relative">
