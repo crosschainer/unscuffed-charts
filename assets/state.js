@@ -3,7 +3,7 @@
 // Global state
 export let currencyUsdPrice = 0;
 export const liveRows = [];
-export const ROW_HEIGHT = 56; // px – real height of 1 sidebar row
+export const ROW_HEIGHT = 62; // px – real height of 1 sidebar row
 export const ivMs = 5 * 60 * 1000; // 5 minutes in ms – interval for candles
 
 // Search state
@@ -44,4 +44,22 @@ export function setIsScrolling(value) {
 
 export function setScrollTimeout(timeout) {
   scrollTimeout = timeout;
+}
+
+export const favoritePairs = new Set(
+  JSON.parse(localStorage.getItem('favoritePairs') ?? '[]')
+);
+
+export function toggleFavorite(id) {
+  if (favoritePairs.has(id)) {
+    favoritePairs.delete(id);
+  } else {
+    favoritePairs.add(id);
+  }
+  // Persist ☑️
+  localStorage.setItem('favoritePairs', JSON.stringify([...favoritePairs]));
+}
+
+export function isFavorite(id) {
+  return favoritePairs.has(id);
 }
