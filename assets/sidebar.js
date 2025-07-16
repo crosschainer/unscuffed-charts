@@ -204,7 +204,7 @@ export function makePairButton(pair, volUSD) {
 
   const logoSrc = meta0.logo || './assets/ph.png';
   const pctClass = pct >= 0 ? 'text-emerald-400' : 'text-rose-400';
-  const formattedVol = volUSD.toLocaleString(undefined, { maximumFractionDigits: 0 });
+  const formattedVol = volUSD.toLocaleString("en-US", { maximumFractionDigits: 0 });
 
   rowBtn.innerHTML = `
     <div class="flex items-center justify-between w-full">

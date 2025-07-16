@@ -41,7 +41,7 @@ export async function selectPair(pairId) {
   els.pairName.textContent = `${meta0.symbol} / ${meta1.symbol}`;
   els.infoTokenName.textContent = meta0.name || meta0.symbol;
   els.infoTokenSymbol.textContent = meta0.symbol;
-  els.infoTokenSupply.textContent = meta0.supply.toLocaleString(undefined, {
+  els.infoTokenSupply.textContent = meta0.supply.toLocaleString("en-US", {
     minimumFractionDigits: 2, maximumFractionDigits: 2
   }) || 'Unknown';
   els.infoTokenOperator.innerHTML = `<a href="https://xian.org/addresses/${meta0.operator}" target="_blank" rel="noopener" class="hover:underline">${meta0.operator}</a>` || 'Unknown';

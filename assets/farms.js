@@ -103,7 +103,7 @@ function createCard(meta) {
 
   /* helper */
   const fmt = (x, dp = 2) =>
-    Number(x).toLocaleString(undefined, { maximumFractionDigits: dp });
+    Number(x).toLocaleString("en-US", { maximumFractionDigits: dp });
 
   /* ---------------- refresh from RPC ---------------- */
   async function refresh() {

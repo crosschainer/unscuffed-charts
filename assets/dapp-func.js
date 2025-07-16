@@ -208,7 +208,7 @@ async function refreshBalanceLine() {
   const contract = side === 'buy' ?  _contract1 : _contract0; // token to spend
   try {
     const bal = await getTokenBalance(contract, userAddress);
-    balL.textContent = `Balance ${bal.toLocaleString(undefined,{maximumFractionDigits:6})} ${side === 'buy' ? _sym1 : _sym0}`;
+    balL.textContent = `Balance ${bal.toLocaleString("en-US",{maximumFractionDigits:6})} ${side === 'buy' ? _sym1 : _sym0}`;
   } catch { balL.textContent = 'Balance 0'; }
 }
 function styleSubmitBtn() {
@@ -331,8 +331,8 @@ async function fetchUserLiquidity() {
               _userToken1Amount = (_reserve1 * _userLP) / _totalLP;
             }
             
-            liqToken0.textContent = `${_userToken0Amount.toLocaleString(undefined, {maximumFractionDigits: 6})} ${_sym0}`;
-            liqToken1.textContent = `${_userToken1Amount.toLocaleString(undefined, {maximumFractionDigits: 6})} ${_sym1}`;
+            liqToken0.textContent = `${_userToken0Amount.toLocaleString("en-US", {maximumFractionDigits: 6})} ${_sym0}`;
+            liqToken1.textContent = `${_userToken1Amount.toLocaleString("en-US", {maximumFractionDigits: 6})} ${_sym1}`;
             
             // Calculate USD value (assuming token1 is the quote token with known price)
             // For XIAN/xUSDC pair, if _sym1 is xUSDC, then userToken1Amount is already in USD
@@ -346,7 +346,7 @@ async function fetchUserLiquidity() {
                 usdValue = _userToken1Amount * _price * 2;
             }
             
-            liqValue.textContent = `$${usdValue.toLocaleString(undefined, {maximumFractionDigits: 2})}`;
+            liqValue.textContent = `$${usdValue.toLocaleString("en-US", {maximumFractionDigits: 2})}`;
             
             // Update the remove liquidity form
             updateRemoveLiquidityForm();
@@ -458,7 +458,7 @@ else if (side === 'buy' && _contract1 == "currency") {
 
   expectedOut = out;                // store the numeric amount
   getOut.textContent = out.toLocaleString(
-    undefined,
+    "en-US",
     { maximumFractionDigits: 6 }
   ) + ' ' + (side === 'buy' ? _sym0 : _sym1);
 }
@@ -475,7 +475,7 @@ function formatPrice(value) {
     else if (abs >= 0.001) dp = 8;   //   0.00123456
     else dp = 10;  //   0.0000123456
 
-    return num.toLocaleString(undefined, {
+    return num.toLocaleString("en-US", {
         minimumFractionDigits: dp,
         maximumFractionDigits: dp,
     });
@@ -764,8 +764,8 @@ async function updateTokenBalances() {
     const balance0 = _contract0 ? await getTokenBalance(_contract0, userAddress) : 0;
     const balance1 = _contract1 ? await getTokenBalance(_contract1, userAddress) : 0;
     
-    token0Balance.textContent = balance0.toLocaleString(undefined, {maximumFractionDigits: 6});
-    token1Balance.textContent = balance1.toLocaleString(undefined, {maximumFractionDigits: 6});
+    token0Balance.textContent = balance0.toLocaleString("en-US", {maximumFractionDigits: 6});
+    token1Balance.textContent = balance1.toLocaleString("en-US", {maximumFractionDigits: 6});
   } catch (error) {
     console.error('Error fetching token balances:', error);
     token0Balance.textContent = '—';
@@ -798,8 +798,8 @@ function updateRemoveLiquidityAmounts(percentage) {
   const removeToken0 = _userToken0Amount * removePercent;
   const removeToken1 = _userToken1Amount * removePercent;
   
-  removeToken0Amount.textContent = removeToken0.toLocaleString(undefined, {maximumFractionDigits: 6});
-  removeToken1Amount.textContent = removeToken1.toLocaleString(undefined, {maximumFractionDigits: 6});
+  removeToken0Amount.textContent = removeToken0.toLocaleString("en-US", {maximumFractionDigits: 6});
+  removeToken1Amount.textContent = removeToken1.toLocaleString("en-US", {maximumFractionDigits: 6});
 }
 
 /* Add liquidity function */

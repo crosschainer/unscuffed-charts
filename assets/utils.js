@@ -112,7 +112,7 @@ export function formatPrice(value) {
   else if (abs >= 0.001) decimals = 8; // 0.00123456
   else decimals = 10;                 // 0.0000123456
 
-  return num.toLocaleString(undefined, {
+  return num.toLocaleString("en-US", {
     minimumFractionDigits: decimals,
     maximumFractionDigits: decimals,
   });

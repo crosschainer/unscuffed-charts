@@ -39,10 +39,10 @@ export function buildTradeRow(t, meta0, meta1) {
       ${side}
     </td>
     <td class="px-2 py-2 text-right whitespace-nowrap">
-      ${amount.toLocaleString(undefined, { minFractionDigits: 2, maxFractionDigits: 4 })} ${amountSymbol}
+      ${amount.toLocaleString("en-US", { minFractionDigits: 2, maxFractionDigits: 4 })} ${amountSymbol}
     </td>
     <td class="px-2 py-2 text-right whitespace-nowrap">
-      ${price.toLocaleString(undefined, { minFractionDigits: 2, maxFractionDigits: 8 })} ${meta1.symbol}
+      ${price.toLocaleString("en-US", { minFractionDigits: 2, maxFractionDigits: 8 })} ${meta1.symbol}
     </td>
     <td class="px-2 py-2 text-right text-gray-400 whitespace-nowrap">
       ${timeAgo(t.created)}

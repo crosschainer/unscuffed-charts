@@ -28,13 +28,13 @@ export function paintPrice(price, pct, meta1) {
 
 export function paintVolume(vol) {
   if (vol == null) return;
-  els.volume.textContent = `$${vol.toLocaleString()}`;
+  els.volume.textContent = `$${vol.toLocaleString("en-US")}`;
   els.volumeM.textContent = els.volume.textContent;
 }
 
 export function paintLiquidity(liq) {
   if (liq == null) return;
-  els.liquidity.textContent = `$${liq.toLocaleString(undefined, {
+  els.liquidity.textContent = `$${liq.toLocaleString("en-US", {
     minFractionDigits: 2, maxFractionDigits: 2
   })}`;
   els.liquidityM.textContent = els.liquidity.textContent;
@@ -52,7 +52,7 @@ export function updateMarketCap(newPrice, meta0, meta1) {
   if (isNaN(marketCap) || !isFinite(marketCap)) {
     els.infoTokenMarketCap.textContent = 'Unknown';
   } else {
-    els.infoTokenMarketCap.textContent = '$' + marketCap.toLocaleString(undefined, {
+    els.infoTokenMarketCap.textContent = '$' + marketCap.toLocaleString("en-US", {
       minimumFractionDigits: 2,
       maximumFractionDigits: 2
     });
