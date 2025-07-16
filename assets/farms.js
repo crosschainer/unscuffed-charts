@@ -64,24 +64,27 @@ function createCard(meta) {
                     focus:outline-none focus:ring-2 focus:ring-emerald-500">
         </div>
 
-        <div class="grid grid-cols-3 gap-3">
+        <div class="grid grid-cols-2 gap-2 pb-4">
           <button class="stake  py-2 rounded-md text-sm font-medium
                          bg-brand-cyan text-brand-base hover:bg-brand-cyan/90">
-            Stake
+            Stake LP
           </button>
           <button class="unstake py-2 rounded-md text-sm font-medium
                          bg-white/10 hover:bg-white/20">
-            Withdraw
+            Withdraw LP
           </button>
-          <button class="harvest py-2 rounded-md text-sm font-medium
-                         bg-white/10 hover:bg-white/20 disabled:opacity-40" disabled>
-            Harvest
-          </button>
+          
         </div>
 
-        <p class="text-xs text-gray-400 pb-4">
-          Harvestable: <span class="earned text-gray-200 font-medium">0</span> ${meta.reward}
+        <p class="text-xs text-gray-400">
+          Harvestable Rewards: <span class="earned text-gray-200 font-medium">0</span> ${meta.reward}
         </p>
+        <div class="pb-4">
+          <button class="harvest rounded-md text-sm font-medium w-full py-2
+                         bg-white/10 hover:bg-white/20 disabled:opacity-40" disabled>
+            Harvest Rewards
+          </button>
+        </div>
       </div>
     </details>
   `;
