@@ -1131,7 +1131,7 @@ async function validateAndShowTokenInfo(tokenContract, infoElementId, errorEleme
       document.getElementById(prefix + 'Symbol').textContent = tokenMeta.symbol || tokenContract;
       document.getElementById(prefix + 'Name').textContent = tokenMeta.name || 'Unknown';
       document.getElementById(prefix + 'Supply').textContent = tokenMeta.supply ? 
-        new Intl.NumberFormat().format(tokenMeta.supply) : 'Unknown';
+        new Intl.NumberFormat("en-US").format(tokenMeta.supply) : 'Unknown';
       
       infoEl.classList.remove('hidden');
       return true;
