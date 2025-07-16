@@ -108,7 +108,7 @@ export function initEmptyChart() {
     crosshair: { mode: LightweightCharts.CrosshairMode.Magnet },
     localization: {
       locale: navigator.language,
-      priceFormatter: v => new Intl.NumberFormat(navigator.language, {
+      priceFormatter: v => new Intl.NumberFormat("en-US", {
         minimumFractionDigits: PRECISION,
         maximumFractionDigits: PRECISION,
       }).format(v),
