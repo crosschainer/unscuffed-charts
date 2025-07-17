@@ -1,7 +1,21 @@
 :root { 
   --brandbar-h: 48px; /* matches h-12 */
 }
+/* 1‑A  | crisper text on every Chromium/WebKit browser */
+html{
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+}
 
+/* 1‑B  | force the TradingView canvas (and any <img>) to render on the
+          device‑pixel grid instead of being blurred down‑scaled            */
+canvas, img {
+  image-rendering: crisp-edges;         /* Chromium */
+  image-rendering: -webkit-optimize-contrast; /* Safari */
+}
+
+body{font-family: 'Inter', ui-sans-serif, system-ui;}
 /* Cosmic radial backdrop */
 body::before {
   content: "";
