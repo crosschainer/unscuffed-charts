@@ -95,8 +95,7 @@ export function initEmptyChart() {
   els.chartWrap.innerHTML = '';
 
   chart = LightweightCharts.createChart(els.chartWrap, {
-    width:  els.chartWrap.clientWidth,
-    height: Math.max(300, els.chartWrap.clientHeight || 0),
+    autoSize: true,
     layout: {
       background: { type: 'solid', color: 'rgba(0,0,0,0)' },
       textColor:  '#cbd5e1',
@@ -152,14 +151,7 @@ export function initEmptyChart() {
   });
   volumeSeries.priceScale().applyOptions({ scaleMargins: { top: 0.70, bottom: 0 } });
 
-  window.addEventListener('resize', () => chart.applyOptions({
-    width:  els.chartWrap.clientWidth,
-    height: Math.max(300, els.chartWrap.clientHeight),
-  }));
-  new ResizeObserver(entries => {
-    const { width, height } = entries[0].contentRect;
-    chart.applyOptions({ width, height });
-  }).observe(els.chartWrap);
+ 
 }
 
 /* ────────────────────────── Initial load ───────────────────────────── */
