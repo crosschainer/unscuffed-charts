@@ -173,15 +173,55 @@ export const getPairTrades = (
 export const getPairReserves = id => fetchJSON(`${API_BASE}/pairs/${id}/reserves`);
 
 /* ─────────────────────  WebSocket helpers (unchanged)  ────────────────── */
-function _subscribe(path, onData, onError, onOpen) {
-  const ws = new WebSocket(WS_BASE + path);
-  ws.addEventListener('open',  ev => onOpen?.(ev));
-  ws.addEventListener('error', ev => { console.error('WS error', path, ev); onError?.(ev); });
-  ws.addEventListener('message', ev => {
-    try { onData?.(JSON.parse(ev.data)); }
-    catch { console.error('Malformed WS message', ev.data); }
-  });
-  return ws;
+function _subscribe(path, onData, onError, onOpen, opts = {}) {
+  const {
+    maxRetries   = Infinity,   // how many times to retry
+    minDelay     =  500,       // first back‑off   (ms)
+    maxDelay     = 15_000,     // cap for back‑off (ms)
+    heartbeatInt = 25_000,     // ping‑pong every 25 s if no traffic
+  } = opts;
+
+  let tries = 0, ws, timer, heartbeat;
+  const url = WS_BASE + path;
+
+  const connect = () => {
+    ws = new WebSocket(url);
+
+    ws.addEventListener('open', ev => {
+      tries = 0;                       // reset back‑off
+      onOpen?.(ev);
+      clearInterval(heartbeat);
+      heartbeat = setInterval(() => {
+        if (ws.readyState === WebSocket.OPEN) ws.send('{"op":"ping"}');
+      }, heartbeatInt);
+    });
+
+    ws.addEventListener('message', ev => {
+      onData?.(JSON.parse(ev.data));
+    });
+
+    ws.addEventListener('error', ev => {
+      console.error('WS error', url, ev);
+      onError?.(ev);
+    });
+
+    ws.addEventListener('close', ev => {
+      clearInterval(heartbeat);
+      if (tries >= maxRetries) return;
+      const delay = Math.min(minDelay * 2 ** tries, maxDelay) + Math.random()*400;
+      timer = setTimeout(connect, delay);
+      tries += 1;
+    });
+  };
+
+  connect();
+
+  // return an unsubscribe handle
+  return () => {
+    clearTimeout(timer);
+    clearInterval(heartbeat);
+    ws?.close(1000, 'client‑gone');
+  };
 }
 
 export const subscribePairCandles = (id, token, interval = '5m', cb = {}) =>
