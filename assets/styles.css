@@ -131,3 +131,65 @@ aside {
 .animate-scale-in {
   animation: scale-in 0.15s ease-out both;
 }
+
+/* Launch tab specific styles */
+.launch-step {
+  animation: fadeIn 0.3s ease-in-out;
+}
+
+.launch-step.hidden {
+  display: none;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* Progress step indicators */
+.launch-step-indicator {
+  transition: all 0.3s ease-in-out;
+}
+
+/* Form styling improvements for launch */
+#launchView input[type="text"],
+#launchView input[type="url"],
+#launchView input[type="number"],
+#launchView select {
+  transition: all 0.2s ease-in-out;
+}
+
+#launchView input[type="text"]:focus,
+#launchView input[type="url"]:focus,
+#launchView input[type="number"]:focus,
+#launchView select:focus {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(8, 251, 214, 0.15);
+}
+
+/* Button hover effects for launch */
+#launchView button {
+  transition: all 0.2s ease-in-out;
+}
+
+#launchView button:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+#launchView button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+}
+
+/* Success checkmark animation */
+@keyframes checkmark {
+  0% { transform: scale(0) rotate(45deg); }
+  50% { transform: scale(1.2) rotate(45deg); }
+  100% { transform: scale(1) rotate(45deg); }
+}
+
+.checkmark-animation {
+  animation: checkmark 0.5s ease-in-out;
+}

@@ -87,6 +87,11 @@
         Trade
       </a>
 
+      <a href="/#launch" class="px-1 pb-0.5 border-b-2 border-transparent
+              text-gray-300 hover:text-brand-cyan hover:border-brand-cyan">
+        Launch
+      </a>
+
       <a href="/#farms" class="px-1 pb-0.5 border-b-2 border-transparent
               text-gray-300 hover:text-brand-cyan hover:border-brand-cyan">
         Farms
@@ -469,6 +474,234 @@
       </section>
     </main>
   </div>
+
+  <!-- Launch View -->
+  <div class="flex flex-1 md:overflow-hidden" id="launchView" style="display: none;">
+    <!-- Main panel -->
+    <main class="flex-1 flex flex-col md:overflow-hidden relative">
+      <!-- Header -->
+      <header class="border-b border-white/5 backdrop-blur-sm bg-brand-base/70">
+        <div class="flex items-center justify-between px-4 md:px-6 py-4">
+          <div class="flex items-center gap-3">
+            <div class="w-8 h-8 rounded-full bg-brand-cyan/20 flex items-center justify-center">
+              <svg class="w-5 h-5 text-brand-cyan" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"/>
+              </svg>
+            </div>
+            <div>
+              <h1 class="text-xl font-semibold">Launch Your Token</h1>
+              <p class="text-sm text-gray-400">Create a token, pair, and add liquidity in one guided process</p>
+            </div>
+          </div>
+        </div>
+      </header>
+
+      <!-- Content -->
+      <div class="flex-1 overflow-y-auto">
+        <div class="max-w-2xl mx-auto p-6">
+          <!-- Progress Steps -->
+          <div class="mb-8">
+            <div class="flex items-center justify-between mb-4">
+              <div class="flex items-center">
+                <div id="step1-indicator" class="w-8 h-8 rounded-full bg-brand-cyan text-brand-base flex items-center justify-center text-sm font-medium">1</div>
+                <span class="ml-3 text-sm font-medium">Create Token</span>
+              </div>
+              <div class="flex-1 mx-4 h-px bg-white/10"></div>
+              <div class="flex items-center">
+                <div id="step2-indicator" class="w-8 h-8 rounded-full bg-white/10 text-gray-400 flex items-center justify-center text-sm font-medium">2</div>
+                <span class="ml-3 text-sm font-medium text-gray-400">Create Pair</span>
+              </div>
+              <div class="flex-1 mx-4 h-px bg-white/10"></div>
+              <div class="flex items-center">
+                <div id="step3-indicator" class="w-8 h-8 rounded-full bg-white/10 text-gray-400 flex items-center justify-center text-sm font-medium">3</div>
+                <span class="ml-3 text-sm font-medium text-gray-400">Add Liquidity</span>
+              </div>
+              <div class="flex-1 mx-4 h-px bg-white/10"></div>
+              <div class="flex items-center">
+                <div id="step4-indicator" class="w-8 h-8 rounded-full bg-white/10 text-gray-400 flex items-center justify-center text-sm font-medium">4</div>
+                <span class="ml-3 text-sm font-medium text-gray-400">Complete</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Step Content -->
+          <div id="launchStepContent">
+            <!-- Step 1: Create Token -->
+            <div id="step1-content" class="launch-step">
+              <div class="bg-brand-card rounded-lg border border-white/5 p-6">
+                <h2 class="text-lg font-semibold mb-4">Create Your Token</h2>
+                <p class="text-sm text-gray-400 mb-6">Fill in the details for your new token. This will deploy a smart contract on the Xian blockchain.</p>
+                
+                <form id="tokenForm" class="space-y-4">
+                  <div>
+                    <label class="block text-sm font-medium mb-2">Token Name</label>
+                    <input type="text" id="tokenName" placeholder="e.g., My Awesome Token" 
+                           class="w-full rounded-md bg-white/5 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-brand-cyan" required>
+                    <p class="text-xs text-gray-500 mt-1">The full name of your token</p>
+                  </div>
+                  
+                  <div>
+                    <label class="block text-sm font-medium mb-2">Token Symbol</label>
+                    <input type="text" id="tokenSymbol" placeholder="e.g., MAT" maxlength="10"
+                           class="w-full rounded-md bg-white/5 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-brand-cyan" required>
+                    <p class="text-xs text-gray-500 mt-1">Short symbol (3-5 characters recommended)</p>
+                  </div>
+                  
+                  <div>
+                    <label class="block text-sm font-medium mb-2">Total Supply</label>
+                    <input type="number" id="tokenSupply" placeholder="1000000" min="1" step="1"
+                           class="w-full rounded-md bg-white/5 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-brand-cyan" required>
+                    <p class="text-xs text-gray-500 mt-1">Total number of tokens to create</p>
+                  </div>
+                  
+                  <div>
+                    <label class="block text-sm font-medium mb-2">Logo URL (Optional)</label>
+                    <input type="url" id="tokenLogo" placeholder="https://example.com/logo.png"
+                           class="w-full rounded-md bg-white/5 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-brand-cyan">
+                    <p class="text-xs text-gray-500 mt-1">URL to your token's logo image</p>
+                  </div>
+                  
+                  <div>
+                    <label class="block text-sm font-medium mb-2">Website (Optional)</label>
+                    <input type="url" id="tokenWebsite" placeholder="https://mytoken.com"
+                           class="w-full rounded-md bg-white/5 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-brand-cyan">
+                    <p class="text-xs text-gray-500 mt-1">Your project's website</p>
+                  </div>
+                </form>
+                
+                <div class="flex justify-end mt-6">
+                  <button id="createTokenBtn" class="px-6 py-2 bg-brand-cyan text-brand-base rounded-md font-medium hover:bg-brand-cyan/90 transition-colors">
+                    Create Token
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <!-- Step 2: Create Pair -->
+            <div id="step2-content" class="launch-step hidden">
+              <div class="bg-brand-card rounded-lg border border-white/5 p-6">
+                <h2 class="text-lg font-semibold mb-4">Create Trading Pair</h2>
+                <p class="text-sm text-gray-400 mb-6">Create a trading pair for your token. This will allow others to trade your token.</p>
+                
+                <div class="space-y-4">
+                  <div>
+                    <label class="block text-sm font-medium mb-2">Your Token</label>
+                    <div class="flex items-center gap-3 p-3 bg-white/5 rounded-md">
+                      <div class="w-8 h-8 rounded-full bg-brand-cyan/20 flex items-center justify-center">
+                        <span id="tokenSymbolDisplay" class="text-xs font-medium">-</span>
+                      </div>
+                      <div>
+                        <div class="font-medium" id="tokenNameDisplay">-</div>
+                        <div class="text-xs text-gray-400" id="tokenContractDisplay">-</div>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <div>
+                    <label class="block text-sm font-medium mb-2">Base Token</label>
+                    <select id="baseTokenSelect" class="w-full rounded-md bg-white/5 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-brand-cyan">
+                      <option value="con_xian">XIAN (con_xian)</option>
+                      <option value="con_usdc">USDC (con_usdc)</option>
+                    </select>
+                    <p class="text-xs text-gray-500 mt-1">The token your token will be paired with</p>
+                  </div>
+                </div>
+                
+                <div class="flex justify-between mt-6">
+                  <button id="backToStep1" class="px-6 py-2 bg-white/10 text-gray-300 rounded-md font-medium hover:bg-white/20 transition-colors">
+                    Back
+                  </button>
+                  <button id="createPairBtn" class="px-6 py-2 bg-brand-cyan text-brand-base rounded-md font-medium hover:bg-brand-cyan/90 transition-colors">
+                    Create Pair
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <!-- Step 3: Add Liquidity -->
+            <div id="step3-content" class="launch-step hidden">
+              <div class="bg-brand-card rounded-lg border border-white/5 p-6">
+                <h2 class="text-lg font-semibold mb-4">Add Initial Liquidity</h2>
+                <p class="text-sm text-gray-400 mb-6">Add liquidity to your pair to enable trading. This sets the initial price.</p>
+                
+                <div class="space-y-4">
+                  <div>
+                    <label class="block text-sm font-medium mb-2">Your Token Amount</label>
+                    <input type="number" id="tokenAmount" placeholder="1000" min="0" step="any"
+                           class="w-full rounded-md bg-white/5 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-brand-cyan">
+                    <div class="flex justify-between text-xs text-gray-400 mt-1">
+                      <span>Balance:</span>
+                      <span id="tokenBalance">-</span>
+                    </div>
+                  </div>
+                  
+                  <div>
+                    <label class="block text-sm font-medium mb-2">Base Token Amount</label>
+                    <input type="number" id="baseAmount" placeholder="100" min="0" step="any"
+                           class="w-full rounded-md bg-white/5 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-brand-cyan">
+                    <div class="flex justify-between text-xs text-gray-400 mt-1">
+                      <span>Balance:</span>
+                      <span id="baseBalance">-</span>
+                    </div>
+                  </div>
+                  
+                  <div class="bg-white/5 rounded-md p-3">
+                    <div class="text-sm font-medium mb-2">Initial Price</div>
+                    <div class="text-lg font-semibold" id="initialPrice">-</div>
+                    <div class="text-xs text-gray-400">Base tokens per your token</div>
+                  </div>
+                </div>
+                
+                <div class="flex justify-between mt-6">
+                  <button id="backToStep2" class="px-6 py-2 bg-white/10 text-gray-300 rounded-md font-medium hover:bg-white/20 transition-colors">
+                    Back
+                  </button>
+                  <button id="addLiquidityBtn" class="px-6 py-2 bg-brand-cyan text-brand-base rounded-md font-medium hover:bg-brand-cyan/90 transition-colors">
+                    Add Liquidity
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <!-- Step 4: Complete -->
+            <div id="step4-content" class="launch-step hidden">
+              <div class="bg-brand-card rounded-lg border border-white/5 p-6 text-center">
+                <div class="w-16 h-16 bg-emerald-500/20 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <svg class="w-8 h-8 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                  </svg>
+                </div>
+                <h2 class="text-xl font-semibold mb-2">Launch Complete!</h2>
+                <p class="text-gray-400 mb-6">Your token has been created and is now tradeable on the DEX.</p>
+                
+                <div class="bg-white/5 rounded-md p-4 mb-6">
+                  <div class="grid grid-cols-2 gap-4 text-sm">
+                    <div>
+                      <div class="text-gray-400">Token Contract</div>
+                      <div class="font-medium" id="finalTokenContract">-</div>
+                    </div>
+                    <div>
+                      <div class="text-gray-400">Pair ID</div>
+                      <div class="font-medium" id="finalPairId">-</div>
+                    </div>
+                  </div>
+                </div>
+                
+                <div class="flex gap-3 justify-center">
+                  <button id="viewPairBtn" class="px-6 py-2 bg-brand-cyan text-brand-base rounded-md font-medium hover:bg-brand-cyan/90 transition-colors">
+                    View Trading Pair
+                  </button>
+                  <button id="launchAnotherBtn" class="px-6 py-2 bg-white/10 text-gray-300 rounded-md font-medium hover:bg-white/20 transition-colors">
+                    Launch Another
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
   <!-- Toasts land here -->
   <div id="toastContainer" class="fixed top-4 right-4 z-50 space-y-2 pointer-events-none"></div>
 
@@ -627,6 +860,7 @@
   <script src="assets/dapp-func.js?v=10320"></script>
   <script src="assets/main.js?v=21202320" type="module"></script>
   <script src="assets/farms.js?v=3"></script>
+  <script src="assets/launch.js?v=1"></script>
 </body>
 
 </html>

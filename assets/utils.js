@@ -96,6 +96,10 @@ export function isFarmsHash() {
   return location.hash === '#farms';
 }
 
+export function isLaunchHash() {
+  return location.hash === '#launch';
+}
+
 export function setPairHash(id) {
   history.replaceState(null, '', `#pair=${id}`);
 }

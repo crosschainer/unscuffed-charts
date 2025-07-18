@@ -2,7 +2,7 @@
 import { els, showSidebarSkeleton, showMainSkeleton } from './ui.js';
 import * as api from './api.js';
 import * as chart from './chart.js';
-import { getPairFromHash, isFarmsHash } from './utils.js';
+import { getPairFromHash, isFarmsHash, isLaunchHash } from './utils.js';
 import { 
   currencyUsdPrice, 
   setCurrencyUsdPrice, 
@@ -81,6 +81,7 @@ function showFarmsPlaceholder() {
   // Hide the trade container
   document.getElementById('loadingView').style.display = 'none';
   document.getElementById('tradeView').style.display = 'none';
+  document.getElementById('launchView').style.display = 'none';
   document.getElementById('farmsView').style.display = 'flex';
   if(!document.getElementById('mobilePairHeader').classList.contains('hidden')) {
     document.getElementById('mobilePairHeader').classList.add('hidden');
@@ -89,8 +90,30 @@ function showFarmsPlaceholder() {
   // Update navigation highlighting
   document.querySelector('a[href="/#pair=1"]').classList.remove('text-brand-cyan', 'border-brand-cyan');
   document.querySelector('a[href="/#pair=1"]').classList.add('text-gray-300', 'border-transparent');
+  document.querySelector('a[href="/#launch"]').classList.remove('text-brand-cyan', 'border-brand-cyan');
+  document.querySelector('a[href="/#launch"]').classList.add('text-gray-300', 'border-transparent');
   document.querySelector('a[href="/#farms"]').classList.remove('text-gray-300', 'border-transparent');
   document.querySelector('a[href="/#farms"]').classList.add('text-brand-cyan', 'border-brand-cyan');
+}
+
+// Function to show the launch view
+function showLaunchView() {
+  // Hide other containers
+  document.getElementById('loadingView').style.display = 'none';
+  document.getElementById('tradeView').style.display = 'none';
+  document.getElementById('farmsView').style.display = 'none';
+  document.getElementById('launchView').style.display = 'flex';
+  if(!document.getElementById('mobilePairHeader').classList.contains('hidden')) {
+    document.getElementById('mobilePairHeader').classList.add('hidden');
+  }
+  
+  // Update navigation highlighting
+  document.querySelector('a[href="/#pair=1"]').classList.remove('text-brand-cyan', 'border-brand-cyan');
+  document.querySelector('a[href="/#pair=1"]').classList.add('text-gray-300', 'border-transparent');
+  document.querySelector('a[href="/#farms"]').classList.remove('text-brand-cyan', 'border-brand-cyan');
+  document.querySelector('a[href="/#farms"]').classList.add('text-gray-300', 'border-transparent');
+  document.querySelector('a[href="/#launch"]').classList.remove('text-gray-300', 'border-transparent');
+  document.querySelector('a[href="/#launch"]').classList.add('text-brand-cyan', 'border-brand-cyan');
 }
 
 // Function to show the pairs view
@@ -99,6 +122,7 @@ function showPairsView() {
   document.getElementById('loadingView').style.display = 'none';
   document.getElementById('tradeView').style.display = 'flex';
   document.getElementById('farmsView').style.display = 'none';
+  document.getElementById('launchView').style.display = 'none';
   if(document.getElementById('mobilePairHeader').classList.contains('hidden')) {
     document.getElementById('mobilePairHeader').classList.remove('hidden');
   }
@@ -106,6 +130,8 @@ function showPairsView() {
   // Update navigation highlighting
   document.querySelector('a[href="/#pair=1"]').classList.add('text-brand-cyan', 'border-brand-cyan');
   document.querySelector('a[href="/#pair=1"]').classList.remove('text-gray-300', 'border-transparent');
+  document.querySelector('a[href="/#launch"]').classList.add('text-gray-300', 'border-transparent');
+  document.querySelector('a[href="/#launch"]').classList.remove('text-brand-cyan', 'border-brand-cyan');
   document.querySelector('a[href="/#farms"]').classList.add('text-gray-300', 'border-transparent');
   document.querySelector('a[href="/#farms"]').classList.remove('text-brand-cyan', 'border-brand-cyan');
 }
@@ -114,6 +140,8 @@ function showPairsView() {
 function handleHashChange() {
   if (isFarmsHash()) {
     showFarmsPlaceholder();
+  } else if (isLaunchHash()) {
+    showLaunchView();
   } else {
     showPairsView();
     const maybeId = getPairFromHash();
