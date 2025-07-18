@@ -35,11 +35,14 @@ body::before {
 }
 
 #live-dot {
-  opacity: 0; /* hidden by default */
+  opacity: 0.3; /* dimmed when disconnected */
+  background-color: #ef4444; /* red when disconnected */
+  transition: all 0.3s ease;
 }
 
 #live-dot.connected {
   opacity: 1;
+  background-color: #10b981; /* green when connected */
   animation: live-pulse 2s ease-in-out infinite;
 }
 /* Chart background with subtle diagonal grid */

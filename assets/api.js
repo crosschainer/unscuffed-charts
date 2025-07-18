@@ -172,27 +172,24 @@ export const getPairTrades = (
 };
 export const getPairReserves = id => fetchJSON(`${API_BASE}/pairs/${id}/reserves`);
 
-/* ─────────────────────  WebSocket helpers (unchanged)  ────────────────── */
-function _subscribe(path, onData, onError, onOpen) {
-  const ws = new WebSocket(WS_BASE + path);
-  ws.addEventListener('open',  ev => onOpen?.(ev));
-  ws.addEventListener('error', ev => { console.error('WS error', path, ev); onError?.(ev); });
-  ws.addEventListener('message', ev => {
-    try { onData?.(JSON.parse(ev.data)); }
-    catch { console.error('Malformed WS message', ev.data); }
-  });
-  return ws;
+/* ─────────────────────  WebSocket helpers  ────────────────── */
+import { createReconnectingWebSocket } from './websockets.js';
+
+function _subscribe(path, onData, onError, onOpen, wsType) {
+  const url = WS_BASE + path;
+  const callbacks = { onData, onError, onOpen };
+  return createReconnectingWebSocket(url, callbacks, wsType);
 }
 
 export const subscribePairCandles = (id, token, interval = '5m', cb = {}) =>
-  _subscribe(`/ws/pairs/${id}/candles?token=${token}&interval=${interval}`, cb.onData, cb.onError, cb.onOpen);
+  _subscribe(`/ws/pairs/${id}/candles?token=${token}&interval=${interval}`, cb.onData, cb.onError, cb.onOpen, 'candles');
 export const subscribePairVolume24h = (id, token, cb = {}) =>
-  _subscribe(`/ws/pairs/${id}/volume24h?token=${token}`, cb.onData, cb.onError, cb.onOpen);
+  _subscribe(`/ws/pairs/${id}/volume24h?token=${token}`, cb.onData, cb.onError, cb.onOpen, 'volume');
 export const subscribePairPriceChange24h = (id, token, cb = {}) =>
-  _subscribe(`/ws/pairs/${id}/pricechange24h?token=${token}`, cb.onData, cb.onError, cb.onOpen);
+  _subscribe(`/ws/pairs/${id}/pricechange24h?token=${token}`, cb.onData, cb.onError, cb.onOpen, 'priceChange');
 export const subscribePairTrades = (id, token, cb = {}) =>
-  _subscribe(`/ws/pairs/${id}/trades?token=${token}&limit=25`, cb.onData, cb.onError, cb.onOpen);
+  _subscribe(`/ws/pairs/${id}/trades?token=${token}&limit=25`, cb.onData, cb.onError, cb.onOpen, 'trades');
 export const subscribePairReserves = (id, cb = {}) =>
-  _subscribe(`/ws/pairs/${id}/reserves`, cb.onData, cb.onError, cb.onOpen);
+  _subscribe(`/ws/pairs/${id}/reserves`, cb.onData, cb.onError, cb.onOpen, 'reserves');
 export const subscribePairs = (cb = {}) =>
-  _subscribe('/ws/pairs', cb.onData, cb.onError, cb.onOpen);
+  _subscribe('/ws/pairs', cb.onData, cb.onError, cb.onOpen, 'pairs');

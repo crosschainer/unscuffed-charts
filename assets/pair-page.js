@@ -145,14 +145,12 @@ function fillMissingCandles() {
 
 function setupPairWebSockets(pairId, denomPrice, denomVol, denomTrades, chartDenom, meta0, meta1, tradeBoxState) {
   // Price change WebSocket
-  setCurrentPriceChangeWs(api.subscribePairPriceChange24h(pairId, denomPrice, {
+  const priceChangeCallbacks = {
     onOpen: () => {
       console.log('Price WS open for', pairId);
-      document.getElementById('live-dot').classList.add('connected');
     },
     onError: err => {
       console.error('Price WS error', err);
-      document.getElementById('live-dot').classList.remove('connected');
     },
     onData: d => {
       const newPrice = d.priceNow ?? d.price;
@@ -167,17 +165,25 @@ function setupPairWebSockets(pairId, denomPrice, denomVol, denomTrades, chartDen
       
       updateMarketCap(newPrice, meta0, meta1);
     }
-  }));
+  };
+  setCurrentPriceChangeWs(
+    api.subscribePairPriceChange24h(pairId, denomPrice, priceChangeCallbacks),
+    { pairId, denomPrice, callbacks: priceChangeCallbacks }
+  );
 
   // Volume WebSocket
-  setCurrentVolumeWs(api.subscribePairVolume24h(pairId, denomVol, {
+  const volumeCallbacks = {
     onData: d => {
       paintVolume(d.volume24h * currencyUsdPrice);
     }
-  }));
+  };
+  setCurrentVolumeWs(
+    api.subscribePairVolume24h(pairId, denomVol, volumeCallbacks),
+    { pairId, denomVol, callbacks: volumeCallbacks }
+  );
 
   // Reserves WebSocket
-  setCurrentReservesWs(api.subscribePairReserves(pairId, {
+  const reservesCallbacks = {
     onData: d => {
       tradeBoxState.reserve0 = d.reserve0 || 0;
       tradeBoxState.reserve1 = d.reserve1 || 0;
@@ -189,10 +195,14 @@ function setupPairWebSockets(pairId, denomPrice, denomVol, denomTrades, chartDen
     },
     onError: err => console.error('Reserves WS error', err),
     onOpen: () => console.log('Reserves WS open'),
-  }));
+  };
+  setCurrentReservesWs(
+    api.subscribePairReserves(pairId, reservesCallbacks),
+    { pairId, callbacks: reservesCallbacks }
+  );
 
   // Candles WebSocket
-  setCurrentCandlesWs(api.subscribePairCandles(pairId, chartDenom, "5m", {
+  const candlesCallbacks = {
     onOpen: () => console.log('Candles WS connected for', pairId),
     onError: err => console.error('Candles WS error', err),
     onData: incomingCandle => {
@@ -219,7 +229,11 @@ function setupPairWebSockets(pairId, denomPrice, denomVol, denomTrades, chartDen
 
       chart.upsertLastCandle(incomingCandle);
     }
-  }));
+  };
+  setCurrentCandlesWs(
+    api.subscribePairCandles(pairId, chartDenom, "5m", candlesCallbacks),
+    { pairId, token: chartDenom, interval: "5m", callbacks: candlesCallbacks }
+  );
 
   // Trades WebSocket
   setupTradesWebSocket(pairId, denomTrades, meta0, meta1);
@@ -229,7 +243,7 @@ function setupTradesWebSocket(pairId, denomTrades, meta0, meta1) {
   let firstTrade = true;
   let lastTradeTs = 0;
   
-  setCurrentTradesWs(api.subscribePairTrades(pairId, denomTrades, {
+  const tradesCallbacks = {
     onData: payload => {
       const incoming = (payload.trades || [])
         .filter(t => new Date(t.created).getTime() > lastTradeTs)
@@ -257,7 +271,12 @@ function setupTradesWebSocket(pairId, denomTrades, meta0, meta1) {
     },
     onError: err => console.error('Trades WS error', err),
     onOpen: () => console.log('Connected to live trades for', pairId),
-  }));
+  };
+  
+  setCurrentTradesWs(
+    api.subscribePairTrades(pairId, denomTrades, tradesCallbacks),
+    { pairId, token: denomTrades, callbacks: tradesCallbacks }
+  );
 }
 
 // Use the global functions from dapp-func.js

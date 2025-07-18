@@ -153,8 +153,8 @@ async function init() {
   setHasRealData(true);
   renderSidebar(allPairs);                         // first paint
 
-  // ── NEW: subscribe to live all-pairs feed
-  setCurrentPairsWs(api.subscribePairs({
+  // ── Subscribe to live all-pairs feed with reconnection support
+  const pairsCallbacks = {
     onData: payload => {
       const live = normalisePairs(payload.pairs || []);
       setAllPairs(live);
@@ -192,7 +192,9 @@ async function init() {
     },
     onError: err => console.error('Pairs WS error', err),
     onOpen: () => console.log('Pairs WS connected'),
-  }));
+  };
+  
+  setCurrentPairsWs(api.subscribePairs(pairsCallbacks), pairsCallbacks);
 
   // Add hash change event listener
   window.addEventListener('hashchange', handleHashChange);

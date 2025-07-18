@@ -3,9 +3,9 @@ import { els } from './ui.js';
 import { formatPrice } from './utils.js';
 import { currencyUsdPrice } from './state.js';
 
+// This function is no longer needed as the dot now reflects actual connection state
 export function blinkLive() {
-  const dot = document.getElementById('live-dot');
-  if (dot) dot.classList.toggle('opacity-0');
+  // Function kept for backward compatibility but does nothing
 }
 
 export function tickUpdated() {
