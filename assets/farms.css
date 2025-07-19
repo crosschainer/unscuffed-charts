@@ -92,9 +92,7 @@
   color: #08FBD6;
   text-shadow: 0 0 10px rgba(8, 251, 214, 0.3);
   position: relative;
-  padding: 4px 10px;
-  border-radius: 4px;
-  background: rgba(8, 251, 214, 0.1);
+ 
   animation: pulse 2s infinite;
 }
 
@@ -102,11 +100,7 @@
 .farm-reward {
   display: inline-flex;
   align-items: center;
-  background: rgba(8, 251, 214, 0.1);
-  border: 1px solid rgba(8, 251, 214, 0.2);
-  border-radius: 4px;
-  padding: 0.25rem 0.5rem;
-  font-size: 0.75rem;
+ 
   font-weight: 500;
   color: #08FBD6;
 }

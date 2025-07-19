@@ -70,13 +70,13 @@ function createCard(meta) {
         </div>
 
         <div class="grid grid-cols-2 gap-3 mt-4">
-          <button class="stake farm-btn farm-btn-primary">
+          <button class="stake farm-btn  py-2 rounded-md font-medium disabled transition-colors duration-150 bg-brand-cyan text-gray-900">
             <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 mr-1" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <path d="M12 5v14M5 12h14"/>
             </svg>
             Stake LP
           </button>
-          <button class="unstake farm-btn farm-btn-secondary">
+          <button class="unstake farm-btn  py-2 rounded-md font-medium disabled transition-colors duration-150 text-gray-900 bg-brand-magenta">
             <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 mr-1" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <path d="M5 12h14"/>
             </svg>
