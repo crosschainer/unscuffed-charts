@@ -354,6 +354,9 @@
   }
 
   /* ---------- boot -------------------------------------------------- */
+  // Global reference to the refresh function
+  let globalRefresh = null;
+  
   async function init() {
     // Add loading indicator
     const loadingEl = document.createElement('div');
@@ -377,11 +380,14 @@
       const { el, refresh } = createCard(stakingData);
       GRID.appendChild(el);
       
+      // Store refresh function globally
+      globalRefresh = refresh;
+      
       // Refresh staking data
-      refresh();
+      globalRefresh();
       
       // Set up auto-refresh
-      refreshTimer = setInterval(refresh, 15000);  // auto refresh every 15 s
+      refreshTimer = setInterval(globalRefresh, 15000);  // auto refresh every 15 s
     } catch (error) {
       console.error('Error loading staking:', error);
       // Show error message
@@ -394,9 +400,22 @@
   }
 
   window.refreshStaking = () => {
-    refresh();
+    if (globalRefresh) {
+      globalRefresh();
+    } else {
+      console.warn('Staking refresh function not initialized yet');
+    }
   };
   
+  // Listen for wallet connection events from the main app
+  document.addEventListener('walletConnected', (event) => {
+    if (event.detail && event.detail.address) {
+      userAddress = event.detail.address;
+      if (globalRefresh) {
+        globalRefresh();
+      }
+    }
+  });
 
   /* kick-off when DOM ready */
   if (document.readyState === 'loading') {
