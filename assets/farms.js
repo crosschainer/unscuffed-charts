@@ -4,44 +4,48 @@
  */
 
 (() => {
-  const GRID = document.querySelector('#farmsView .grid'); // already there
-  const FARMS_TXT = 'farms.txt';                           // 1 line / farm
-  const farms = [];                                        // live instances
+  const GRID = document.querySelector('#farmsView .farms-grid'); // updated selector
+  const FARMS_TXT = 'farms.txt';                                // 1 line / farm
+  const farms = [];                                             // live instances
 
   /* ---------- card constructor ------------------------------------- */
   /* ---------- card constructor ------------------------------------- */
 function createCard(meta) {
   const el = document.createElement('article');
-  el.className =
-    'flex flex-col bg-brand-card rounded-lg border border-white/5 ' +
-    '';
+  el.className = 'farm-card';
 
   /* template */
   el.innerHTML = /*html*/`
     <!-- header -->
-    <div class="flex items-center gap-3 p-4 border-b border-white/5">
-      <div class="flex-1">
-        <h3 class="title font-medium leading-tight">${meta.title}</h3>
-        <p class="pair text-xs text-gray-400">Pool #${meta.pairIdx}</p>
+    <div class="farm-card-header">
+      <div class="flex items-center gap-3">
+        <div class="flex-1">
+          <h3 class="farm-title">${meta.title}</h3>
+          <p class="farm-pair">Pool #${meta.pairIdx}</p>
+        </div>
       </div>
     </div>
 
     <!-- quick stats -->
-    <dl class="stats flex flex-col gap-3 p-4 text-sm">
-      <div class="flex justify-between"><dt class="text-gray-400">APR</dt>
-           <dd class="apr font-medium text-brand-cyan">—</dd></div>
-      <div class="flex justify-between"><dt class="text-gray-400">Reward</dt>
-           <dd class="reward">${meta.reward}</dd></div>
-      <div class="flex justify-between"><dt class="text-gray-400">Ends</dt>
-           <dd class="ends">—</dd></div>
+    <dl class="farm-stats flex flex-col gap-4 text-sm">
+      <div class="flex justify-between items-center">
+        <dt class="text-gray-400 font-medium">Annual Percentage Rate</dt>
+        <dd class="apr farm-apr">—</dd>
+      </div>
+      <div class="flex justify-between items-center">
+        <dt class="text-gray-400 font-medium">Reward Token</dt>
+        <dd class="reward farm-reward">${meta.reward}</dd>
+      </div>
+      <div class="flex justify-between items-center">
+        <dt class="text-gray-400 font-medium">Program Ends</dt>
+        <dd class="ends text-white/80 font-medium">—</dd>
+      </div>
     </dl>
 
     <!-- interaction -->
-    <details class="mt-auto border-t border-white/5 group">
-      <summary
-        class="cursor-pointer list-none px-4 py-3 flex items-center justify-between text-sm
-               hover:bg-white/5">
-        <span class="font-medium">Manage Position</span>
+    <details class="farm-manage group">
+      <summary class="flex items-center justify-between">
+        <span>Manage Your Position</span>
         <svg class="w-4 h-4 shrink-0 transition-transform group-open:-rotate-180"
              viewBox="0 0 24 24" fill="none">
           <path d="M6 9l6 6 6-6" stroke="currentColor" stroke-width="2"
@@ -49,40 +53,47 @@ function createCard(meta) {
         </svg>
       </summary>
 
-      <div class="body px-4 pt-4 space-y-4">
-        <p class="text-xs text-gray-400 font-medium">
-          Your Stake:
-            <span class="mystake text-gray-200 font-medium">—</span> LP
-        </p>
-        <p class="text-xs text-gray-400">
-          Balance: <span class="bal text-gray-200 font-medium">—</span> LP
-        </p>
-
-        <div class="relative">
-          <input  type="number" min="0" step="any" inputmode="decimal" placeholder="0.0"
-                 class="amount w-full rounded bg-white/5 px-3 py-2 text-right
-                    focus:outline-none focus:ring-2 focus:ring-emerald-500">
+      <div class="farm-manage-body space-y-4">
+        <div class="flex justify-between items-center p-3 bg-white/5 rounded-lg">
+          <p class="farm-info-label">Your Stake</p>
+          <p class="mystake farm-info-value">— LP</p>
+        </div>
+        
+        <div class="flex justify-between">
+          <p class="farm-info-label">Wallet Balance</p>
+          <p class="bal farm-info-value">— LP</p>
         </div>
 
-        <div class="grid grid-cols-2 gap-2 pb-4">
-          <button class="stake  py-2 rounded-md text-sm font-medium
-                         bg-brand-cyan text-brand-base hover:bg-brand-cyan/90">
+        <div class="relative mt-2">
+          <input type="number" min="0" step="any" inputmode="decimal" placeholder="Enter amount to stake or withdraw"
+                 class="amount farm-input">
+        </div>
+
+        <div class="grid grid-cols-2 gap-3 mt-4">
+          <button class="stake farm-btn farm-btn-primary">
+            <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 mr-1" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M12 5v14M5 12h14"/>
+            </svg>
             Stake LP
           </button>
-          <button class="unstake py-2 rounded-md text-sm font-medium
-                         bg-white/10 hover:bg-white/20">
+          <button class="unstake farm-btn farm-btn-secondary">
+            <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 mr-1" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M5 12h14"/>
+            </svg>
             Withdraw LP
           </button>
-          
         </div>
 
-        <p class="text-xs text-gray-400">
-          Harvestable Rewards: <span class="earned text-gray-200 font-medium">0</span> ${meta.reward}
-        </p>
-        <div class="pb-4">
-          <button class="harvest rounded-md text-sm font-medium w-full py-2
-                         bg-white/10 hover:bg-white/20 disabled:opacity-40" disabled>
-            Harvest Rewards
+        <div class="flex justify-between items-center p-3 bg-white/5 rounded-lg mt-6">
+          <div>
+            <p class="farm-info-label">Harvestable Rewards</p>
+            <p class="earned farm-info-value">0 ${meta.reward}</p>
+          </div>
+          <button class="harvest farm-btn farm-btn-harvest px-4" disabled>
+            <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 mr-1" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M8 7V3m8 4V3M3 21h18M3 10h18M3 7h18M3 14h18M3 18h18"/>
+            </svg>
+            Harvest
           </button>
         </div>
       </div>
@@ -154,13 +165,13 @@ function createCard(meta) {
 
     if (userAddress) {
         /* user stake / rewards */
-        $stake.textContent = fmt(usrStk, 6);
-        $earned.textContent = fmt(usrRew, 4);
-        $harvest.disabled   = !(usrRew > 0);
+        $stake.textContent = fmt(usrStk, 6) + " LP";
+        $earned.textContent = fmt(usrRew, 4) + " " + meta.reward;
+        $harvest.disabled = !(usrRew > 0);
 
         /* wallet balance */
         const bal = await getLiq("con_pairs", meta.pairIdx, userAddress);
-        $bal.textContent = fmt(bal, 6);
+        $bal.textContent = fmt(bal, 6) + " LP";
     }
   }
 
@@ -228,17 +239,40 @@ function createCard(meta) {
 
   /* ---------- boot -------------------------------------------------- */
   async function init() {
-    const txt = await fetch(FARMS_TXT).then(r => r.text());
-    txt.trim().split('\n').forEach(line => {
-      if (!line) return;
-      const [pairIdx, title, reward, farm, stake, contract0, contract1] = line.split(';');
-      const { el, refresh } = createCard({pairIdx, title, reward, farm, stake, contract0, contract1});
-      GRID.appendChild(el);
-      farms.push({ refresh });
-    });
-    farms.forEach(f => f.refresh());
-
+    // Add loading indicator
+    const loadingEl = document.createElement('div');
+    loadingEl.className = 'flex items-center justify-center w-full py-12';
+    loadingEl.innerHTML = `
+      <div class="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-brand-cyan"></div>
+    `;
+    GRID.appendChild(loadingEl);
     
+    try {
+      const txt = await fetch(FARMS_TXT).then(r => r.text());
+      
+      // Remove loading indicator
+      GRID.removeChild(loadingEl);
+      
+      // Create farm cards
+      txt.trim().split('\n').forEach(line => {
+        if (!line) return;
+        const [pairIdx, title, reward, farm, stake, contract0, contract1] = line.split(';');
+        const { el, refresh } = createCard({pairIdx, title, reward, farm, stake, contract0, contract1});
+        GRID.appendChild(el);
+        farms.push({ refresh });
+      });
+      
+      // Refresh farm data
+      farms.forEach(f => f.refresh());
+    } catch (error) {
+      console.error('Error loading farms:', error);
+      // Show error message
+      GRID.innerHTML = `
+        <div class="col-span-full text-center py-12">
+          <p class="text-red-400">Failed to load farming pools. Please try again later.</p>
+        </div>
+      `;
+    }
   }
 
   window.refreshFarms = () => {

@@ -1,0 +1,278 @@
+/* Farms Page Styling */
+
+/* Animations */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes pulse {
+  0% { box-shadow: 0 0 0 0 rgba(8, 251, 214, 0.4); }
+  70% { box-shadow: 0 0 0 10px rgba(8, 251, 214, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(8, 251, 214, 0); }
+}
+
+@keyframes gradientFlow {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+/* Farm cards styling */
+.farm-card {
+  background: linear-gradient(145deg, rgba(13, 14, 17, 0.9) 0%, rgba(6, 7, 8, 0.95) 100%);
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  border-radius: 12px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+  transition: all 0.3s ease;
+  overflow: hidden;
+  position: relative;
+  animation: fadeIn 0.5s ease-out forwards;
+  animation-fill-mode: both;
+}
+
+/* Stagger the animation for each card */
+.farm-card:nth-child(1) { animation-delay: 0.1s; }
+.farm-card:nth-child(2) { animation-delay: 0.2s; }
+.farm-card:nth-child(3) { animation-delay: 0.3s; }
+.farm-card:nth-child(4) { animation-delay: 0.4s; }
+
+.farm-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.3), 0 0 15px rgba(8, 251, 214, 0.1);
+  border-color: rgba(8, 251, 214, 0.2);
+}
+
+/* Card header with gradient border */
+.farm-card-header {
+  position: relative;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.07);
+  padding: 1.25rem;
+  background: rgba(13, 14, 17, 0.7);
+}
+
+.farm-card-header::after {
+  content: "";
+  position: absolute;
+  bottom: -1px;
+  left: 0;
+  width: 100%;
+  height: 1px;
+  background: linear-gradient(90deg, 
+    rgba(8, 251, 214, 0.7) 0%, 
+    rgba(196, 0, 255, 0.7) 50%, 
+    rgba(68, 164, 255, 0.7) 100%);
+  opacity: 0.5;
+}
+
+/* Farm title styling */
+.farm-title {
+  font-weight: 600;
+  font-size: 1.1rem;
+  color: rgba(255, 255, 255, 0.95);
+  letter-spacing: 0.02em;
+}
+
+/* Farm pair text */
+.farm-pair {
+  font-size: 0.75rem;
+  color: rgba(255, 255, 255, 0.5);
+  margin-top: 0.25rem;
+}
+
+/* Stats section */
+.farm-stats {
+  padding: 1.25rem;
+  background: rgba(6, 7, 8, 0.4);
+}
+
+/* APR highlight */
+.farm-apr {
+  font-weight: 700;
+  color: #08FBD6;
+  text-shadow: 0 0 10px rgba(8, 251, 214, 0.3);
+  position: relative;
+  padding: 4px 10px;
+  border-radius: 4px;
+  background: rgba(8, 251, 214, 0.1);
+  animation: pulse 2s infinite;
+}
+
+/* Reward token badge */
+.farm-reward {
+  display: inline-flex;
+  align-items: center;
+  background: rgba(8, 251, 214, 0.1);
+  border: 1px solid rgba(8, 251, 214, 0.2);
+  border-radius: 4px;
+  padding: 0.25rem 0.5rem;
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: #08FBD6;
+}
+
+/* Manage position section */
+.farm-manage {
+  border-top: 1px solid rgba(255, 255, 255, 0.07);
+}
+
+.farm-manage summary {
+  padding: 1rem 1.25rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+  user-select: none;
+}
+
+.farm-manage summary:hover {
+  background-color: rgba(255, 255, 255, 0.05);
+}
+
+.farm-manage-body {
+  padding: 1.25rem;
+  background: rgba(13, 14, 17, 0.5);
+}
+
+/* Input field styling */
+.farm-input {
+  width: 100%;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  padding: 0.75rem 1rem;
+  color: white;
+  font-size: 0.9rem;
+  transition: all 0.2s ease;
+}
+
+.farm-input:focus {
+  outline: none;
+  border-color: rgba(8, 251, 214, 0.5);
+  box-shadow: 0 0 0 2px rgba(8, 251, 214, 0.2);
+}
+
+/* Button styling */
+.farm-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.75rem 1rem;
+  border-radius: 8px;
+  font-weight: 600;
+  font-size: 0.875rem;
+  transition: all 0.2s ease;
+  cursor: pointer;
+}
+
+.farm-btn-primary {
+  background: linear-gradient(135deg, #08FBD6 0%, #44A4FF 100%);
+  color: #060708;
+  border: none;
+}
+
+.farm-btn-primary:hover {
+  background: linear-gradient(135deg, #0AFFE0 0%, #55B5FF 100%);
+  box-shadow: 0 0 15px rgba(8, 251, 214, 0.4);
+}
+
+.farm-btn-secondary {
+  background: rgba(255, 255, 255, 0.1);
+  color: rgba(255, 255, 255, 0.9);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+}
+
+.farm-btn-secondary:hover {
+  background: rgba(255, 255, 255, 0.15);
+  border-color: rgba(255, 255, 255, 0.2);
+}
+
+.farm-btn-harvest {
+  background: linear-gradient(135deg, rgba(196, 0, 255, 0.7) 0%, rgba(68, 164, 255, 0.7) 100%);
+  color: white;
+  border: none;
+}
+
+.farm-btn-harvest:hover {
+  background: linear-gradient(135deg, rgba(196, 0, 255, 0.8) 0%, rgba(68, 164, 255, 0.8) 100%);
+  box-shadow: 0 0 15px rgba(196, 0, 255, 0.3);
+}
+
+.farm-btn-harvest:disabled {
+  background: rgba(255, 255, 255, 0.1);
+  color: rgba(255, 255, 255, 0.4);
+  cursor: not-allowed;
+  box-shadow: none;
+}
+
+/* Info labels */
+.farm-info-label {
+  font-size: 0.75rem;
+  color: rgba(255, 255, 255, 0.5);
+}
+
+.farm-info-value {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.9);
+}
+
+/* Farms grid layout */
+.farms-grid {
+  display: grid;
+  gap: 1.5rem;
+  padding: 1.5rem;
+  width: 100%;
+}
+
+/* Responsive grid */
+@media (min-width: 640px) {
+  .farms-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (min-width: 1024px) {
+  .farms-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (min-width: 1280px) {
+  .farms-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+/* Farms page header */
+.farms-header {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem 1.5rem;
+  text-align: center;
+  background: linear-gradient(180deg, rgba(13, 14, 17, 0.8) 0%, rgba(6, 7, 8, 0.4) 100%);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  margin-bottom: 1rem;
+}
+
+.farms-title {
+  font-size: 2rem;
+  font-weight: 700;
+  color: white;
+  margin-bottom: 0.5rem;
+  background: linear-gradient(90deg, #08FBD6, #C400FF, #44A4FF, #08FBD6);
+  background-size: 300% 100%;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  text-fill-color: transparent;
+  animation: gradientFlow 6s ease infinite;
+}
+
+.farms-subtitle {
+  font-size: 1rem;
+  color: rgba(255, 255, 255, 0.7);
+  max-width: 600px;
+  line-height: 1.5;
+}

@@ -43,6 +43,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
   <!-- Custom CSS -->
   <link href="assets/styles.css?v=9" rel="stylesheet" />
+  <link href="assets/farms.css?v=1" rel="stylesheet" />
 </head>
 
 <body class="font-inter bg-brand-base text-gray-200 min-h-screen
@@ -459,13 +460,16 @@
   </div>
   <div class="flex flex-1 md:overflow-hidden" id="farmsView" style="display: none;">
     <!-- Main panel -->
-    <main class="flex-1 flex flex-col md:flex-row md:overflow-hidden relative">
-      <section class="grid gap-6 p-6 w-full
-              sm:grid-cols-2
-              lg:grid-cols-2
-              xl:grid-cols-3 items-start">
-
+    <main class="flex-1 flex flex-col md:overflow-auto relative">
+      <!-- Farms Header -->
+      <div class="farms-header">
+        <h1 class="farms-title">Yield Farming</h1>
+        <p class="farms-subtitle">Stake your LP tokens to earn rewards. Participate in our liquidity mining program and maximize your returns.</p>
+      </div>
       
+      <!-- Farms Grid -->
+      <section class="farms-grid">
+        <!-- Farm cards will be dynamically inserted here -->
       </section>
     </main>
   </div>
