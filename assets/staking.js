@@ -244,7 +244,7 @@
       
       await runTx({
         btn: $('.harvest'),
-        labelIdle: 'Harvest',
+        labelIdle: 'Claim',
         txs: [{ c: STAKING_CONTRACT, f: 'withdrawRewards', k: { amount: rewards } }],
         onSuccess: async () => {
           toast('Claim TX submitted');
