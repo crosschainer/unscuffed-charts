@@ -126,6 +126,14 @@
     const fmt = (x, dp = 2) =>
       Number(x).toLocaleString("en-US", { maximumFractionDigits: dp });
 
+    const toNumber = (str) =>
+  Number(
+    str
+      .replace(/,/g, '')        // remove thousands separators
+      .trim()                   // be nice to copy‑paste
+      .split(' ')[0]            // drop token symbol if present
+  );
+
     /* ---------------- refresh from RPC ---------------- */
     window.refreshStaking = async () => {
       try {
@@ -173,6 +181,7 @@
             rewardsFormatted = "0.00000000"; // handle NaN case
           }
           $earned.textContent = rewardsFormatted + " " + meta.token;
+          $earned.dataset.raw = rewardsFormatted;
           $harvest.disabled = !(pendingRewards > 0);
           
           // Update wallet balance
@@ -239,7 +248,7 @@
     }
     
     async function harvestTx() {
-      const rewards = parseFloat($earned.textContent);
+      const rewards = Number($earned.dataset.raw);   // exact, no re‑parse
       if (rewards <= 0) return toast('Nothing to harvest', 'error');
       
       await runTx({
@@ -254,13 +263,13 @@
     }
     
     $('.stake').onclick = async () => {
-      const amt = parseFloat($amount.value);
+      const amt = toNumber($amount.value);
       if (!amt) return toast('Enter amount', 'error');
       await stakeTx(amt);
     };
     
     $('.unstake').onclick = async () => {
-      const amt = parseFloat($amount.value);
+      const amt = toNumber($amount.value);
       if (!amt) return toast('Enter amount', 'error');
       await withdrawTx(amt);
     };

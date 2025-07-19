@@ -116,6 +116,14 @@ function createCard(meta) {
   const fmt = (x, dp = 2) =>
     Number(x).toLocaleString("en-US", { maximumFractionDigits: dp });
 
+const toNumber = (str) =>
+  Number(
+    str
+      .replace(/,/g, '')   // kill thousands commas
+      .trim()              // be nice to copy‑paste
+      .split(' ')[0]       // drop token symbol if present
+  );
+
   /* ---------------- refresh from RPC ---------------- */
   async function refresh() {
     const infoJson = await getFarmsInfo(
@@ -167,6 +175,7 @@ function createCard(meta) {
         /* user stake / rewards */
         $stake.textContent = fmt(usrStk, 6) + " LP";
         $earned.textContent = fmt(usrRew, 4) + " " + meta.reward;
+        $earned.dataset.raw = usrRew;
         $harvest.disabled = !(usrRew > 0);
 
         /* wallet balance */
@@ -216,19 +225,19 @@ function createCard(meta) {
     );
   }
   el.querySelector('.stake'  ).onclick = async () => {
-    const amt = parseFloat($amount.value);
+    const amt = toNumber($amount.value);
     if (!amt) return toast('Enter amount', 'error');
     await stakeTx(amt);  toast('Staked!',    'success'); $amount.value='';
     refresh();
   };
   el.querySelector('.unstake').onclick = async () => {
-    const amt = parseFloat($amount.value);
+    const amt = toNumber($amount.value);
     if (!amt) return toast('Enter amount', 'error');
     await withdrawTx(amt); toast('Withdrawn!', 'success'); $amount.value='';
     refresh();
   };
   $harvest.onclick = async () => {
-    const amt = parseFloat($earned.textContent);
+    const amt = Number($earned.dataset.raw);
     await harvestTx(amt);   toast('Harvested!', 'success');
     refresh();
   };
