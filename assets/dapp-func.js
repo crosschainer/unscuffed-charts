@@ -100,6 +100,7 @@ async function connectWallet() {
             fetchUserLiquidity();
         }
         window.refreshFarms();
+        window.refreshStaking();
         toast(`Connected to ${userAddress}`, 'success');
 
     } catch (err) {
@@ -906,6 +907,7 @@ async function addLiquidity() {
       fetchUserLiquidity();
       updateTokenBalances();
       window.refreshFarms();
+      
     }, 2000);
     
   } catch (error) {

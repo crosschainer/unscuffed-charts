@@ -44,6 +44,7 @@
   <!-- Custom CSS -->
   <link href="assets/styles.css?v=19" rel="stylesheet" />
   <link href="assets/farms.css?v=2" rel="stylesheet" />
+  <link href="assets/staking.css?v=1" rel="stylesheet" />
 </head>
 
 <body class="font-inter bg-brand-base text-gray-200 min-h-screen
@@ -91,6 +92,11 @@
       <a href="/#farms" class="px-1 pb-0.5 border-b-2 border-transparent
               text-gray-300 hover:text-brand-cyan hover:border-brand-cyan">
         Farms
+      </a>
+      
+      <a href="/#staking" class="px-1 pb-0.5 border-b-2 border-transparent
+              text-gray-300 hover:text-brand-cyan hover:border-brand-cyan">
+        Staking
       </a>
 
       <a href="https://bridge.xian.org" target="_blank" class="px-1 pb-0.5 border-b-2 border-transparent
@@ -473,6 +479,23 @@
       </section>
     </main>
   </div>
+  
+  <!-- Staking View -->
+  <div class="flex flex-1 md:overflow-hidden" id="stakingView" style="display: none;">
+    <!-- Main panel -->
+    <main class="flex-1 flex flex-col md:overflow-auto relative">
+      <!-- Staking Header -->
+      <div class="staking-header">
+        <h1 class="staking-title">Xian Staking</h1>
+        <p class="staking-subtitle">Stake your XIAN tokens to earn rewards. Every deposit starts a 7‑day lock on your entire stake; adding more resets the timer to 7 days from the newest deposit.</p>
+      </div>
+      
+      <!-- Staking Grid -->
+      <section class="staking-grid">
+        <!-- Staking cards will be dynamically inserted here -->
+      </section>
+    </main>
+  </div>
   <!-- Toasts land here -->
   <div id="toastContainer" class="fixed top-4 right-4 z-50 space-y-2 pointer-events-none"></div>
 
@@ -631,6 +654,7 @@
   <script src="assets/dapp-func.js?v=10320"></script>
   <script src="assets/main.js?v=21202320" type="module"></script>
   <script src="assets/farms.js?v=3"></script>
+  <script src="assets/staking.js?v=1"></script>
 </body>
 
 </html>
