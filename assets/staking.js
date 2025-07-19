@@ -382,33 +382,6 @@
       
       // Set up auto-refresh
       refreshTimer = setInterval(refresh, 15000);  // auto refresh every 15 s
-      
-      // Set up wallet connection listener
-      document.getElementById("connectBtn").addEventListener("click", async () => {
-        try {
-          const info = await XianWalletUtils.requestWalletInfo();
-          if (info.locked) { 
-            toast("Unlock wallet first", "error"); 
-            return; 
-          }
-          
-          userAddress = info.address;
-          const addrSpan = document.getElementById("walletAddress");
-          if (addrSpan) {
-            addrSpan.textContent = `${userAddress.slice(0, 6)}...${userAddress.slice(-4)}`;
-            addrSpan.classList.remove("d-none");
-          }
-          
-          // Update the connect button
-          const connectBtn = document.getElementById("connectBtn");
-          connectBtn.classList.add("hidden");
-          
-          // Refresh staking data with user address
-          refresh();
-        } catch (error) {
-          toast("Wallet not available", "error");
-        }
-      });
     } catch (error) {
       console.error('Error loading staking:', error);
       // Show error message
@@ -423,6 +396,14 @@
   window.refreshStaking = () => {
     refresh();
   };
+  
+  // Listen for wallet connection events from the main app
+  document.addEventListener('walletConnected', (event) => {
+    if (event.detail && event.detail.address) {
+      userAddress = event.detail.address;
+      refresh();
+    }
+  });
 
   /* kick-off when DOM ready */
   if (document.readyState === 'loading') {
