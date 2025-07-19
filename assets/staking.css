@@ -1,0 +1,270 @@
+/* Staking page styles */
+/* Animations */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes pulse {
+  0% { box-shadow: 0 0 0 0 rgba(8, 251, 214, 0.4); }
+  70% { box-shadow: 0 0 0 10px rgba(8, 251, 214, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(8, 251, 214, 0); }
+}
+
+@keyframes gradientFlow {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+/* Staking header */
+.staking-header {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem 1.5rem;
+  text-align: center;
+  background: linear-gradient(180deg, rgba(13, 14, 17, 0.8) 0%, rgba(6, 7, 8, 0.4) 100%);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  margin-bottom: 1rem;
+}
+
+.staking-title {
+  font-size: 2rem;
+  font-weight: 700;
+  color: white;
+  margin-bottom: 0.5rem;
+  background: linear-gradient(90deg, #08FBD6, #C400FF, #44A4FF, #08FBD6);
+  background-size: 300% 100%;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  text-fill-color: transparent;
+  animation: gradientFlow 6s ease infinite;
+}
+
+.staking-subtitle {
+  font-size: 1rem;
+  color: rgba(255, 255, 255, 0.7);
+  max-width: 600px;
+  line-height: 1.5;
+}
+
+/* Staking grid layout */
+.staking-grid {
+  display: grid;
+  gap: 1.5rem;
+  padding: 1.5rem;
+  width: 100%;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+/* Responsive grid */
+@media (min-width: 640px) {
+  .staking-grid {
+    grid-template-columns: repeat(1, 1fr);
+    max-width: 800px;
+  }
+}
+
+@media (min-width: 1024px) {
+  .staking-grid {
+    grid-template-columns: repeat(1, 1fr);
+    max-width: 800px;
+  }
+}
+
+/* Staking card styling */
+.staking-card {
+  background: linear-gradient(145deg, rgba(13, 14, 17, 0.9) 0%, rgba(6, 7, 8, 0.95) 100%);
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  border-radius: 12px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+  transition: all 0.3s ease;
+  overflow: hidden;
+  position: relative;
+  animation: fadeIn 0.5s ease-out forwards;
+  animation-fill-mode: both;
+}
+
+.staking-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.3), 0 0 15px rgba(8, 251, 214, 0.1);
+  border-color: rgba(8, 251, 214, 0.2);
+}
+
+/* Card header with gradient border */
+.staking-card-header {
+  position: relative;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.07);
+  padding: 1.25rem;
+  background: rgba(13, 14, 17, 0.7);
+}
+
+.staking-card-header::after {
+  content: "";
+  position: absolute;
+  bottom: -1px;
+  left: 0;
+  width: 100%;
+  height: 1px;
+  background: linear-gradient(90deg, 
+    rgba(8, 251, 214, 0.7) 0%, 
+    rgba(196, 0, 255, 0.7) 50%, 
+    rgba(68, 164, 255, 0.7) 100%);
+  opacity: 0.5;
+}
+
+/* Staking title styling */
+.staking-card .staking-title {
+  font-weight: 600;
+  font-size: 1.1rem;
+  color: rgba(255, 255, 255, 0.95);
+  letter-spacing: 0.02em;
+  background: none;
+  -webkit-text-fill-color: rgba(255, 255, 255, 0.95);
+  animation: none;
+}
+
+/* Staking token text */
+.staking-token {
+  font-size: 0.75rem;
+  color: rgba(255, 255, 255, 0.5);
+  margin-top: 0.25rem;
+}
+
+/* Stats section */
+.staking-stats {
+  padding: 1.25rem;
+  background: rgba(6, 7, 8, 0.4);
+}
+
+/* APR highlight */
+.staking-apr {
+  font-weight: 700;
+  color: #08FBD6;
+  text-shadow: 0 0 10px rgba(8, 251, 214, 0.3);
+  position: relative;
+  animation: pulse 2s infinite;
+}
+
+/* Manage position section */
+.staking-manage {
+  border-top: 1px solid rgba(255, 255, 255, 0.07);
+}
+
+.staking-manage summary {
+  padding: 1rem 1.25rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+  user-select: none;
+}
+
+.staking-manage summary:hover {
+  background-color: rgba(255, 255, 255, 0.05);
+}
+
+.staking-manage-body {
+  padding: 1.25rem;
+  background: rgba(13, 14, 17, 0.5);
+}
+
+/* Input field styling */
+.staking-input {
+  width: 100%;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  padding: 0.75rem 1rem;
+  color: white;
+  font-size: 0.9rem;
+  transition: all 0.2s ease;
+}
+
+.staking-input:focus {
+  outline: none;
+  border-color: rgba(8, 251, 214, 0.5);
+  box-shadow: 0 0 0 2px rgba(8, 251, 214, 0.2);
+}
+
+/* Button styling */
+.staking-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.75rem 1rem;
+  border-radius: 8px;
+  font-weight: 600;
+  font-size: 0.875rem;
+  transition: all 0.2s ease;
+  cursor: pointer;
+}
+
+.staking-btn:hover:not(:disabled) {
+  opacity: 0.9;
+}
+
+.staking-btn:active:not(:disabled) {
+  transform: scale(0.98);
+}
+
+.staking-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.staking-btn-harvest {
+  background: linear-gradient(135deg, rgba(196, 0, 255, 0.7) 0%, rgba(68, 164, 255, 0.7) 100%);
+  color: white;
+  border: none;
+}
+
+.staking-btn-harvest:hover:not(:disabled) {
+  background: linear-gradient(135deg, rgba(196, 0, 255, 0.8) 0%, rgba(68, 164, 255, 0.8) 100%);
+  box-shadow: 0 0 15px rgba(196, 0, 255, 0.3);
+}
+
+.staking-btn-harvest:disabled {
+  background: rgba(255, 255, 255, 0.1);
+  color: rgba(255, 255, 255, 0.4);
+  cursor: not-allowed;
+  box-shadow: none;
+}
+
+/* Info labels */
+.staking-info-label {
+  font-size: 0.75rem;
+  color: rgba(255, 255, 255, 0.5);
+}
+
+.staking-info-value {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.9);
+}
+
+/* Toast styles */
+.toast {
+  position: relative;
+  border-radius: 0.375rem;
+  max-width: 300px;
+  opacity: 0;
+  transform: translateY(1rem);
+  transition: opacity 0.3s, transform 0.3s;
+}
+
+.toast.show {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.toast-success {
+  background-color: rgba(16, 185, 129, 0.9);
+}
+
+.toast-error {
+  background-color: rgba(239, 68, 68, 0.9);
+}
