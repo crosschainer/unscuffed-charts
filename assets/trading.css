@@ -28,16 +28,6 @@
   margin: 0 0.5rem;
 }
 
-/* Fix chart background */
-.chart-bg {
-  background: linear-gradient(145deg, rgba(13, 14, 17, 0.9) 0%, rgba(6, 7, 8, 0.95) 100%) !important;
-}
-
-/* Fix canvas elements */
-#chartContainer canvas {
-  border-radius: 0 0 8px 8px;
-}
-
 /* Timeframe toolbar */
 #tfToolbar {
   background: rgba(13, 14, 17, 0.8);
@@ -47,24 +37,23 @@
   gap: 0.5rem;
 }
 
-#tfToolbar button {
+.tf-btn {
   background: rgba(255, 255, 255, 0.05);
   border: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: 4px;
   color: rgba(255, 255, 255, 0.7);
   font-weight: 500;
   transition: all 0.2s ease;
-  padding: 0.25rem 0.75rem;
 }
 
-#tfToolbar button.active {
+.tf-btn.active {
   background: rgba(8, 251, 214, 0.15);
   border-color: rgba(8, 251, 214, 0.3);
   color: #08FBD6;
   box-shadow: 0 0 10px rgba(8, 251, 214, 0.2);
 }
 
-#tfToolbar button:hover:not(.active) {
+.tf-btn:hover:not(.active) {
   background: rgba(255, 255, 255, 0.1);
   border-color: rgba(255, 255, 255, 0.2);
   color: white;
@@ -118,8 +107,6 @@ aside.border-l {
   position: relative;
   font-weight: 500;
   transition: all 0.2s ease;
-  padding: 0.5rem 0;
-  border-bottom: 2px solid transparent;
 }
 
 #tbBuy.active, #tbSell.active, #tbLiquidity.active {
@@ -172,55 +159,51 @@ aside.border-l {
 }
 
 /* Token information section */
-section[id*="tokenInfo"] {
+#tokenInfo {
   padding: 1.25rem;
   border-bottom: 1px solid rgba(255, 255, 255, 0.07);
   animation: fadeIn 0.5s ease-out forwards;
   animation-delay: 0.1s;
-  background: linear-gradient(145deg, rgba(13, 14, 17, 0.9) 0%, rgba(6, 7, 8, 0.95) 100%);
 }
 
-section[id*="tokenInfo"] h3,
-section[id*="tokenInfo"] h4 {
+#tokenInfo h3 {
   font-weight: 600;
   color: white;
   display: flex;
   align-items: center;
   gap: 0.5rem;
   margin-bottom: 1rem;
-  font-size: 0.95rem;
 }
 
-section[id*="tokenInfo"] h3 svg,
-section[id*="tokenInfo"] h4 svg {
+#tokenInfo h3 svg {
   color: #08FBD6;
 }
 
-section[id*="tokenInfo"] dl {
+#tokenInfo dl {
   display: grid;
-  grid-template-columns: 1fr 2fr;
+  grid-template-columns: 1fr 1fr;
   gap: 0.75rem 1rem;
 }
 
-section[id*="tokenInfo"] dt {
+#tokenInfo dt {
   color: rgba(255, 255, 255, 0.6);
   font-size: 0.875rem;
 }
 
-section[id*="tokenInfo"] dd {
+#tokenInfo dd {
   color: white;
   font-weight: 500;
   font-size: 0.875rem;
   text-align: right;
 }
 
-section[id*="tokenInfo"] a {
+#tokenInfo a {
   color: #08FBD6;
   text-decoration: none;
   transition: color 0.2s ease;
 }
 
-section[id*="tokenInfo"] a:hover {
+#tokenInfo a:hover {
   color: #44A4FF;
   text-decoration: underline;
 }
@@ -274,18 +257,14 @@ section[id*="tokenInfo"] a:hover {
   background: rgba(255, 255, 255, 0.05);
 }
 
-/* Buy/Sell side colors */
-.side-buy, 
-td:first-child:contains("Buy"),
-#tradesList tr td:first-child:contains("Buy") {
-  color: #10b981 !important;
+/* Buy side */
+.side-buy {
+  color: #10b981;
 }
 
 /* Sell side */
-.side-sell,
-td:first-child:contains("Sell"),
-#tradesList tr td:first-child:contains("Sell") {
-  color: #ef4444 !important;
+.side-sell {
+  color: #ef4444;
 }
 
 /* Sidebar styling */
