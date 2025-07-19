@@ -44,6 +44,7 @@
   <!-- Custom CSS -->
   <link href="assets/styles.css?v=9" rel="stylesheet" />
   <link href="assets/farms.css?v=1" rel="stylesheet" />
+  <link href="assets/trading.css?v=1" rel="stylesheet" />
 </head>
 
 <body class="font-inter bg-brand-base text-gray-200 min-h-screen
@@ -181,42 +182,42 @@
       <!-- Content column -->
       <div class="md:flex-1 flex flex-col ">
         <!-- Stats bar -->
-        <header class="border-b border-white/5 backdrop-blur-sm bg-brand-base/70">
+        <header class="border-b border-white/5">
           <!-- top row: logo + inline stats (desktop) -->
           <div class="flex items-center justify-between px-4 md:px-6 py-3">
             <div class="flex items-center gap-3">
-              <img id="pairLogo" src="data:image/gif;base64,R0lGODlhAQABAAD/ACwAAAAAAQABAAACADs=" class="h-7 w-7"
+              <img id="pairLogo" src="data:image/gif;base64,R0lGODlhAQABAAD/ACwAAAAAAQABAAACADs=" class="h-8 w-8 rounded-full"
                 alt="Logo" onerror="this.onerror=null;this.src=this.src">
               <!-- live dot + pair name -->
               <div class="flex items-center gap-2">
                 <!-- blinking green dot -->
                 <span id="live-dot" class="w-2 h-2 rounded-full bg-emerald-400 opacity-0"></span>
 
-                <!-- your existing pair name -->
-                <h1 id="pairName" class="text-lg font-semibold">&nbsp;</h1>
+                <!-- pair name -->
+                <h1 id="pairName">&nbsp;</h1>
               </div>
             </div>
 
             <!-- inline stats — desktop only -->
-            <div class="hidden lg:flex items-center gap-4 text-xs">
-              <span>Price: <span id="price" class="font-medium">—</span></span>
-              <span>24h Δ: <span id="delta" class="font-medium">—</span></span>
-              <span>Liquidity: <span id="liquidity" class="font-medium">—</span></span>
-              <span>Vol 24h: <span id="volume" class="font-medium">—</span></span>
+            <div class="hidden lg:flex items-center gap-6 text-sm">
+              <span>Price: <span id="price">—</span></span>
+              <span>24h Δ: <span id="delta">—</span></span>
+              <span>Liquidity: <span id="liquidity">—</span></span>
+              <span>Vol 24h: <span id="volume">—</span></span>
             </div>
           </div>
 
           <!-- wrapped grid — mobile only -->
-          <div class="grid grid-cols-2 gap-x-6 gap-y-1 px-4 pb-2 text-xs lg:hidden">
-            <span>Price:</span> <span id="priceM" class="font-medium justify-self-end">—</span>
-            <span>24 h Δ:</span> <span id="deltaM" class="font-medium justify-self-end">—</span>
-            <span>Liquidity:</span> <span id="liquidityM" class="font-medium justify-self-end">—</span>
-            <span>Vol 24 h:</span> <span id="volumeM" class="font-medium justify-self-end">—</span>
+          <div class="grid grid-cols-2 gap-x-6 gap-y-2 px-4 pb-3 text-sm lg:hidden">
+            <span>Price:</span> <span id="priceM" class="justify-self-end">—</span>
+            <span>24h Δ:</span> <span id="deltaM" class="justify-self-end">—</span>
+            <span>Liquidity:</span> <span id="liquidityM" class="justify-self-end">—</span>
+            <span>Vol 24h:</span> <span id="volumeM" class="justify-self-end">—</span>
           </div>
         </header>
 
         <!-- Chart -->
-        <div id="tfToolbar" class="flex gap-1 px-4 py-1 text-xs select-none">
+        <div id="tfToolbar">
           <button data-tf="5m" class="tf-btn active">5m</button>
           <button data-tf="15m" class="tf-btn">15m</button>
           <button data-tf="30m" class="tf-btn">30m</button>
@@ -224,27 +225,22 @@
           <button data-tf="4h" class="tf-btn">4h</button>
           <button data-tf="1d" class="tf-btn">1d</button>
         </div>
-        <div id="chartContainer" class="h-[45vh]  md:flex-1 min-h-0 chart-bg relative "></div>
+        <div id="chartContainer" class="h-[45vh] md:flex-1 min-h-0 chart-bg relative"></div>
       </div>
 
       <!-- Trades panel (full width on mobile, fixed on desktop) -->
       <aside class="w-full md:w-96 flex-1 md:flex-none
 +             border-l border-white/5 bg-brand-card overflow-y-auto">
-        <!-- ░░ Trade Box ░░ -->
-        <section id="tradeBox" class="p-4 border-b border-white/5">
+        <!-- Trade Box -->
+        <section id="tradeBox">
           <!-- pair title is filled from JS -->
-          <h3 id="tbPair" class="text-sm font-semibold mb-3">— / —</h3>
+          <h3 id="tbPair">— / —</h3>
 
           <!-- tabs -->
           <div class="flex mb-3">
-            <button id="tbBuy" class="flex-1 py-2 text-center text-xs
-               border-b-2 border-transparent hover:bg-white/5">Buy</button>
-
-            <button id="tbSell" class="flex-1 py-2 text-center text-xs
-               border-b-2 border-transparent hover:bg-white/5">Sell</button>
-
-            <button id="tbLiquidity" class="flex-1 py-2 text-center text-xs
-               border-b-2 border-transparent hover:bg-white/5">Liquidity</button>
+            <button id="tbBuy" class="flex-1 py-2 text-center text-xs">Buy</button>
+            <button id="tbSell" class="flex-1 py-2 text-center text-xs">Sell</button>
+            <button id="tbLiquidity" class="flex-1 py-2 text-center text-xs">Liquidity</button>
           </div>
 
           <!-- Trade form (Buy/Sell) -->
@@ -396,64 +392,64 @@
             </div>
           </div>
         </section>
-        <!-- ░░ Token information ░░ -->
-        <section id="tokenInfo" class="p-4 border-b border-white/5 bg-brand-card/80">
-          <h4 class="text-sm font-semibold mb-3 flex items-center gap-1">
-            <svg class="w-4 h-4 text-brand-cyan" viewBox="0 0 24 24" fill="currentColor">
-              <path d="M12 2L2 7v10l10 5 10-5V7l-10-5zm0 2.18l7.5 3.45v6.74L12 17.82
-               4.5 14.37V7.63L12 4.18z" />
+        <!-- Token information -->
+        <section id="tokenInfo">
+          <h3>
+            <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
             </svg>
-            Token information
-          </h4>
+            Token Information
+          </h3>
+          <dl>
+            <dt>Name</dt>
+            <dd id="tiName">—</dd>
 
-          <dl class="grid grid-cols-3 gap-y-2 text-xs">
-            <dt class="col-span-1 text-gray-400">Name</dt>
-            <dd id="tiName" class="col-span-2 text-gray-200">—</dd>
+            <dt>Symbol</dt>
+            <dd id="tiSymbol">—</dd>
 
-            <dt class="col-span-1 text-gray-400">Symbol</dt>
-            <dd id="tiSymbol" class="col-span-2">—</dd>
+            <dt>FDV</dt>
+            <dd id="tiMarketCap">—</dd>
 
-            <dt class="col-span-1 text-gray-400">FDV</dt>
-            <dd id="tiMarketCap" class="col-span-2">—</dd>
+            <dt>Total Supply</dt>
+            <dd id="tiSupply">—</dd>
 
-            <dt class="col-span-1 text-gray-400">Total&nbsp;Supply</dt>
-            <dd id="tiSupply" class="col-span-2">—</dd>
+            <dt>Operator</dt>
+            <dd id="tiOperator" class="truncate">—</dd>
 
-            <dt class="col-span-1 text-gray-400">Operator</dt>
-            <dd id="tiOperator" class="col-span-2 truncate">—</dd>
-
-            <dt class="col-span-1 text-gray-400">Explorer</dt>
-            <dd id="tiExplorer" class="col-span-2 truncate">
-              <a href="#" target="_blank" rel="noopener" class="hover:underline">—</a>
+            <dt>Explorer</dt>
+            <dd id="tiExplorer" class="truncate">
+              <a href="#" target="_blank" rel="noopener">—</a>
             </dd>
           </dl>
         </section>
 
-        <div class="p-4 border-b border-white/5 text-sm font-semibold flex items-center justify-between">
-          <span>Latest Trades</span>
-          <small id="last-updated" class="text-xs text-gray-500">
-            Updated: <time>—</time>
-          </small>
-        </div>
-        <div class="overflow-x-auto">
-          <table class="min-w-full table-fixed text-xs">
-            <colgroup>
-              <col style="width: 10%" />
-              <col style="width: 35%" />
-              <col style="width: 25%" />
-              <col style="width: 20%" />
-            </colgroup>
-            <thead class="bg-brand-card/75">
-              <tr class="border-b border-white/10">
-                <th class="px-2 py-2 text-left">Side</th>
-                <th class="px-2 py-2 text-right">Amount</th>
-                <th class="px-2 py-2 text-right">Price</th>
-                <th class="px-2 py-2 text-right">Age</th>
-              </tr>
-            </thead>
-            <tbody id="tradesList" class="divide-y divide-white/5"></tbody>
-          </table>
-        </div>
+        <section id="tradesBox">
+          <div class="header">
+            <span class="title">Latest Trades</span>
+            <span class="updated" id="last-updated">
+              Updated: <time>—</time>
+            </span>
+          </div>
+          <div class="overflow-x-auto">
+            <table>
+              <colgroup>
+                <col style="width: 10%" />
+                <col style="width: 35%" />
+                <col style="width: 25%" />
+                <col style="width: 20%" />
+              </colgroup>
+              <thead>
+                <tr>
+                  <th>Side</th>
+                  <th style="text-align: right">Amount</th>
+                  <th style="text-align: right">Price</th>
+                  <th style="text-align: right">Age</th>
+                </tr>
+              </thead>
+              <tbody id="tradesList"></tbody>
+            </table>
+          </div>
+        </section>
       </aside>
 
     </main>
@@ -631,6 +627,7 @@
   <script src="assets/dapp-func.js?v=10320"></script>
   <script src="assets/main.js?v=21202320" type="module"></script>
   <script src="assets/farms.js?v=3"></script>
+  <script src="assets/trading-enhancements.js?v=1"></script>
 </body>
 
 </html>

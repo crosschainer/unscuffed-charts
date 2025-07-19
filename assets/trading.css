@@ -1,0 +1,338 @@
+/* Trading View Styling */
+
+/* Animations */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes pulse {
+  0% { box-shadow: 0 0 0 0 rgba(8, 251, 214, 0.4); }
+  70% { box-shadow: 0 0 0 10px rgba(8, 251, 214, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(8, 251, 214, 0); }
+}
+
+@keyframes gradientFlow {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+/* Chart container styling */
+#chartContainer {
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+  background: linear-gradient(145deg, rgba(13, 14, 17, 0.9) 0%, rgba(6, 7, 8, 0.95) 100%);
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  margin: 0 0.5rem;
+}
+
+/* Timeframe toolbar */
+#tfToolbar {
+  background: rgba(13, 14, 17, 0.8);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.07);
+  padding: 0.5rem 1rem;
+  display: flex;
+  gap: 0.5rem;
+}
+
+.tf-btn {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 4px;
+  color: rgba(255, 255, 255, 0.7);
+  font-weight: 500;
+  transition: all 0.2s ease;
+}
+
+.tf-btn.active {
+  background: rgba(8, 251, 214, 0.15);
+  border-color: rgba(8, 251, 214, 0.3);
+  color: #08FBD6;
+  box-shadow: 0 0 10px rgba(8, 251, 214, 0.2);
+}
+
+.tf-btn:hover:not(.active) {
+  background: rgba(255, 255, 255, 0.1);
+  border-color: rgba(255, 255, 255, 0.2);
+  color: white;
+}
+
+/* Stats bar styling */
+header.border-b {
+  background: linear-gradient(180deg, rgba(13, 14, 17, 0.9) 0%, rgba(6, 7, 8, 0.8) 100%);
+  border-bottom: 1px solid rgba(8, 251, 214, 0.2) !important;
+  padding: 0.75rem 1rem;
+}
+
+#pairName {
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  color: white;
+}
+
+/* Stats values */
+#price, #delta, #liquidity, #volume,
+#priceM, #deltaM, #liquidityM, #volumeM {
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.9);
+}
+
+/* Positive delta */
+#delta.positive, #deltaM.positive {
+  color: #10b981;
+}
+
+/* Negative delta */
+#delta.negative, #deltaM.negative {
+  color: #ef4444;
+}
+
+/* Trade panel styling */
+aside.border-l {
+  background: linear-gradient(145deg, rgba(13, 14, 17, 0.9) 0%, rgba(6, 7, 8, 0.95) 100%);
+  border-left: 1px solid rgba(255, 255, 255, 0.07) !important;
+}
+
+/* Trade box */
+#tradeBox {
+  padding: 1.25rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.07);
+  animation: fadeIn 0.5s ease-out forwards;
+}
+
+/* Trade tabs */
+#tbBuy, #tbSell, #tbLiquidity {
+  position: relative;
+  font-weight: 500;
+  transition: all 0.2s ease;
+}
+
+#tbBuy.active, #tbSell.active, #tbLiquidity.active {
+  color: #08FBD6;
+  border-bottom: 2px solid #08FBD6;
+}
+
+#tbBuy:hover:not(.active), #tbSell:hover:not(.active), #tbLiquidity:hover:not(.active) {
+  background: rgba(255, 255, 255, 0.05);
+  color: white;
+}
+
+/* Trade form inputs */
+#tbAmount, #tbSlippage {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  padding: 0.75rem 1rem;
+  color: white;
+  font-size: 0.9rem;
+  transition: all 0.2s ease;
+}
+
+#tbAmount:focus, #tbSlippage:focus {
+  outline: none;
+  border-color: rgba(8, 251, 214, 0.5);
+  box-shadow: 0 0 0 2px rgba(8, 251, 214, 0.2);
+}
+
+/* Trade button */
+#tbSubmit {
+  background: linear-gradient(135deg, #08FBD6 0%, #44A4FF 100%);
+  color: #060708;
+  border: none;
+  border-radius: 8px;
+  font-weight: 600;
+  padding: 0.75rem;
+  transition: all 0.2s ease;
+}
+
+#tbSubmit:not(:disabled):hover {
+  background: linear-gradient(135deg, #0AFFE0 0%, #55B5FF 100%);
+  box-shadow: 0 0 15px rgba(8, 251, 214, 0.4);
+}
+
+#tbSubmit:disabled {
+  background: rgba(255, 255, 255, 0.1);
+  color: rgba(255, 255, 255, 0.4);
+  cursor: not-allowed;
+}
+
+/* Token information section */
+#tokenInfo {
+  padding: 1.25rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.07);
+  animation: fadeIn 0.5s ease-out forwards;
+  animation-delay: 0.1s;
+}
+
+#tokenInfo h3 {
+  font-weight: 600;
+  color: white;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+#tokenInfo h3 svg {
+  color: #08FBD6;
+}
+
+#tokenInfo dl {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.75rem 1rem;
+}
+
+#tokenInfo dt {
+  color: rgba(255, 255, 255, 0.6);
+  font-size: 0.875rem;
+}
+
+#tokenInfo dd {
+  color: white;
+  font-weight: 500;
+  font-size: 0.875rem;
+  text-align: right;
+}
+
+#tokenInfo a {
+  color: #08FBD6;
+  text-decoration: none;
+  transition: color 0.2s ease;
+}
+
+#tokenInfo a:hover {
+  color: #44A4FF;
+  text-decoration: underline;
+}
+
+/* Latest trades section */
+#tradesBox {
+  padding: 1.25rem;
+  animation: fadeIn 0.5s ease-out forwards;
+  animation-delay: 0.2s;
+}
+
+#tradesBox .header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+
+#tradesBox .title {
+  font-weight: 600;
+  color: white;
+}
+
+#tradesBox .updated {
+  font-size: 0.75rem;
+  color: rgba(255, 255, 255, 0.6);
+}
+
+#tradesBox table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+}
+
+#tradesBox th {
+  text-align: left;
+  padding: 0.5rem;
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.6);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+#tradesBox td {
+  padding: 0.5rem;
+  font-size: 0.875rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+#tradesBox tr:hover td {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+/* Buy side */
+.side-buy {
+  color: #10b981;
+}
+
+/* Sell side */
+.side-sell {
+  color: #ef4444;
+}
+
+/* Sidebar styling */
+#sidebar {
+  background: linear-gradient(180deg, rgba(13, 14, 17, 0.95) 0%, rgba(6, 7, 8, 0.9) 100%);
+  border-right: 1px solid rgba(255, 255, 255, 0.07) !important;
+}
+
+#sidebar .text-lg {
+  font-weight: 700;
+  color: white;
+}
+
+#pairSearch {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  transition: all 0.2s ease;
+}
+
+#pairSearch:focus {
+  outline: none;
+  border-color: rgba(8, 251, 214, 0.5);
+  box-shadow: 0 0 0 2px rgba(8, 251, 214, 0.2);
+}
+
+/* Pair list items */
+#rowHost button {
+  border-radius: 8px;
+  transition: all 0.2s ease;
+  margin: 0 0.5rem;
+}
+
+#rowHost button:hover {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+#rowHost button.active {
+  background: rgba(8, 251, 214, 0.1);
+  border-left: 3px solid #08FBD6;
+}
+
+/* Create pair button */
+#createPairBtn, #createPairBtnMobile {
+  background: rgba(8, 251, 214, 0.15);
+  border: 1px solid rgba(8, 251, 214, 0.3);
+  color: #08FBD6;
+  border-radius: 6px;
+  font-weight: 500;
+  transition: all 0.2s ease;
+}
+
+#createPairBtn:hover, #createPairBtnMobile:hover {
+  background: rgba(8, 251, 214, 0.25);
+  box-shadow: 0 0 10px rgba(8, 251, 214, 0.2);
+}
+
+/* Connect wallet button */
+#connectBtn {
+  background: rgba(8, 251, 214, 0.15);
+  border: 1px solid rgba(8, 251, 214, 0.3);
+  color: #08FBD6;
+  border-radius: 6px;
+  font-weight: 500;
+  transition: all 0.2s ease;
+}
+
+#connectBtn:hover {
+  background: rgba(8, 251, 214, 0.25);
+  box-shadow: 0 0 10px rgba(8, 251, 214, 0.2);
+}
