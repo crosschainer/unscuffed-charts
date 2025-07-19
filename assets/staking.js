@@ -91,14 +91,14 @@
 
           <div class="flex justify-between items-center p-3 bg-white/5 rounded-lg mt-6">
             <div>
-              <p class="staking-info-label">Harvestable Rewards</p>
+              <p class="staking-info-label">Claimable Rewards</p>
               <p class="earned staking-info-value">0 ${meta.token}</p>
             </div>
             <button class="harvest staking-btn staking-btn-harvest px-4" disabled>
               <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 mr-1" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <path d="M8 7V3m8 4V3M3 21h18M3 10h18M3 7h18M3 14h18M3 18h18"/>
               </svg>
-              Harvest
+              Claim
             </button>
           </div>
           
@@ -397,13 +397,6 @@
     refresh();
   };
   
-  // Listen for wallet connection events from the main app
-  document.addEventListener('walletConnected', (event) => {
-    if (event.detail && event.detail.address) {
-      userAddress = event.detail.address;
-      refresh();
-    }
-  });
 
   /* kick-off when DOM ready */
   if (document.readyState === 'loading') {
