@@ -741,7 +741,7 @@ function toast(message, type = 'success') {
 /* slippage selector */
 const slipInput = document.getElementById('tbSlippage');
 slipInput.addEventListener('input', () => {
-  const v = parseFloat(slipInput.value);
+  const v = parseAmount(slipInput.value);
   userSlippage = Number.isFinite(v) && v >= 0 ? v / 100 : 0;  // fallback 0 %
 });
 
@@ -924,8 +924,8 @@ async function removeLiquidity() {
   if (!userAddress) return toast('Connect wallet', 'error');
   if (!_liquidityData || !_userLP) return toast('No liquidity position found', 'error');
   
-  const percentage = parseFloat(removePercentage.value);
-  const slippage = parseFloat(removeLiquiditySlippage.value) / 100;
+  const percentage = parseAmount(removePercentage.value);
+  const slippage = parseAmount(removeLiquiditySlippage.value) / 100;
   
   if (!percentage || percentage <= 0) return toast('Enter valid percentage to remove', 'error');
   if (!_contract0 || !_contract1) return toast('Token contracts not available', 'error');
