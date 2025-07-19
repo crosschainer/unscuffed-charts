@@ -5,9 +5,8 @@
 
 (() => {
   const GRID = document.querySelector('#stakingView .staking-grid'); // selector for staking grid
-  const CONTRACT = "con_staking3";                                  // staking contract from app.js
-  const CHAIN_RPC = "https://testnet.xian.org";                     // RPC URL from app.js
-  let userAddress = null;                                           // user wallet address
+  const STAKING_CONTRACT = "con_staking_v1";                                  // staking contract from app.js
+  const CHAIN_RPC = "https://node.xian.org";                            // RPC endpoint
   let refreshTimer = null;                                          // auto-refresh timer
   
   /* ---------- card constructor ------------------------------------- */
@@ -128,10 +127,10 @@
       Number(x).toLocaleString("en-US", { maximumFractionDigits: dp });
 
     /* ---------------- refresh from RPC ---------------- */
-    async function refresh() {
+    window.refreshStaking = async () => {
       try {
         // Simulate the getInfo call to the staking contract
-        const farmInfo = await simulate(CONTRACT, "getInfo", { who: userAddress || "" });
+        const farmInfo = await simulate(STAKING_CONTRACT, "getInfo", { who: userAddress || "" });
         
         // Parse the response
         const data = farmInfo.split(",").map(item => item.trim());
@@ -207,13 +206,13 @@
         btn: $('.stake'),
         labelIdle: 'Stake',
         txs: [
-          { c: 'currency', f: 'approve', k: { to: CONTRACT, amount: amt } },
-          { c: CONTRACT, f: 'deposit', k: { amount: amt } }
+          { c: 'currency', f: 'approve', k: { to: STAKING_CONTRACT, amount: amt } },
+          { c: STAKING_CONTRACT, f: 'deposit', k: { amount: amt } }
         ],
         onSuccess: async () => {
           toast('Deposit submitted');
           $amount.value = '';
-          await refresh();
+          await window.refreshStaking();
         }
       });
     }
@@ -224,11 +223,11 @@
       await runTx({
         btn: $('.unstake'),
         labelIdle: 'Withdraw',
-        txs: [{ c: CONTRACT, f: 'withdraw', k: { amount: amt } }],
+        txs: [{ c: STAKING_CONTRACT, f: 'withdraw', k: { amount: amt } }],
         onSuccess: async () => {
           toast('Withdraw submitted');
           $amount.value = '';
-          await refresh();
+          await window.refreshStaking();
         }
       });
     }
@@ -240,10 +239,10 @@
       await runTx({
         btn: $('.harvest'),
         labelIdle: 'Harvest',
-        txs: [{ c: CONTRACT, f: 'withdrawRewards', k: { amount: rewards } }],
+        txs: [{ c: STAKING_CONTRACT, f: 'withdrawRewards', k: { amount: rewards } }],
         onSuccess: async () => {
           toast('Claim TX submitted');
-          await refresh();
+          await window.refreshStaking();
         }
       });
     }
@@ -264,7 +263,7 @@
       await harvestTx();
     };
 
-    return { el, refresh };
+    return { el };
   }
 
   /* ---------- helper functions ------------------------------------- */
@@ -306,7 +305,7 @@
 
   async function getDepositTime(addr = "") {
     /* returns deposit time in ISO format */
-    const res = await fetch(`${CHAIN_RPC}/abci_query?path="/get/${CONTRACT}.deposits:${addr}"`);
+    const res = await fetch(`${CHAIN_RPC}/abci_query?path="/get/${STAKING_CONTRACT}.deposits:${addr}"`);
     const json = await res.json();
     try {
       if (!json.result.response.value) return null; // no deposit
@@ -321,7 +320,7 @@
 
   async function getRewards(addr = "") {
     /* returns rewards available for withdrawal */
-    return await simulate(CONTRACT, "getRewards", { address: addr });
+    return await simulate(STAKING_CONTRACT, "getRewards", { address: addr });
   }
 
   async function runTx({ btn, labelIdle, onSuccess, txs }) {
@@ -354,8 +353,6 @@
   }
 
   /* ---------- boot -------------------------------------------------- */
-  // Global reference to the refresh function
-  let globalRefresh = null;
   
   async function init() {
     // Add loading indicator
@@ -374,20 +371,17 @@
       const stakingData = {
         title: "Xian Staking",
         token: "XIAN",
-        contract: CONTRACT
+        contract: STAKING_CONTRACT
       };
       
-      const { el, refresh } = createCard(stakingData);
+      const { el } = createCard(stakingData);
       GRID.appendChild(el);
       
       // Store refresh function globally
-      globalRefresh = refresh;
-      
-      // Refresh staking data
-      globalRefresh();
+      window.refreshStaking()
       
       // Set up auto-refresh
-      refreshTimer = setInterval(globalRefresh, 15000);  // auto refresh every 15 s
+      refreshTimer = setInterval(window.refreshStaking, 15000);  // auto refresh every 15 s
     } catch (error) {
       console.error('Error loading staking:', error);
       // Show error message
@@ -399,23 +393,7 @@
     }
   }
 
-  window.refreshStaking = () => {
-    if (globalRefresh) {
-      globalRefresh();
-    } else {
-      console.warn('Staking refresh function not initialized yet');
-    }
-  };
   
-  // Listen for wallet connection events from the main app
-  document.addEventListener('walletConnected', (event) => {
-    if (event.detail && event.detail.address) {
-      userAddress = event.detail.address;
-      if (globalRefresh) {
-        globalRefresh();
-      }
-    }
-  });
 
   /* kick-off when DOM ready */
   if (document.readyState === 'loading') {
