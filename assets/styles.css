@@ -1,11 +1,18 @@
 :root { 
   --brandbar-h: 48px; /* matches h-12 */
+  --brand-cyan: #08FBD6;
+  --brand-magenta: #C400FF;
+  --brand-indigo: #44A4FF;
+  --brand-base: #060708;
+  --brand-card: #0d0e11;
 }
+
 /* 1‑A  | crisper text on every Chromium/WebKit browser */
 html{
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   text-rendering: optimizeLegibility;
+  scroll-behavior: smooth;
 }
 
 /* 1‑B  | force the TradingView canvas (and any <img>) to render on the
@@ -15,8 +22,12 @@ canvas, img {
   image-rendering: -webkit-optimize-contrast; /* Safari */
 }
 
-body{font-family: 'Inter', ui-sans-serif, system-ui;}
-/* Cosmic radial backdrop */
+body{
+  font-family: 'Inter', ui-sans-serif, system-ui;
+  overflow-x: hidden;
+}
+
+/* Cosmic radial backdrop with subtle animation */
 body::before {
   content: "";
   position: fixed;
@@ -26,7 +37,18 @@ body::before {
     radial-gradient(800px at 80% 70%, rgba(196, 0, 255, 0.08), transparent 70%);
   pointer-events: none;
   z-index: -1;
+  animation: subtle-shift 60s ease-in-out infinite alternate;
 }
+
+@keyframes subtle-shift {
+  0% {
+    background-position: 0% 0%;
+  }
+  100% {
+    background-position: 5% 10%;
+  }
+}
+
 /* Live indicator animation */
 @keyframes live-pulse {
   0%   { opacity: 0.2; transform: scale(0.8); }
@@ -45,6 +67,7 @@ body::before {
   background-color: #10b981; /* green when connected */
   animation: live-pulse 2s ease-in-out infinite;
 }
+
 /* Chart background with subtle diagonal grid */
 .chart-bg {
   background: #060708;
@@ -78,19 +101,59 @@ body::before {
   scrollbar-width: thin; /* Firefox */
   scrollbar-color: #4b5563 transparent;
 }
-/* Button styling */
+
+/* Button styling with improved hover effects */
+.btn-neon {
+  position: relative;
+  overflow: hidden;
+  transition: all 0.3s ease;
+}
+
+.btn-neon::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(45deg, var(--brand-cyan), var(--brand-magenta));
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  z-index: -1;
+  border-radius: inherit;
+}
+
 .btn-neon:hover {
-  box-shadow: 0 0 8px #08FBD6, 0 0 12px #C400FF;
+  box-shadow: 0 0 8px var(--brand-cyan), 0 0 12px var(--brand-magenta);
+}
+
+.btn-neon:hover::before {
+  opacity: 0.1;
 }
 
 .tf-btn {
   padding: 2px 6px;
   border-radius: 4px;
+  transition: all 0.2s ease;
 }
 
-.tf-btn.active,
-.tf-btn:hover {
-  background: #08FBD615;
+.tf-btn.active {
+  background: rgba(8, 251, 214, 0.15);
+  box-shadow: 0 0 4px rgba(8, 251, 214, 0.3);
+}
+
+.tf-btn:hover:not(.active) {
+  background: rgba(8, 251, 214, 0.08);
+}
+
+/* Focus styles for better accessibility */
+button:focus-visible,
+a:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible {
+  outline: 2px solid var(--brand-cyan);
+  outline-offset: 2px;
 }
 
 /* Mobile touch comfort */
@@ -100,27 +163,41 @@ body::before {
     font-size: 0.75rem; /* ~12px */
     border-radius: 6px;
   }
+  
+  /* Increase tap target size for mobile */
+  button, 
+  [role="button"],
+  a.button,
+  input[type="button"],
+  input[type="submit"] {
+    min-height: 44px;
+  }
 }
 
 /* Aside scrollbar styling */
-aside::-webkit-scrollbar {
+aside::-webkit-scrollbar,
+.scrollbar-thin::-webkit-scrollbar {
   width: 8px;
 }
 
-aside::-webkit-scrollbar-track {
+aside::-webkit-scrollbar-track,
+.scrollbar-thin::-webkit-scrollbar-track {
   background: transparent;
 }
 
-aside::-webkit-scrollbar-thumb {
+aside::-webkit-scrollbar-thumb,
+.scrollbar-thin::-webkit-scrollbar-thumb {
   background: #4b5563;
   border-radius: 4px;
 }
 
-aside:hover::-webkit-scrollbar-thumb {
+aside:hover::-webkit-scrollbar-thumb,
+.scrollbar-thin:hover::-webkit-scrollbar-thumb {
   background: #9ca3af;
 }
 
-aside {
+aside,
+.scrollbar-thin {
   scrollbar-width: thin; /* Firefox */
   scrollbar-color: #4b5563 transparent;
 }
@@ -133,4 +210,106 @@ aside {
 
 .animate-scale-in {
   animation: scale-in 0.15s ease-out both;
+}
+
+@keyframes fade-in {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+.animate-fade-in {
+  animation: fade-in 0.2s ease-out both;
+}
+
+@keyframes slide-in-right {
+  from { transform: translateX(20px); opacity: 0; }
+  to   { transform: translateX(0); opacity: 1; }
+}
+
+.animate-slide-in-right {
+  animation: slide-in-right 0.3s ease-out both;
+}
+
+@keyframes slide-in-left {
+  from { transform: translateX(-20px); opacity: 0; }
+  to   { transform: translateX(0); opacity: 1; }
+}
+
+.animate-slide-in-left {
+  animation: slide-in-left 0.3s ease-out both;
+}
+
+@keyframes slide-in-up {
+  from { transform: translateY(20px); opacity: 0; }
+  to   { transform: translateY(0); opacity: 1; }
+}
+
+.animate-slide-in-up {
+  animation: slide-in-up 0.3s ease-out both;
+}
+
+/* Improved form elements */
+input[type="text"],
+input[type="number"],
+input[type="email"],
+input[type="password"],
+textarea,
+select {
+  transition: all 0.2s ease;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+input[type="text"]:hover,
+input[type="number"]:hover,
+input[type="email"]:hover,
+input[type="password"]:hover,
+textarea:hover,
+select:hover {
+  border-color: rgba(255, 255, 255, 0.2);
+}
+
+input[type="text"]:focus,
+input[type="number"]:focus,
+input[type="email"]:focus,
+input[type="password"]:focus,
+textarea:focus,
+select:focus {
+  border-color: var(--brand-cyan);
+  box-shadow: 0 0 0 2px rgba(8, 251, 214, 0.2);
+}
+
+/* Toast animations */
+#toastContainer > div {
+  transition: opacity 0.3s ease;
+}
+
+/* Loading skeleton animation */
+@keyframes skeleton-loading {
+  0% { background-position: -200px 0; }
+  100% { background-position: calc(200px + 100%) 0; }
+}
+
+.skeleton {
+  background: linear-gradient(90deg, rgba(255, 255, 255, 0.05) 25%, rgba(255, 255, 255, 0.1) 37%, rgba(255, 255, 255, 0.05) 63%);
+  background-size: 400px 100%;
+  animation: skeleton-loading 1.4s ease infinite;
+}
+
+/* Improved card hover effects */
+.hover-card {
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.hover-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.3), 0 8px 10px -6px rgba(0, 0, 0, 0.2);
+}
+
+/* Gradient text */
+.gradient-text {
+  background: linear-gradient(90deg, var(--brand-cyan), var(--brand-magenta));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  color: transparent;
 }
