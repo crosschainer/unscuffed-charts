@@ -166,6 +166,12 @@
           
           // Update user rewards
           let rewardsFormatted = typeof pendingRewards === "number" ? pendingRewards : parseFloat(pendingRewards).toFixed(8);
+          if (rewardsFormatted < 0.00000001) {
+            rewardsFormatted = "0.00000000"; // avoid showing too small numbers
+          }
+          if (rewardsFormatted === "NaN") {
+            rewardsFormatted = "0.00000000"; // handle NaN case
+          }
           $earned.textContent = rewardsFormatted + " " + meta.token;
           $harvest.disabled = !(pendingRewards > 0);
           
