@@ -157,7 +157,7 @@
         }
         
         // Update APR
-        const APR_PCT = 20; // constant from app.js
+        const APR_PCT = 10; // constant from app.js
         $apr.textContent = APR_PCT.toFixed(2) + '%';
         
         // Update total staked
