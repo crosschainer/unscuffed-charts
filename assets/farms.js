@@ -5,7 +5,7 @@
 
 (() => {
   const GRID = document.querySelector('#farmsView .farms-grid'); // updated selector
-  const FARMS_TXT = 'farms.txt';                                // 1 line / farm
+  const FARMS_TXT = 'farms.txt?v2';                                // 1 line / farm
   const farms = [];                                             // live instances
 
   /* ---------- card constructor ------------------------------------- */
@@ -36,8 +36,13 @@ function createCard(meta) {
         <dt class="text-gray-400 font-medium">Reward Token</dt>
         <dd class="reward farm-reward">${meta.reward}</dd>
       </div>
+
       <div class="flex justify-between items-center">
-        <dt class="text-gray-400 font-medium">Program Ends</dt>
+        <dt class="text-gray-400 font-medium">Farm Starts</dt>
+        <dd class="starts text-white/80 font-medium">—</dd>
+      </div>
+      <div class="flex justify-between items-center">
+        <dt class="text-gray-400 font-medium">Farm Ends</dt>
         <dd class="ends text-white/80 font-medium">—</dd>
       </div>
     </dl>
@@ -108,6 +113,7 @@ function createCard(meta) {
   const $stake   = $('.mystake');
   const $bal     = $('.bal');
   const $earned  = $('.earned');
+  const $starts  = $('.starts');
   const $ends    = $('.ends');
   const $amount  = $('.amount');
   const $harvest = $('.harvest');
@@ -167,6 +173,13 @@ const toNumber = (str) =>
     if (end) {
       const d = new Date(`${end}Z`);
       $ends.textContent =
+        d.toLocaleDateString() + ' ' + d.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'});
+    }
+
+    /* Starts date */
+    if (start) {
+      const d = new Date(`${start}Z`);
+      $starts.textContent =
         d.toLocaleDateString() + ' ' + d.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'});
     }
 
