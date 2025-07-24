@@ -17,6 +17,13 @@
   50% { background-position: 100% 50%; }
   100% { background-position: 0% 50%; }
 }
+.farm-manage-body {
+  display: none; /* hide by default */
+}
+
+.farm-manage[open] .farm-manage-body {
+  display: block; /* show only if <details open> */
+}
 
 /* Farm cards styling */
 .farm-card {
