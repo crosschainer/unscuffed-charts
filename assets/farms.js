@@ -57,8 +57,21 @@ function createCard(meta) {
                 stroke-linecap="round" stroke-linejoin="round"/>
         </svg>
       </summary>
+      
 
       <div class="farm-manage-body space-y-4">
+       <!-- subtle helper link -->
+<p class="mt-2 text-right">
+  <a href="https://dex.xian.org/#pair=${meta.pairIdx}" rel="noopener noreferrer"
+     class="inline-flex items-center gap-1 text-brand-cyan hover:text-brand-cyan/80
+            text-sm font-medium underline-offset-2 hover:underline">
+    Add Liquidity
+    <svg xmlns="http://www.w3.org/2000/svg" class="w-3 h-3" fill="none"
+         viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+      <path d="M7 17L17 7M7 7h10v10"/>
+    </svg>
+  </a>
+</p>
         <div class="flex justify-between items-center p-3 bg-white/5 rounded-lg">
           <p class="farm-info-label">Your Stake</p>
           <p class="mystake farm-info-value">— LP</p>
@@ -73,7 +86,7 @@ function createCard(meta) {
           <input type="number" min="0" step="any" inputmode="decimal" placeholder="Enter amount to stake or withdraw"
                  class="amount farm-input">
         </div>
-
+        
         <div class="grid grid-cols-2 gap-3 mt-4">
           <button class="stake farm-btn  py-2 rounded-md font-medium disabled transition-colors duration-150 bg-brand-cyan text-gray-900">
             <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 mr-1" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -87,8 +100,9 @@ function createCard(meta) {
             </svg>
             Withdraw LP
           </button>
+         
         </div>
-
+       
         <div class="flex justify-between items-center p-3 bg-white/5 rounded-lg mt-6">
           <div>
             <p class="farm-info-label">Harvestable Rewards</p>
