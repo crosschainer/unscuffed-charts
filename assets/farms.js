@@ -177,10 +177,16 @@ const toNumber = (str) =>
     tvlRaw = Number(JSON.parse(tvlRaw.replace(/'/g, '"'))[0]); // tvlRaw is how much 1 LP is worth
 
     /* APR */
-    if (+totalStk > 0) {
-      console.log(rps, totalStk, tvlRaw);
+    if (+totalStk > 0){
+      // APR should only show when the farm already started
+      let startDate = new Date(`${start}Z`);
+      if (startDate < new Date()) {
+        console.log(rps, totalStk, tvlRaw);
       const apr = (Number(rps) * 31_556_926 / (Number(totalStk) * Number(tvlRaw))) * 100;
       $apr.textContent = fmt(apr) + '%';
+      }
+        
+      
     }
 
     /* Ends date */
