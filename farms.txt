@@ -1,1 +1,2 @@
 1;XIAN-USDC LP;XIAN;con_farm_xian_usdc;currency;con_usdc
+21;SSS-XIAN LP;XIAN;con_farm_slither_xian;con_slither;currency
