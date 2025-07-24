@@ -36,6 +36,7 @@
   position: relative;
   animation: fadeIn 0.5s ease-out forwards;
   animation-fill-mode: both;
+  align-self: start;
 }
 
 /* Stagger the animation for each card */
