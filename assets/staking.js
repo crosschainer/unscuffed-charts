@@ -162,7 +162,7 @@
         
         // Update total staked
         let totalFormatted = typeof total === "number" ? total : parseFloat(total).toFixed(4);
-        $totalStaked.textContent = fmt(totalFormatted) + " " + stakeTok;
+        $totalStaked.textContent = fmt(totalFormatted);
         
         if (userAddress) {
           // Get user rewards
