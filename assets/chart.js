@@ -155,21 +155,69 @@ export function initEmptyChart() {
 }
 
 /* ────────────────────────── Initial load ───────────────────────────── */
+// Track the current loading operation
+let currentLoadingPairId = null;
+
 export async function loadInitialCandles(pairId, denom = '0') {
+  // If we're already loading this pair, don't start another load
+  if (isLoadingBars && currentPairId === pairId && chartDenom === denom) {
+    console.log(`Already loading candles for pair ${pairId}`);
+    return;
+  }
+  
+  // Cancel any previous visible range change subscription
+  if (chart) {
+    try {
+      chart.timeScale().unsubscribeVisibleTimeRangeChange(onVisibleRangeChanged);
+    } catch (e) {
+      // Ignore errors if the chart is not fully initialized
+      console.warn("Could not unsubscribe from visible range change", e);
+    }
+  }
+  
+  // Set loading state
   currentPairId = pairId;
-  chartDenom    = denom;
-  currentTf     = '5m';        // reset when switching pairs
+  currentLoadingPairId = pairId;
+  chartDenom = denom;
+  currentTf = '5m';        // reset when switching pairs
   isLoadingBars = true;
+  
+  // Reset chart data
+  baseBars = [];
+  viewBars = [];
+  oldestCursor = null;
 
-  const page = await getPairCandles(pairId, { token: denom });
-  oldestCursor = page.page.before;
-  baseBars     = page.candles.map(toBar);
-  viewBars     = baseBars.slice();
+  try {
+    const page = await getPairCandles(pairId, { token: denom });
+    
+    // Check if we're still loading the same pair
+    if (currentLoadingPairId !== pairId) {
+      console.log(`Loading of candles for pair ${pairId} was cancelled`);
+      return;
+    }
+    
+    oldestCursor = page.page.before;
+    baseBars = page.candles.map(toBar);
+    viewBars = baseBars.slice();
 
-  paint(viewBars);
-
-  isLoadingBars = false;
-  chart.timeScale().subscribeVisibleTimeRangeChange(onVisibleRangeChanged);
+    // Only paint if we're still loading the same pair
+    if (currentLoadingPairId === pairId) {
+      paint(viewBars);
+      
+      // Subscribe to visible range changes only after painting is complete
+      if (chart) {
+        chart.timeScale().subscribeVisibleTimeRangeChange(onVisibleRangeChanged);
+      }
+    }
+  } catch (error) {
+    console.error(`Error loading candles for pair ${pairId}:`, error);
+  } finally {
+    // Only clear loading state if this is still the current loading operation
+    if (currentLoadingPairId === pairId) {
+      isLoadingBars = false;
+      currentLoadingPairId = null;
+    }
+  }
 }
 export const getChartInstance = () => chart;
 
@@ -185,71 +233,141 @@ export function changeTimeframe(tf) {
 
 /* ────────────────────────── Lazy back‑fill on scroll ───────────────── */
 async function onVisibleRangeChanged(range) {
-  if (isLoadingBars || !oldestCursor) return;
+  if (isLoadingBars || !oldestCursor || !baseBars.length) return;
   if (range.from > baseBars[0].time + 1) return;   // not at extreme left
 
+  // Store the current pair ID to check for cancellation
+  const loadingPairId = currentPairId;
+  const loadingDenom = chartDenom;
+  
   isLoadingBars = true;
-  const page = await getPairCandles(currentPairId, { before: oldestCursor, token: chartDenom });
-  const moreRaw = page.candles.map(toBar);
+  
+  try {
+    const page = await getPairCandles(loadingPairId, { before: oldestCursor, token: loadingDenom });
+    
+    // Check if we're still on the same pair
+    if (loadingPairId !== currentPairId || loadingDenom !== chartDenom) {
+      console.log(`Back-fill for pair ${loadingPairId} was cancelled`);
+      return;
+    }
+    
+    const moreRaw = page.candles.map(toBar);
 
-  const existingTimes = new Set(baseBars.map(b => b.time));
-  let unique = moreRaw.filter(b => !existingTimes.has(b.time));
-  // last unique bar has to be updated to connect to the first bar
-  if (unique.length && unique[unique.length - 1].time < baseBars[0].time) {
-    unique[unique.length - 1] = {
-      ...unique[unique.length - 1],
-      open:   baseBars[0].close,
-      
-    };
+    // Check if we're still on the same pair
+    if (loadingPairId !== currentPairId || loadingDenom !== chartDenom) {
+      console.log(`Back-fill for pair ${loadingPairId} was cancelled`);
+      return;
+    }
+
+    const existingTimes = new Set(baseBars.map(b => b.time));
+    let unique = moreRaw.filter(b => !existingTimes.has(b.time));
+    
+    // last unique bar has to be updated to connect to the first bar
+    if (unique.length && baseBars.length && unique[unique.length - 1].time < baseBars[0].time) {
+      unique[unique.length - 1] = {
+        ...unique[unique.length - 1],
+        open: baseBars[0].close,
+      };
+    }
+    
+    // Check if we're still on the same pair
+    if (loadingPairId !== currentPairId || loadingDenom !== chartDenom) {
+      console.log(`Back-fill for pair ${loadingPairId} was cancelled`);
+      return;
+    }
+    
+    baseBars = unique.concat(baseBars);              // prepend older data
+    oldestCursor = page.page.before;
+    viewBars = (currentTf === '5m') ? baseBars.slice()
+                                    : aggregate(baseBars, TF_MS[currentTf]);
+    
+    // Only paint if we're still on the same pair
+    if (loadingPairId === currentPairId && loadingDenom === chartDenom) {
+      paint(viewBars);
+    }
+  } catch (error) {
+    console.error(`Error loading back-fill for pair ${loadingPairId}:`, error);
+  } finally {
+    // Only clear loading state if we're still on the same pair
+    if (loadingPairId === currentPairId && loadingDenom === chartDenom) {
+      isLoadingBars = false;
+    }
   }
-  baseBars = unique.concat(baseBars);              // prepend older data
-
-  oldestCursor = page.page.before;
-  viewBars = (currentTf === '5m') ? baseBars.slice()
-                                  : aggregate(baseBars, TF_MS[currentTf]);
-  paint(viewBars);
-  isLoadingBars = false;
 }
 
 /* ────────────────────────── Live update hook ───────────────────────── */
 export function upsertLastCandle(raw) {
-  // Fill missing open/high/low/close as original impl did ----------------
-  if (raw.open == null) {
-    const prevClose = baseBars.length ? baseBars[baseBars.length - 1].close : raw.close;
-    raw.open   = prevClose;
-    raw.high   = Math.max(prevClose, raw.close ?? prevClose);
-    raw.low    = Math.min(prevClose, raw.close ?? prevClose);
-    raw.close  = raw.close ?? prevClose;
-    raw.volume = raw.volume ?? 0;
+  // Safety check - make sure we have a chart and series
+  if (!chart || !candleSeries || !volumeSeries) {
+    console.warn("Cannot update candle: chart or series not initialized");
+    return;
   }
-
-  const bar  = toBar(raw);
-  const last = baseBars[baseBars.length - 1];
-
-  if (last && last.time === bar.time) {
-    baseBars[baseBars.length - 1] = bar;
-  } else if (!last || bar.time > last.time) {
-    baseBars.push(bar);
-  } else {
-    return;                    // ignore truly old data
-  }
-
-  // Update currently displayed TF --------------------------------------
-  if (currentTf === '5m') {
-    candleSeries.update(bar);
-    volumeSeries.update({ time: bar.time, value: bar.volume });
-    viewBars = baseBars;       // simple alias
-  } else {
-    const bucketMs = TF_MS[currentTf];
-    const aggBar   = aggregate([bar], bucketMs)[0];
-    const lastView = viewBars[viewBars.length - 1];
-    if (lastView && lastView.time === aggBar.time) {
-      viewBars[viewBars.length - 1] = aggBar;
-    } else if (!lastView || aggBar.time > lastView.time) {
-      viewBars.push(aggBar);
+  
+  try {
+    // Fill missing open/high/low/close as original impl did ----------------
+    if (raw.open == null) {
+      const prevClose = baseBars.length ? baseBars[baseBars.length - 1].close : raw.close;
+      raw.open   = prevClose;
+      raw.high   = Math.max(prevClose, raw.close ?? prevClose);
+      raw.low    = Math.min(prevClose, raw.close ?? prevClose);
+      raw.close  = raw.close ?? prevClose;
+      raw.volume = raw.volume ?? 0;
     }
-    candleSeries.update(aggBar);
-    volumeSeries.update({ time: aggBar.time, value: aggBar.volume });
+
+    const bar = toBar(raw);
+    
+    // Safety check - make sure baseBars is initialized
+    if (!Array.isArray(baseBars)) {
+      console.warn("Cannot update candle: baseBars is not an array");
+      return;
+    }
+    
+    const last = baseBars.length ? baseBars[baseBars.length - 1] : null;
+
+    if (last && last.time === bar.time) {
+      baseBars[baseBars.length - 1] = bar;
+    } else if (!last || bar.time > last.time) {
+      baseBars.push(bar);
+    } else {
+      return;                    // ignore truly old data
+    }
+
+    // Update currently displayed TF --------------------------------------
+    if (currentTf === '5m') {
+      try {
+        candleSeries.update(bar);
+        volumeSeries.update({ time: bar.time, value: bar.volume });
+        viewBars = baseBars;       // simple alias
+      } catch (e) {
+        console.warn("Error updating chart series", e);
+      }
+    } else {
+      try {
+        const bucketMs = TF_MS[currentTf];
+        const aggBar   = aggregate([bar], bucketMs)[0];
+        
+        // Safety check - make sure viewBars is initialized
+        if (!Array.isArray(viewBars)) {
+          console.warn("Cannot update candle: viewBars is not an array");
+          return;
+        }
+        
+        const lastView = viewBars.length ? viewBars[viewBars.length - 1] : null;
+        
+        if (lastView && lastView.time === aggBar.time) {
+          viewBars[viewBars.length - 1] = aggBar;
+        } else if (!lastView || aggBar.time > lastView.time) {
+          viewBars.push(aggBar);
+        }
+        
+        candleSeries.update(aggBar);
+        volumeSeries.update({ time: aggBar.time, value: aggBar.volume });
+      } catch (e) {
+        console.warn("Error updating aggregated chart series", e);
+      }
+    }
+  } catch (error) {
+    console.error("Error in upsertLastCandle:", error);
   }
 }
 

@@ -170,8 +170,39 @@ export function closeAllWebSockets() {
 }
 
 export function closePairWebSockets() {
-  [currentTradesWs, currentPriceChangeWs, currentVolumeWs, currentReservesWs, currentCandlesWs].forEach(ws => {
-    if (ws) ws.close();
+  // Create a local copy of the WebSocket references to avoid race conditions
+  const socketsToClose = [
+    currentTradesWs, 
+    currentPriceChangeWs, 
+    currentVolumeWs, 
+    currentReservesWs, 
+    currentCandlesWs
+  ];
+  
+  // Clear the global references immediately to prevent callbacks from using them
+  currentTradesWs = null;
+  currentPriceChangeWs = null;
+  currentVolumeWs = null;
+  currentReservesWs = null;
+  currentCandlesWs = null;
+  
+  // Update connection state
+  connectionState.trades = false;
+  connectionState.priceChange = false;
+  connectionState.volume = false;
+  connectionState.reserves = false;
+  connectionState.candles = false;
+  updateConnectionState();
+  
+  // Close each WebSocket
+  socketsToClose.forEach(ws => {
+    if (ws) {
+      try {
+        ws.close();
+      } catch (e) {
+        console.warn("Error closing WebSocket", e);
+      }
+    }
   });
 }
 
