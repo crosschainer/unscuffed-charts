@@ -2,6 +2,38 @@
  * Allows users to create, save, and execute sequences of DeFi operations
  */
 
+// Import necessary modules if we're in a module context
+let allPairs = [];
+let TOKEN_CACHE = {};
+
+// Function to access global state
+function accessGlobalState() {
+  try {
+    // Access state from the main application
+    if (window.state && window.state.allPairs) {
+      allPairs = window.state.allPairs;
+      console.log('Successfully imported allPairs from state');
+    }
+    
+    // Access TOKEN_CACHE from the main application
+    if (window.api && window.api.TOKEN_CACHE) {
+      TOKEN_CACHE = window.api.TOKEN_CACHE;
+      console.log('Successfully imported TOKEN_CACHE from api');
+    }
+  } catch (err) {
+    console.error('Error accessing main application state:', err);
+  }
+}
+
+// Function to initialize the macro system
+function initMacroSystem() {
+  // Access global state
+  accessGlobalState();
+  
+  // Initialize the macro UI
+  initMacros();
+}
+
 // Available macro step types and their configurations
 const MACRO_STEP_TYPES = {
   CLAIM_REWARDS: {
@@ -153,6 +185,16 @@ function addDropdownStyles() {
 }
 
 function initMacros() {
+  // Access global state first
+  accessGlobalState();
+  
+  // Load available options (farms, pairs, tokens)
+  loadAvailableOptions().then(() => {
+    console.log('Available options loaded');
+  }).catch(err => {
+    console.error('Failed to load available options:', err);
+  });
+  
   // Load saved macros from localStorage
   loadSavedMacros();
   
@@ -166,9 +208,6 @@ function initMacros() {
   copyShareLinkBtn.addEventListener('click', copyShareLink);
   importMacroBtn.addEventListener('click', importMacro);
   executeMacroBtn.addEventListener('click', executeMacro);
-  
-  // Load available options for selects
-  loadAvailableOptions();
   
   // Create the add step modal
   createAddStepModal();
@@ -268,59 +307,86 @@ function updateExecuteMacroSelect() {
 
 // Load available options for selects (farms, pairs, tokens)
 async function loadAvailableOptions() {
-  // Define API base URL
-  const API_BASE = 'https://api.snaklytics.com';
-  
-  // Load farms from farms.txt
+  // Import necessary modules
   try {
-    const farmsText = await fetch('farms.txt').then(r => r.text());
-    availableFarms = farmsText.trim().split('\n').map(line => {
-      const parts = line.split(';');
-      const [pairIdx, title, reward, farm, token0, token1] = parts;
-      return {
-        id: farm, // Use the actual farm contract
-        name: title,
-        pairIdx: pairIdx,
-        token0: token0 || 'currency',
-        token1: token1 || 'con_usdc',
-        reward: reward || 'XIAN'
-      };
-    });
-  } catch (err) {
-    console.error('Failed to load farms:', err);
-    availableFarms = [];
-  }
-  
-  // Load pairs from the API
-  try {
-    // First try to get pairs from the API
-    const response = await fetch(`${API_BASE}/pairs?limit=100`);
-    const data = await response.json();
-    
-    if (data && data.pairs && data.pairs.length > 0) {
-      availablePairs = data.pairs.map(pair => ({
-        id: pair.id.toString(),
-        name: `${pair.token0.symbol}-${pair.token1.symbol}`,
-        token0: pair.token0.contract,
-        token1: pair.token1.contract,
-        token0Symbol: pair.token0.symbol,
-        token1Symbol: pair.token1.symbol,
-        token0Decimals: pair.token0.decimals || 18,
-        token1Decimals: pair.token1.decimals || 18
+    // Use existing data from the main application if available
+    if (window.allPairs && window.allPairs.length > 0) {
+      console.log('Using existing pairs data from main application');
+      availablePairs = window.allPairs.map(pair => ({
+        id: pair.pair,
+        name: `${pair.token0Symbol || pair.token0}-${pair.token1Symbol || pair.token1}`,
+        token0: pair.token0,
+        token1: pair.token1,
+        token0Symbol: pair.token0Symbol,
+        token1Symbol: pair.token1Symbol,
+        reserve0: pair.reserve0,
+        reserve1: pair.reserve1
       }));
-    } else if (window.XianWalletUtils && typeof window.XianWalletUtils.getPairs === 'function') {
-      // Fallback to wallet pairs
-      const pairs = await window.XianWalletUtils.getPairs();
-      if (pairs && pairs.length > 0) {
-        availablePairs = pairs.map(pair => ({
-          id: pair.id.toString(),
-          name: `${pair.token0.symbol}-${pair.token1.symbol}`,
-          token0: pair.token0.contract,
-          token1: pair.token1.contract,
-          token0Symbol: pair.token0.symbol,
-          token1Symbol: pair.token1.symbol
-        }));
-      } else {
+    } else {
+      // Load farms from farms.txt
+      try {
+        const farmsText = await fetch('farms.txt').then(r => r.text());
+        availableFarms = farmsText.trim().split('\n').map(line => {
+          const parts = line.split(';');
+          const [pairIdx, title, reward, farm, token0, token1] = parts;
+          return {
+            id: farm, // Use the actual farm contract
+            name: title,
+            pairIdx: pairIdx,
+            token0: token0 || 'currency',
+            token1: token1 || 'con_usdc',
+            reward: reward || 'XIAN'
+          };
+        });
+      } catch (err) {
+        console.error('Failed to load farms:', err);
+        availableFarms = [];
+      }
+      
+      // Load pairs from the API
+      try {
+        // Define API base URL
+        const API_BASE = 'https://api.snaklytics.com';
+        
+        // First try to get pairs from the API
+        const response = await fetch(`${API_BASE}/pairs?limit=100`);
+        const data = await response.json();
+        
+        if (data && data.pairs && data.pairs.length > 0) {
+          availablePairs = data.pairs.map(pair => ({
+            id: pair.id.toString(),
+            name: `${pair.token0.symbol}-${pair.token1.symbol}`,
+            token0: pair.token0.contract,
+            token1: pair.token1.contract,
+            token0Symbol: pair.token0.symbol,
+            token1Symbol: pair.token1.symbol,
+            token0Decimals: pair.token0.decimals || 18,
+            token1Decimals: pair.token1.decimals || 18,
+            reserve0: pair.reserve0,
+            reserve1: pair.reserve1
+          }));
+        } else {
+          // Fallback to farms data
+          availablePairs = availableFarms.map(farm => {
+            return {
+              id: farm.pairIdx,
+              name: farm.name,
+              token0: farm.token0,
+              token1: farm.token1
+            };
+          });
+          
+          // Add default pairs if no farms
+          if (availablePairs.length === 0) {
+            availablePairs = [
+              { id: '1', name: 'XIAN-USDC', token0: 'currency', token1: 'con_usdc' },
+              { id: '21', name: 'SSS-XIAN', token0: 'con_slither', token1: 'currency' }
+            ];
+          }
+        }
+      } catch (err) {
+        console.error('Failed to load pairs:', err);
+        
         // Fallback to farms data
         availablePairs = availableFarms.map(farm => {
           return {
@@ -330,57 +396,36 @@ async function loadAvailableOptions() {
             token1: farm.token1
           };
         });
-      }
-    } else {
-      // Fallback to farms data
-      availablePairs = availableFarms.map(farm => {
-        return {
-          id: farm.pairIdx,
-          name: farm.name,
-          token0: farm.token0,
-          token1: farm.token1
-        };
-      });
-      
-      // Add default pairs if no farms
-      if (availablePairs.length === 0) {
-        availablePairs = [
-          { id: '1', name: 'XIAN-USDC', token0: 'currency', token1: 'con_usdc' },
-          { id: '21', name: 'SSS-XIAN', token0: 'con_slither', token1: 'currency' }
-        ];
+        
+        // Add default pairs if no farms
+        if (availablePairs.length === 0) {
+          availablePairs = [
+            { id: '1', name: 'XIAN-USDC', token0: 'currency', token1: 'con_usdc' },
+            { id: '21', name: 'SSS-XIAN', token0: 'con_slither', token1: 'currency' }
+          ];
+        }
       }
     }
-  } catch (err) {
-    console.error('Failed to load pairs:', err);
     
-    // Fallback to farms data
-    availablePairs = availableFarms.map(farm => {
-      return {
-        id: farm.pairIdx,
-        name: farm.name,
-        token0: farm.token0,
-        token1: farm.token1
-      };
-    });
-    
-    // Add default pairs if no farms
-    if (availablePairs.length === 0) {
-      availablePairs = [
-        { id: '1', name: 'XIAN-USDC', token0: 'currency', token1: 'con_usdc' },
-        { id: '21', name: 'SSS-XIAN', token0: 'con_slither', token1: 'currency' }
+    // Load tokens from TOKEN_CACHE if available
+    if (window.TOKEN_CACHE && Object.keys(window.TOKEN_CACHE).length > 0) {
+      console.log('Using existing token data from TOKEN_CACHE');
+      availableTokens = Object.entries(window.TOKEN_CACHE)
+        .filter(([contract, meta]) => meta && meta.symbol)
+        .map(([contract, meta]) => ({
+          id: contract,
+          name: meta.symbol,
+          decimals: meta.decimals || 18
+        }));
+    } else {
+      // Standard tokens in the system
+      availableTokens = [
+        { id: 'currency', name: 'XIAN', decimals: 18 },
+        { id: 'con_usdc', name: 'USDC', decimals: 6 },
+        { id: 'con_eth', name: 'ETH', decimals: 18 },
+        { id: 'con_slither', name: 'SSS', decimals: 18 }
       ];
     }
-  }
-
-  // Load tokens
-  try {
-    // Standard tokens in the system
-    availableTokens = [
-      { id: 'currency', name: 'XIAN', decimals: 18 },
-      { id: 'con_usdc', name: 'USDC', decimals: 6 },
-      { id: 'con_eth', name: 'ETH', decimals: 18 },
-      { id: 'con_slither', name: 'SSS', decimals: 18 }
-    ];
     
     // Add staking contracts
     const stakingContracts = [
@@ -388,47 +433,49 @@ async function loadAvailableOptions() {
       { id: 'con_staking_sss', name: 'SSS Staking', decimals: 18 }
     ];
     
-    availableTokens = [...availableTokens, ...stakingContracts];
-    
-    // Try to get tokens from the API
-    try {
-      const response = await fetch(`${API_BASE}/tokens?limit=100`);
-      const data = await response.json();
-      
-      if (data && data.tokens && data.tokens.length > 0) {
-        // Add tokens from API that aren't already in our list
-        const apiTokens = data.tokens
-          .filter(token => !availableTokens.some(t => t.id === token.contract))
-          .map(token => ({
-            id: token.contract,
-            name: token.symbol,
-            decimals: token.decimals || 18
-          }));
-        
-        availableTokens = [...availableTokens, ...apiTokens];
+    // Add staking contracts if they're not already in the tokens list
+    for (const contract of stakingContracts) {
+      if (!availableTokens.some(t => t.id === contract.id)) {
+        availableTokens.push(contract);
       }
-    } catch (apiErr) {
-      console.error('Failed to load tokens from API:', apiErr);
     }
     
-    // Add any additional tokens from the wallet if available
-    if (window.XianWalletUtils && window.XianWalletUtils.tokens) {
-      const walletTokens = Object.values(window.XianWalletUtils.tokens)
-        .filter(token => 
-          // Filter out tokens we already have
-          token && token.symbol && !availableTokens.some(t => t.id === token.contract)
-        )
-        .map(token => ({
-          id: token.contract,
-          name: token.symbol,
-          decimals: token.decimals || 18
-        }));
-      
-      availableTokens = [...availableTokens, ...walletTokens];
+    // Load farms from farms.txt if not already loaded
+    if (availableFarms.length === 0) {
+      try {
+        const farmsText = await fetch('farms.txt').then(r => r.text());
+        availableFarms = farmsText.trim().split('\n').map(line => {
+          const parts = line.split(';');
+          const [pairIdx, title, reward, farm, token0, token1] = parts;
+          return {
+            id: farm, // Use the actual farm contract
+            name: title,
+            pairIdx: pairIdx,
+            token0: token0 || 'currency',
+            token1: token1 || 'con_usdc',
+            reward: reward || 'XIAN'
+          };
+        });
+      } catch (err) {
+        console.error('Failed to load farms:', err);
+        availableFarms = [];
+      }
     }
+    
+    console.log('Loaded options:', {
+      pairs: availablePairs.length,
+      tokens: availableTokens.length,
+      farms: availableFarms.length
+    });
   } catch (err) {
-    console.error('Failed to load tokens:', err);
-    // Fallback to basic tokens
+    console.error('Failed to load available options:', err);
+    
+    // Fallback to basic data
+    availablePairs = [
+      { id: '1', name: 'XIAN-USDC', token0: 'currency', token1: 'con_usdc' },
+      { id: '21', name: 'SSS-XIAN', token0: 'con_slither', token1: 'currency' }
+    ];
+    
     availableTokens = [
       { id: 'currency', name: 'XIAN', decimals: 18 },
       { id: 'con_usdc', name: 'USDC', decimals: 6 },
@@ -437,6 +484,8 @@ async function loadAvailableOptions() {
       { id: 'con_staking_xian', name: 'XIAN Staking', decimals: 18 },
       { id: 'con_staking_sss', name: 'SSS Staking', decimals: 18 }
     ];
+    
+    availableFarms = [];
   }
 }
 
@@ -1763,14 +1812,14 @@ function isMacrosHashLocal() {
 // Initialize when the DOM is loaded
 document.addEventListener('DOMContentLoaded', () => {
   if (isMacrosHashLocal()) {
-    initMacros();
+    initMacroSystem();
   }
 });
 
 // Initialize when the hash changes to #macros
 window.addEventListener('hashchange', () => {
   if (isMacrosHashLocal()) {
-    initMacros();
+    initMacroSystem();
   }
 });
 
