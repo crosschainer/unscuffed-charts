@@ -119,9 +119,45 @@ let availablePairs = [];
 let availableTokens = [];
 
 // Initialize the macros system
+// Add custom styles for dropdowns to fix styling issues
+function addDropdownStyles() {
+  // Check if styles already exist
+  if (document.getElementById('macro-dropdown-styles')) {
+    return;
+  }
+  
+  // Create style element
+  const style = document.createElement('style');
+  style.id = 'macro-dropdown-styles';
+  style.textContent = `
+    /* Fix dropdown styling */
+    select {
+      color: #fff !important;
+      background-color: #1a1a1a !important;
+    }
+    
+    select option {
+      color: #fff !important;
+      background-color: #1a1a1a !important;
+    }
+    
+    /* Improve dropdown hover state */
+    select option:hover, select option:focus, select option:active, select option:checked {
+      background-color: #333 !important;
+      color: #fff !important;
+    }
+  `;
+  
+  // Add to document head
+  document.head.appendChild(style);
+}
+
 function initMacros() {
   // Load saved macros from localStorage
   loadSavedMacros();
+  
+  // Add dropdown styling to fix light text on light background
+  addDropdownStyles();
   
   // Set up event listeners
   addStepBtn.addEventListener('click', showAddStepModal);
