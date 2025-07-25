@@ -45,6 +45,7 @@
   <link href="assets/styles.css?v=19" rel="stylesheet" />
   <link href="assets/farms.css?v=32" rel="stylesheet" />
   <link href="assets/staking.css?v=1" rel="stylesheet" />
+  <link href="assets/macros.css?v=1" rel="stylesheet" />
 </head>
 
 <body class="font-inter bg-brand-base text-gray-200 min-h-screen
@@ -99,9 +100,9 @@
         Staking
       </a>
 
-      <a href="https://bridge.xian.org" target="_blank" class="px-1 pb-0.5 border-b-2 border-transparent
+      <a href="/#macros" class="px-1 pb-0.5 border-b-2 border-transparent
               text-gray-300 hover:text-brand-cyan hover:border-brand-cyan">
-        Bridge
+        Macros
       </a>
     </nav>
   </header>
@@ -124,6 +125,140 @@
       <div class="animate-spin rounded-full h-12 w-12 border-t-2 border-brand-cyan"></div>
     </div>
   </div>
+  
+  <!-- Macros View -->
+  <div class="flex flex-1 flex-col md:overflow-auto" id="macrosView" style="display: none;">
+    <div class="container mx-auto px-4 py-6">
+      <h1 class="text-2xl font-bold mb-6">DeFi Macros</h1>
+      
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <!-- Left Column: Create & Edit Macros -->
+        <div class="bg-brand-card rounded-lg p-4 border border-white/5">
+          <h2 class="text-xl font-semibold mb-4">Create Macro</h2>
+          
+          <div class="mb-4">
+            <label class="block text-sm font-medium text-gray-400 mb-1">Macro Name</label>
+            <input type="text" id="macroName" placeholder="My Awesome Macro" 
+                   class="w-full rounded bg-white/5 px-3 py-2 
+                   focus:outline-none focus:ring-2 focus:ring-brand-cyan">
+          </div>
+          
+          <div class="mb-4">
+            <label class="block text-sm font-medium text-gray-400 mb-1">Macro Steps</label>
+            <div id="macroSteps" class="space-y-2">
+              <!-- Steps will be added here dynamically -->
+            </div>
+            
+            <div class="flex gap-2 mt-3">
+              <button id="addStepBtn" class="px-3 py-1 text-xs font-medium rounded-md
+                       bg-brand-cyan/20 text-brand-cyan border border-brand-cyan/30
+                       hover:bg-brand-cyan/30 active:bg-brand-cyan/40
+                       focus:outline-none focus:ring-2 focus:ring-brand-cyan
+                       transition">
+                + Add Step
+              </button>
+            </div>
+          </div>
+          
+          <div class="flex justify-between mt-6">
+            <button id="saveMacroBtn" class="px-4 py-2 font-medium rounded-md
+                     bg-brand-cyan text-black
+                     hover:bg-brand-cyan/90 active:bg-brand-cyan/80
+                     focus:outline-none focus:ring-2 focus:ring-brand-cyan
+                     transition">
+              Save Macro
+            </button>
+            
+            <button id="clearMacroBtn" class="px-4 py-2 font-medium rounded-md
+                     bg-white/10 text-white
+                     hover:bg-white/15 active:bg-white/20
+                     focus:outline-none focus:ring-2 focus:ring-white/30
+                     transition">
+              Clear
+            </button>
+          </div>
+        </div>
+        
+        <!-- Right Column: Saved & Shared Macros -->
+        <div class="bg-brand-card rounded-lg p-4 border border-white/5">
+          <h2 class="text-xl font-semibold mb-4">Your Macros</h2>
+          
+          <div id="savedMacros" class="space-y-3 mb-6">
+            <!-- Saved macros will appear here -->
+            <div class="text-sm text-gray-400 italic">No saved macros yet</div>
+          </div>
+          
+          <h2 class="text-xl font-semibold mb-4 mt-8">Share & Import</h2>
+          
+          <div class="mb-4">
+            <label class="block text-sm font-medium text-gray-400 mb-1">Share Current Macro</label>
+            <div class="flex gap-2">
+              <input type="text" id="shareLink" readonly
+                     class="w-full rounded bg-white/5 px-3 py-2 
+                     focus:outline-none focus:ring-2 focus:ring-brand-cyan">
+              <button id="copyShareLinkBtn" class="px-3 py-1 text-xs font-medium rounded-md
+                       bg-white/10 text-white
+                       hover:bg-white/15 active:bg-white/20
+                       focus:outline-none focus:ring-2 focus:ring-white/30
+                       transition">
+                Copy
+              </button>
+            </div>
+          </div>
+          
+          <div class="mb-4">
+            <label class="block text-sm font-medium text-gray-400 mb-1">Import Macro</label>
+            <div class="flex gap-2">
+              <input type="text" id="importLink" placeholder="Paste macro code here"
+                     class="w-full rounded bg-white/5 px-3 py-2 
+                     focus:outline-none focus:ring-2 focus:ring-brand-cyan">
+              <button id="importMacroBtn" class="px-3 py-1 text-xs font-medium rounded-md
+                       bg-brand-cyan/20 text-brand-cyan border border-brand-cyan/30
+                       hover:bg-brand-cyan/30 active:bg-brand-cyan/40
+                       focus:outline-none focus:ring-2 focus:ring-brand-cyan
+                       transition">
+                Import
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Macro Execution Panel -->
+      <div class="bg-brand-card rounded-lg p-4 border border-white/5 mt-6">
+        <h2 class="text-xl font-semibold mb-4">Execute Macro</h2>
+        
+        <div class="flex flex-col md:flex-row gap-4">
+          <div class="flex-1">
+            <label class="block text-sm font-medium text-gray-400 mb-1">Select Macro</label>
+            <select id="executeMacroSelect" 
+                    class="w-full rounded bg-white/5 px-3 py-2 
+                    focus:outline-none focus:ring-2 focus:ring-brand-cyan">
+              <option value="">-- Select a macro --</option>
+            </select>
+          </div>
+          
+          <div class="flex items-end">
+            <button id="executeMacroBtn" class="px-4 py-2 font-medium rounded-md
+                     bg-brand-magenta text-white
+                     hover:bg-brand-magenta/90 active:bg-brand-magenta/80
+                     focus:outline-none focus:ring-2 focus:ring-brand-magenta
+                     transition">
+              Execute Macro
+            </button>
+          </div>
+        </div>
+        
+        <div id="executionStatus" class="mt-4 p-3 rounded bg-white/5 hidden">
+          <h3 class="font-medium mb-2">Execution Status</h3>
+          <div id="executionSteps" class="space-y-2 text-sm">
+            <!-- Execution steps will appear here -->
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  
   <div class="flex flex-1 md:overflow-hidden" id="tradeView" style="display: none;">
 
     <!-- Sidebar on md+; toggled offcanvas on mobile -->
@@ -655,6 +790,7 @@
   <script src="assets/main.js?v=212022320" type="module"></script>
   <script src="assets/farms.js?v=52"></script>
   <script src="assets/staking.js?v=322"></script>
+  <script src="assets/macros.js?v=1"></script>
 </body>
 
 </html>

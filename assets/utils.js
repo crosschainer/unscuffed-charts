@@ -100,6 +100,10 @@ export function isStakingHash() {
   return location.hash === '#staking';
 }
 
+export function isMacrosHash() {
+  return location.hash === '#macros';
+}
+
 export function setPairHash(id) {
   history.replaceState(null, '', `#pair=${id}`);
 }
