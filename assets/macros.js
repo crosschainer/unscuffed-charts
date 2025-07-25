@@ -268,15 +268,22 @@ function updateExecuteMacroSelect() {
 
 // Load available options for selects (farms, pairs, tokens)
 async function loadAvailableOptions() {
+  // Define API base URL
+  const API_BASE = 'https://api.snaklytics.com';
+  
   // Load farms from farms.txt
   try {
     const farmsText = await fetch('farms.txt').then(r => r.text());
     availableFarms = farmsText.trim().split('\n').map(line => {
-      const [pairIdx, title, reward, farm] = line.split(';');
+      const parts = line.split(';');
+      const [pairIdx, title, reward, farm, token0, token1] = parts;
       return {
         id: farm, // Use the actual farm contract
         name: title,
-        pairIdx: pairIdx
+        pairIdx: pairIdx,
+        token0: token0 || 'currency',
+        token1: token1 || 'con_usdc',
+        reward: reward || 'XIAN'
       };
     });
   } catch (err) {
@@ -284,53 +291,137 @@ async function loadAvailableOptions() {
     availableFarms = [];
   }
   
-  // Load pairs from the DEX contract
+  // Load pairs from the API
   try {
-    // Get pairs from the DEX contract
-    const pairs = await XianWalletUtils.getPairs();
-    if (pairs && pairs.length > 0) {
-      availablePairs = pairs.map((pair, index) => ({
-        id: index.toString(), // Pair ID is the index
+    // First try to get pairs from the API
+    const response = await fetch(`${API_BASE}/pairs?limit=100`);
+    const data = await response.json();
+    
+    if (data && data.pairs && data.pairs.length > 0) {
+      availablePairs = data.pairs.map(pair => ({
+        id: pair.id.toString(),
         name: `${pair.token0.symbol}-${pair.token1.symbol}`,
         token0: pair.token0.contract,
-        token1: pair.token1.contract
+        token1: pair.token1.contract,
+        token0Symbol: pair.token0.symbol,
+        token1Symbol: pair.token1.symbol,
+        token0Decimals: pair.token0.decimals || 18,
+        token1Decimals: pair.token1.decimals || 18
       }));
+    } else if (window.XianWalletUtils && typeof window.XianWalletUtils.getPairs === 'function') {
+      // Fallback to wallet pairs
+      const pairs = await window.XianWalletUtils.getPairs();
+      if (pairs && pairs.length > 0) {
+        availablePairs = pairs.map(pair => ({
+          id: pair.id.toString(),
+          name: `${pair.token0.symbol}-${pair.token1.symbol}`,
+          token0: pair.token0.contract,
+          token1: pair.token1.contract,
+          token0Symbol: pair.token0.symbol,
+          token1Symbol: pair.token1.symbol
+        }));
+      } else {
+        // Fallback to farms data
+        availablePairs = availableFarms.map(farm => {
+          return {
+            id: farm.pairIdx,
+            name: farm.name,
+            token0: farm.token0,
+            token1: farm.token1
+          };
+        });
+      }
     } else {
-      // Fallback to placeholder data
-      availablePairs = [
-        { id: '1', name: 'XIAN-USDC', token0: 'currency', token1: 'con_usdc' },
-        { id: '2', name: 'XIAN-ETH', token0: 'currency', token1: 'con_eth' }
-      ];
+      // Fallback to farms data
+      availablePairs = availableFarms.map(farm => {
+        return {
+          id: farm.pairIdx,
+          name: farm.name,
+          token0: farm.token0,
+          token1: farm.token1
+        };
+      });
+      
+      // Add default pairs if no farms
+      if (availablePairs.length === 0) {
+        availablePairs = [
+          { id: '1', name: 'XIAN-USDC', token0: 'currency', token1: 'con_usdc' },
+          { id: '21', name: 'SSS-XIAN', token0: 'con_slither', token1: 'currency' }
+        ];
+      }
     }
   } catch (err) {
     console.error('Failed to load pairs:', err);
-    // Fallback to placeholder data
-    availablePairs = [
-      { id: '1', name: 'XIAN-USDC', token0: 'currency', token1: 'con_usdc' },
-      { id: '2', name: 'XIAN-ETH', token0: 'currency', token1: 'con_eth' }
-    ];
+    
+    // Fallback to farms data
+    availablePairs = availableFarms.map(farm => {
+      return {
+        id: farm.pairIdx,
+        name: farm.name,
+        token0: farm.token0,
+        token1: farm.token1
+      };
+    });
+    
+    // Add default pairs if no farms
+    if (availablePairs.length === 0) {
+      availablePairs = [
+        { id: '1', name: 'XIAN-USDC', token0: 'currency', token1: 'con_usdc' },
+        { id: '21', name: 'SSS-XIAN', token0: 'con_slither', token1: 'currency' }
+      ];
+    }
   }
-  
+
   // Load tokens
   try {
     // Standard tokens in the system
     availableTokens = [
-      { id: 'currency', name: 'XIAN' },
-      { id: 'con_usdc', name: 'USDC' },
-      { id: 'con_eth', name: 'ETH' },
-      { id: 'con_slither', name: 'SSS' }
+      { id: 'currency', name: 'XIAN', decimals: 18 },
+      { id: 'con_usdc', name: 'USDC', decimals: 6 },
+      { id: 'con_eth', name: 'ETH', decimals: 18 },
+      { id: 'con_slither', name: 'SSS', decimals: 18 }
     ];
+    
+    // Add staking contracts
+    const stakingContracts = [
+      { id: 'con_staking_xian', name: 'XIAN Staking', decimals: 18 },
+      { id: 'con_staking_sss', name: 'SSS Staking', decimals: 18 }
+    ];
+    
+    availableTokens = [...availableTokens, ...stakingContracts];
+    
+    // Try to get tokens from the API
+    try {
+      const response = await fetch(`${API_BASE}/tokens?limit=100`);
+      const data = await response.json();
+      
+      if (data && data.tokens && data.tokens.length > 0) {
+        // Add tokens from API that aren't already in our list
+        const apiTokens = data.tokens
+          .filter(token => !availableTokens.some(t => t.id === token.contract))
+          .map(token => ({
+            id: token.contract,
+            name: token.symbol,
+            decimals: token.decimals || 18
+          }));
+        
+        availableTokens = [...availableTokens, ...apiTokens];
+      }
+    } catch (apiErr) {
+      console.error('Failed to load tokens from API:', apiErr);
+    }
     
     // Add any additional tokens from the wallet if available
     if (window.XianWalletUtils && window.XianWalletUtils.tokens) {
       const walletTokens = Object.values(window.XianWalletUtils.tokens)
         .filter(token => 
           // Filter out tokens we already have
-          !availableTokens.some(t => t.id === token.contract)
+          token && token.symbol && !availableTokens.some(t => t.id === token.contract)
         )
         .map(token => ({
           id: token.contract,
-          name: token.symbol
+          name: token.symbol,
+          decimals: token.decimals || 18
         }));
       
       availableTokens = [...availableTokens, ...walletTokens];
@@ -339,9 +430,12 @@ async function loadAvailableOptions() {
     console.error('Failed to load tokens:', err);
     // Fallback to basic tokens
     availableTokens = [
-      { id: 'currency', name: 'XIAN' },
-      { id: 'con_usdc', name: 'USDC' },
-      { id: 'con_eth', name: 'ETH' }
+      { id: 'currency', name: 'XIAN', decimals: 18 },
+      { id: 'con_usdc', name: 'USDC', decimals: 6 },
+      { id: 'con_eth', name: 'ETH', decimals: 18 },
+      { id: 'con_slither', name: 'SSS', decimals: 18 },
+      { id: 'con_staking_xian', name: 'XIAN Staking', decimals: 18 },
+      { id: 'con_staking_sss', name: 'SSS Staking', decimals: 18 }
     ];
   }
 }
@@ -1108,6 +1202,19 @@ async function swapTokens(params) {
       actualAmount = amount;
     }
     
+    // Find the pair that contains both tokens
+    const pair = availablePairs.find(p => 
+      (p.token0 === fromToken && p.token1 === toToken) || 
+      (p.token0 === toToken && p.token1 === fromToken)
+    );
+    
+    if (!pair) {
+      throw new Error(`No trading pair found for ${fromToken} and ${toToken}`);
+    }
+    
+    // Determine the side (buy or sell)
+    const side = pair.token0 === fromToken ? 'sell' : 'buy';
+    
     // Get the DEX contract - use the correct one from the repo
     const dexContract = 'con_dex_v2';
     
@@ -1121,15 +1228,29 @@ async function swapTokens(params) {
     // Calculate minimum amount out based on slippage
     const slippageMultiplier = (100 - parseFloat(slippage)) / 100;
     
-    // Find the pair that contains both tokens
-    const pair = availablePairs.find(p => 
-      (p.token0 === fromToken && p.token1 === toToken) || 
-      (p.token0 === toToken && p.token1 === fromToken)
-    );
-    
-    if (!pair) {
-      throw new Error(`No trading pair found for ${fromToken} and ${toToken}`);
+    // Try to get expected output amount
+    let expectedOut = 0;
+    try {
+      // Try to get the pair data from the API
+      const API_BASE = 'https://api.snaklytics.com';
+      const response = await fetch(`${API_BASE}/pairs/${pair.id}`);
+      const pairData = await response.json();
+      
+      if (pairData && pairData.reserve0 && pairData.reserve1) {
+        // Calculate expected output based on constant product formula
+        const inputReserve = side === 'sell' ? parseFloat(pairData.reserve0) : parseFloat(pairData.reserve1);
+        const outputReserve = side === 'sell' ? parseFloat(pairData.reserve1) : parseFloat(pairData.reserve0);
+        
+        // Calculate output with 0.3% fee
+        const inputWithFee = parseFloat(actualAmount) * 0.997;
+        expectedOut = (inputWithFee * outputReserve) / (inputReserve + inputWithFee);
+      }
+    } catch (err) {
+      console.error('Error calculating expected output:', err);
     }
+    
+    // Apply slippage to get minimum output
+    const minOut = expectedOut > 0 ? Math.floor(expectedOut * slippageMultiplier) : 0;
     
     // Deadline – 5 minutes from now
     const now = new Date();
@@ -1150,7 +1271,7 @@ async function swapTokens(params) {
       'swapExactTokenForTokenSupportingFeeOnTransferTokens',
       {
         amountIn: actualAmount,
-        amountOutMin: 0, // We're accepting any output amount for simplicity
+        amountOutMin: minOut, // Use calculated minOut with slippage
         pair: parseInt(pair.id),
         src: fromToken,
         to: XianWalletUtils.getAddress(), // Current user's address
