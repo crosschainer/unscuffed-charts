@@ -189,43 +189,62 @@ function updateExecuteMacroSelect() {
 
 // Load available options for selects (farms, pairs, tokens)
 function loadAvailableOptions() {
-  // In a real implementation, these would be loaded from the blockchain
-  // For now, we'll use placeholder data
-  
-  // Load farms
+  // Load farms from the wallet if available
   try {
-    // This would normally be loaded from the blockchain
-    availableFarms = [
-      { id: '1', name: 'XIAN-USDC Farm' },
-      { id: '2', name: 'XIAN-ETH Farm' },
-      { id: '3', name: 'USDC-ETH Farm' }
-    ];
+    if (window.XianWalletUtils && window.XianWalletUtils.farms) {
+      availableFarms = Object.values(window.XianWalletUtils.farms).map(farm => ({
+        id: farm.address,
+        name: `${farm.pair.token0.symbol}-${farm.pair.token1.symbol} Farm`
+      }));
+    } else {
+      // Fallback to placeholder data
+      availableFarms = [
+        { id: '1', name: 'XIAN-USDC Farm' },
+        { id: '2', name: 'XIAN-ETH Farm' },
+        { id: '3', name: 'USDC-ETH Farm' }
+      ];
+    }
   } catch (err) {
     console.error('Failed to load farms:', err);
     availableFarms = [];
   }
   
-  // Load pairs
+  // Load pairs from the wallet if available
   try {
-    // This would normally be loaded from the blockchain
-    availablePairs = [
-      { id: '1', name: 'XIAN-USDC' },
-      { id: '2', name: 'XIAN-ETH' },
-      { id: '3', name: 'USDC-ETH' }
-    ];
+    if (window.XianWalletUtils && window.XianWalletUtils.pairs) {
+      availablePairs = Object.values(window.XianWalletUtils.pairs).map(pair => ({
+        id: pair.address,
+        name: `${pair.token0.symbol}-${pair.token1.symbol}`
+      }));
+    } else {
+      // Fallback to placeholder data
+      availablePairs = [
+        { id: '1', name: 'XIAN-USDC' },
+        { id: '2', name: 'XIAN-ETH' },
+        { id: '3', name: 'USDC-ETH' }
+      ];
+    }
   } catch (err) {
     console.error('Failed to load pairs:', err);
     availablePairs = [];
   }
   
-  // Load tokens
+  // Load tokens from the wallet if available
   try {
-    // This would normally be loaded from the blockchain
-    availableTokens = [
-      { id: 'con_xian', name: 'XIAN' },
-      { id: 'con_usdc', name: 'USDC' },
-      { id: 'con_eth', name: 'ETH' }
-    ];
+    if (window.XianWalletUtils && window.XianWalletUtils.tokens) {
+      availableTokens = Object.values(window.XianWalletUtils.tokens).map(token => ({
+        id: token.address,
+        name: token.symbol
+      }));
+    } else {
+      // Fallback to placeholder data
+      availableTokens = [
+        { id: 'con_xian', name: 'XIAN' },
+        { id: 'con_usdc', name: 'USDC' },
+        { id: 'con_eth', name: 'ETH' },
+        { id: 'con_dai', name: 'DAI' }
+      ];
+    }
   } catch (err) {
     console.error('Failed to load tokens:', err);
     availableTokens = [];
@@ -392,11 +411,31 @@ function addStepToMacro() {
     return;
   }
   
-  // Add the step to the current macro
-  currentMacro.steps.push({
-    type: stepType,
-    params
-  });
+  // Check if we're editing an existing step
+  const addBtn = document.getElementById('addStepToMacroBtn');
+  const editIndex = addBtn.dataset.editIndex;
+  
+  if (editIndex !== undefined) {
+    // Update existing step
+    currentMacro.steps[editIndex] = {
+      type: stepType,
+      params
+    };
+    
+    // Reset the button
+    addBtn.textContent = 'Add Step';
+    delete addBtn.dataset.editIndex;
+    
+    showToast('Step updated successfully', 'success');
+  } else {
+    // Add new step
+    currentMacro.steps.push({
+      type: stepType,
+      params
+    });
+    
+    showToast('Step added successfully', 'success');
+  }
   
   // Render the updated steps
   renderMacroSteps();
@@ -413,15 +452,47 @@ function renderMacroSteps() {
   macroStepsContainer.innerHTML = '';
   
   if (currentMacro.steps.length === 0) {
-    macroStepsContainer.innerHTML = '<div class="text-sm text-gray-400 italic">No steps added yet</div>';
+    // Empty state is handled by CSS
     return;
   }
   
   currentMacro.steps.forEach((step, index) => {
     const stepEl = document.createElement('div');
-    stepEl.className = 'bg-white/5 rounded p-3 relative';
+    stepEl.className = 'macro-step-card relative';
     
     const stepConfig = MACRO_STEP_TYPES[step.type];
+    if (!stepConfig) {
+      console.error(`Unknown step type: ${step.type}`);
+      return;
+    }
+    
+    // Add step number badge
+    const stepNumberBadge = document.createElement('div');
+    stepNumberBadge.className = 'absolute -left-2 -top-2 bg-brand-base border border-white/10 rounded-full w-6 h-6 flex items-center justify-center text-xs font-bold';
+    stepNumberBadge.textContent = index + 1;
+    stepEl.appendChild(stepNumberBadge);
+    
+    // Choose icon based on step type
+    let iconSvg = '';
+    switch(step.type) {
+      case 'CLAIM_REWARDS':
+        iconSvg = '<path d="M10.75 6.75a.75.75 0 00-1.5 0v2.5h-2.5a.75.75 0 000 1.5h2.5v2.5a.75.75 0 001.5 0v-2.5h2.5a.75.75 0 000-1.5h-2.5v-2.5z" /><path fill-rule="evenodd" d="M8 1a.75.75 0 01.75.75V3a.75.75 0 01-1.5 0V1.75A.75.75 0 018 1zm0 14a.75.75 0 01.75.75v1.5a.75.75 0 01-1.5 0v-1.5A.75.75 0 018 15zM1.75 8a.75.75 0 01.75-.75h1.5a.75.75 0 010 1.5H2.5A.75.75 0 011.75 8zm14 0a.75.75 0 01.75-.75h1.5a.75.75 0 010 1.5h-1.5a.75.75 0 01-.75-.75z" clip-rule="evenodd" />';
+        break;
+      case 'SWAP':
+        iconSvg = '<path fill-rule="evenodd" d="M15.97 2.47a.75.75 0 011.06 0l1.5 1.5a.75.75 0 010 1.06l-1.5 1.5a.75.75 0 11-1.06-1.06l.219-.22H4.75a.75.75 0 010-1.5h11.439l-.22-.22a.75.75 0 010-1.06zm-15 8.5a.75.75 0 011.06 0l.22.22h11.44a.75.75 0 010 1.5H2.25l.22.22a.75.75 0 11-1.06 1.06l-1.5-1.5a.75.75 0 010-1.06l1.5-1.5a.75.75 0 011.06 0z" clip-rule="evenodd" />';
+        break;
+      case 'ADD_LIQUIDITY':
+        iconSvg = '<path d="M10.75 10.818v2.614A3.13 3.13 0 0011.888 13c.482-.315.612-.648.612-.875 0-.227-.13-.56-.612-.875a3.13 3.13 0 00-1.138-.432zM8.33 8.62c.053.055.115.11.184.164.208.16.46.284.736.363V6.603a2.45 2.45 0 00-.35.13c-.14.065-.27.143-.386.233-.377.292-.514.627-.514.909 0 .184.058.39.202.592.037.051.08.102.128.152z" /><path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-8-6a.75.75 0 01.75.75v.316a3.78 3.78 0 011.653.713c.426.33.744.74.925 1.2a.75.75 0 01-1.395.55 1.35 1.35 0 00-.447-.563 2.187 2.187 0 00-.736-.363V9.3c.698.093 1.383.32 1.959.696.787.514 1.29 1.27 1.29 2.13 0 .86-.504 1.616-1.29 2.13-.576.377-1.261.603-1.96.696v.299a.75.75 0 11-1.5 0v-.3c-.697-.092-1.382-.318-1.958-.695-.482-.315-.857-.717-1.078-1.188a.75.75 0 111.359-.636c.08.173.245.376.54.569.313.205.706.353 1.138.432v-2.748a3.782 3.782 0 01-1.653-.713C6.9 9.433 6.5 8.681 6.5 7.875c0-.805.4-1.558 1.097-2.096a3.78 3.78 0 011.653-.713V4.75A.75.75 0 0110 4z" clip-rule="evenodd" />';
+        break;
+      case 'REMOVE_LIQUIDITY':
+        iconSvg = '<path d="M10.75 10.818v2.614A3.13 3.13 0 0011.888 13c.482-.315.612-.648.612-.875 0-.227-.13-.56-.612-.875a3.13 3.13 0 00-1.138-.432zM8.33 8.62c.053.055.115.11.184.164.208.16.46.284.736.363V6.603a2.45 2.45 0 00-.35.13c-.14.065-.27.143-.386.233-.377.292-.514.627-.514.909 0 .184.058.39.202.592.037.051.08.102.128.152z" /><path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-8-6a.75.75 0 01.75.75v.316a3.78 3.78 0 011.653.713c.426.33.744.74.925 1.2a.75.75 0 01-1.395.55 1.35 1.35 0 00-.447-.563 2.187 2.187 0 00-.736-.363V9.3c.698.093 1.383.32 1.959.696.787.514 1.29 1.27 1.29 2.13 0 .86-.504 1.616-1.29 2.13-.576.377-1.261.603-1.96.696v.299a.75.75 0 11-1.5 0v-.3c-.697-.092-1.382-.318-1.958-.695-.482-.315-.857-.717-1.078-1.188a.75.75 0 111.359-.636c.08.173.245.376.54.569.313.205.706.353 1.138.432v-2.748a3.782 3.782 0 01-1.653-.713C6.9 9.433 6.5 8.681 6.5 7.875c0-.805.4-1.558 1.097-2.096a3.78 3.78 0 011.653-.713V4.75A.75.75 0 0110 4z" clip-rule="evenodd" />';
+        break;
+      case 'ADD_TO_FARM':
+        iconSvg = '<path d="M13.75 7h-3V3.66l1.95 2.1a.75.75 0 101.1-1.02l-3.25-3.5a.75.75 0 00-1.1 0L6.2 4.74a.75.75 0 001.1 1.02l1.95-2.1V7h-3A2.25 2.25 0 004 9.25v7.5A2.25 2.25 0 006.25 19h7.5A2.25 2.25 0 0016 16.75v-7.5A2.25 2.25 0 0013.75 7zm-3 0h-1.5v5.25a.75.75 0 001.5 0V7z" />';
+        break;
+      default:
+        iconSvg = '<path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-8.707l-3-3a1 1 0 00-1.414 0l-3 3a1 1 0 001.414 1.414L9 9.414V13a1 1 0 102 0V9.414l1.293 1.293a1 1 0 001.414-1.414z" clip-rule="evenodd" />';
+    }
     
     let paramsHtml = '';
     
@@ -448,34 +519,47 @@ function renderMacroSteps() {
       paramsHtml += `
         <div class="flex justify-between text-xs mb-1">
           <span class="text-gray-400">${paramConfig.name}:</span>
-          <span>${displayValue}</span>
+          <span class="font-medium">${displayValue || 'Not set'}</span>
         </div>
       `;
     });
     
-    stepEl.innerHTML = `
+    stepEl.innerHTML += `
       <div class="flex justify-between items-center mb-2">
-        <h3 class="font-medium">${index + 1}. ${stepConfig.name}</h3>
+        <h3 class="font-medium flex items-center">
+          <span class="text-brand-cyan mr-2">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+              ${iconSvg}
+            </svg>
+          </span>
+          ${stepConfig.name}
+        </h3>
         <div class="flex gap-1">
           <button class="move-step-up-btn p-1 text-xs rounded hover:bg-white/10 ${index === 0 ? 'opacity-50 cursor-not-allowed' : ''}" 
-                  data-index="${index}" ${index === 0 ? 'disabled' : ''}>
+                  data-index="${index}" ${index === 0 ? 'disabled' : ''} title="Move step up">
             <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
               <path fill-rule="evenodd" d="M5.293 9.707a1 1 0 010-1.414l4-4a1 1 0 011.414 0l4 4a1 1 0 01-1.414 1.414L11 7.414V15a1 1 0 11-2 0V7.414L6.707 9.707a1 1 0 01-1.414 0z" clip-rule="evenodd" />
             </svg>
           </button>
           <button class="move-step-down-btn p-1 text-xs rounded hover:bg-white/10 ${index === currentMacro.steps.length - 1 ? 'opacity-50 cursor-not-allowed' : ''}" 
-                  data-index="${index}" ${index === currentMacro.steps.length - 1 ? 'disabled' : ''}>
+                  data-index="${index}" ${index === currentMacro.steps.length - 1 ? 'disabled' : ''} title="Move step down">
             <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
               <path fill-rule="evenodd" d="M14.707 10.293a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 111.414-1.414L9 12.586V5a1 1 0 012 0v7.586l2.293-2.293a1 1 0 011.414 0z" clip-rule="evenodd" />
             </svg>
           </button>
-          <button class="delete-step-btn p-1 text-xs rounded hover:bg-white/10" data-index="${index}">
+          <button class="edit-step-btn p-1 text-xs rounded hover:bg-white/10" data-index="${index}" title="Edit step">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+              <path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z" />
+            </svg>
+          </button>
+          <button class="delete-step-btn p-1 text-xs rounded hover:bg-white/10" data-index="${index}" title="Delete step">
             <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
               <path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clip-rule="evenodd" />
             </svg>
           </button>
         </div>
       </div>
+      <div class="text-xs text-gray-400 mb-2">${stepConfig.description}</div>
       ${paramsHtml}
     `;
     
@@ -505,6 +589,13 @@ function renderMacroSteps() {
     btn.addEventListener('click', () => {
       const index = parseInt(btn.dataset.index);
       deleteStep(index);
+    });
+  });
+  
+  document.querySelectorAll('.edit-step-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const index = parseInt(btn.dataset.index);
+      editStep(index);
     });
   });
 }
@@ -541,6 +632,39 @@ function deleteStep(index) {
   
   renderMacroSteps();
   updateShareLink();
+}
+
+// Edit an existing step
+function editStep(index) {
+  if (index < 0 || index >= currentMacro.steps.length) return;
+  
+  const step = currentMacro.steps[index];
+  
+  // Show the add step modal
+  showAddStepModal();
+  
+  // Set the step type
+  const stepTypeSelect = document.getElementById('stepTypeSelect');
+  stepTypeSelect.value = step.type;
+  
+  // Trigger the change event to load parameters
+  const event = new Event('change');
+  stepTypeSelect.dispatchEvent(event);
+  
+  // Set the parameter values
+  setTimeout(() => {
+    Object.entries(step.params).forEach(([key, value]) => {
+      const input = document.getElementById(`param_${key}`);
+      if (input) {
+        input.value = value;
+      }
+    });
+    
+    // Change the add button to update
+    const addBtn = document.getElementById('addStepToMacroBtn');
+    addBtn.textContent = 'Update Step';
+    addBtn.dataset.editIndex = index;
+  }, 100);
 }
 
 // Save the current macro
@@ -1149,5 +1273,13 @@ document.addEventListener('DOMContentLoaded', () => {
 window.addEventListener('hashchange', () => {
   if (isMacrosHashLocal()) {
     initMacros();
+  }
+});
+
+// Reload options when wallet connects
+document.addEventListener('walletConnected', () => {
+  if (isMacrosHashLocal()) {
+    loadAvailableOptions();
+    showToast('Connected to wallet. Token data updated.', 'success');
   }
 });
