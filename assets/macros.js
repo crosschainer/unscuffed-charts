@@ -48,6 +48,18 @@ const MACRO_STEP_TYPES = {
   }
 };
 
+// Helper function to get liquidity for a pair
+async function getLiq(contract, pairId, address) {
+  try {
+    const response = await fetch(`https://api.snaklytics.com/pairs/${pairId}/liquidity/${address}`);
+    const data = await response.json();
+    return data.userLP || 0;
+  } catch (error) {
+    console.error('Error fetching liquidity:', error);
+    return 0;
+  }
+}
+
 // DOM Elements
 const macroNameInput = document.getElementById('macroName');
 const macroStepsContainer = document.getElementById('macroSteps');
@@ -188,66 +200,82 @@ function updateExecuteMacroSelect() {
 }
 
 // Load available options for selects (farms, pairs, tokens)
-function loadAvailableOptions() {
-  // Load farms from the wallet if available
+async function loadAvailableOptions() {
+  // Load farms from farms.txt
   try {
-    if (window.XianWalletUtils && window.XianWalletUtils.farms) {
-      availableFarms = Object.values(window.XianWalletUtils.farms).map(farm => ({
-        id: farm.address,
-        name: `${farm.pair.token0.symbol}-${farm.pair.token1.symbol} Farm`
-      }));
-    } else {
-      // Fallback to placeholder data
-      availableFarms = [
-        { id: '1', name: 'XIAN-USDC Farm' },
-        { id: '2', name: 'XIAN-ETH Farm' },
-        { id: '3', name: 'USDC-ETH Farm' }
-      ];
-    }
+    const farmsText = await fetch('farms.txt').then(r => r.text());
+    availableFarms = farmsText.trim().split('\n').map(line => {
+      const [pairIdx, title, reward, farm] = line.split(';');
+      return {
+        id: farm, // Use the actual farm contract
+        name: title,
+        pairIdx: pairIdx
+      };
+    });
   } catch (err) {
     console.error('Failed to load farms:', err);
     availableFarms = [];
   }
   
-  // Load pairs from the wallet if available
+  // Load pairs from the DEX contract
   try {
-    if (window.XianWalletUtils && window.XianWalletUtils.pairs) {
-      availablePairs = Object.values(window.XianWalletUtils.pairs).map(pair => ({
-        id: pair.address,
-        name: `${pair.token0.symbol}-${pair.token1.symbol}`
+    // Get pairs from the DEX contract
+    const pairs = await XianWalletUtils.getPairs();
+    if (pairs && pairs.length > 0) {
+      availablePairs = pairs.map((pair, index) => ({
+        id: index.toString(), // Pair ID is the index
+        name: `${pair.token0.symbol}-${pair.token1.symbol}`,
+        token0: pair.token0.contract,
+        token1: pair.token1.contract
       }));
     } else {
       // Fallback to placeholder data
       availablePairs = [
-        { id: '1', name: 'XIAN-USDC' },
-        { id: '2', name: 'XIAN-ETH' },
-        { id: '3', name: 'USDC-ETH' }
+        { id: '1', name: 'XIAN-USDC', token0: 'currency', token1: 'con_usdc' },
+        { id: '2', name: 'XIAN-ETH', token0: 'currency', token1: 'con_eth' }
       ];
     }
   } catch (err) {
     console.error('Failed to load pairs:', err);
-    availablePairs = [];
+    // Fallback to placeholder data
+    availablePairs = [
+      { id: '1', name: 'XIAN-USDC', token0: 'currency', token1: 'con_usdc' },
+      { id: '2', name: 'XIAN-ETH', token0: 'currency', token1: 'con_eth' }
+    ];
   }
   
-  // Load tokens from the wallet if available
+  // Load tokens
   try {
+    // Standard tokens in the system
+    availableTokens = [
+      { id: 'currency', name: 'XIAN' },
+      { id: 'con_usdc', name: 'USDC' },
+      { id: 'con_eth', name: 'ETH' },
+      { id: 'con_slither', name: 'SSS' }
+    ];
+    
+    // Add any additional tokens from the wallet if available
     if (window.XianWalletUtils && window.XianWalletUtils.tokens) {
-      availableTokens = Object.values(window.XianWalletUtils.tokens).map(token => ({
-        id: token.address,
-        name: token.symbol
-      }));
-    } else {
-      // Fallback to placeholder data
-      availableTokens = [
-        { id: 'con_xian', name: 'XIAN' },
-        { id: 'con_usdc', name: 'USDC' },
-        { id: 'con_eth', name: 'ETH' },
-        { id: 'con_dai', name: 'DAI' }
-      ];
+      const walletTokens = Object.values(window.XianWalletUtils.tokens)
+        .filter(token => 
+          // Filter out tokens we already have
+          !availableTokens.some(t => t.id === token.contract)
+        )
+        .map(token => ({
+          id: token.contract,
+          name: token.symbol
+        }));
+      
+      availableTokens = [...availableTokens, ...walletTokens];
     }
   } catch (err) {
     console.error('Failed to load tokens:', err);
-    availableTokens = [];
+    // Fallback to basic tokens
+    availableTokens = [
+      { id: 'currency', name: 'XIAN' },
+      { id: 'con_usdc', name: 'USDC' },
+      { id: 'con_eth', name: 'ETH' }
+    ];
   }
 }
 
@@ -965,14 +993,16 @@ async function claimRewards(params) {
   const { farmId } = params;
   
   try {
-    // Get farm contract from the farm ID
-    const farmContract = `con_farm_${farmId}`;
+    // The farmId is already the contract name from our farms.txt
+    const farmContract = farmId;
     
-    // Call the claim_rewards method on the farm contract
+    // Call the withdrawRewards method on the farm contract (from farms.js)
     const result = await XianWalletUtils.sendTransaction(
       farmContract,
-      'claim_rewards',
-      {}
+      'withdrawRewards',
+      {
+        amount: 0 // Withdraw all rewards
+      }
     );
     
     console.log('Claim rewards result:', result);
@@ -1003,21 +1033,53 @@ async function swapTokens(params) {
       actualAmount = amount;
     }
     
-    // Get the DEX contract
-    const dexContract = 'con_dex_01';
+    // Get the DEX contract - use the correct one from the repo
+    const dexContract = 'con_dex_v2';
+    
+    // First approve the DEX to use our tokens
+    await XianWalletUtils.sendTransaction(
+      fromToken,
+      'approve',
+      { to: dexContract, amount: actualAmount }
+    );
     
     // Calculate minimum amount out based on slippage
-    // In a real implementation, you would get the current price and calculate this
     const slippageMultiplier = (100 - parseFloat(slippage)) / 100;
+    
+    // Find the pair that contains both tokens
+    const pair = availablePairs.find(p => 
+      (p.token0 === fromToken && p.token1 === toToken) || 
+      (p.token0 === toToken && p.token1 === fromToken)
+    );
+    
+    if (!pair) {
+      throw new Error(`No trading pair found for ${fromToken} and ${toToken}`);
+    }
+    
+    // Deadline – 5 minutes from now
+    const now = new Date();
+    const deadline = new Date(now.getTime() + 5 * 60 * 1000);
+    const datetimeArg = {
+      '__time__': [
+        deadline.getUTCFullYear(),
+        deadline.getUTCMonth() + 1,
+        deadline.getUTCDate(),
+        deadline.getUTCHours(),
+        deadline.getUTCMinutes()
+      ]
+    };
     
     // Call the swap method on the DEX contract
     const result = await XianWalletUtils.sendTransaction(
       dexContract,
-      'swap',
+      'swapExactTokenForTokenSupportingFeeOnTransferTokens',
       {
-        token_contract: fromToken,
-        to_token: toToken,
-        amount: actualAmount
+        amountIn: actualAmount,
+        amountOutMin: 0, // We're accepting any output amount for simplicity
+        pair: parseInt(pair.id),
+        src: fromToken,
+        to: XianWalletUtils.getAddress(), // Current user's address
+        deadline: datetimeArg
       }
     );
     
@@ -1040,14 +1102,9 @@ async function addLiquidity(params) {
       throw new Error(`Pair with ID ${pairId} not found`);
     }
     
-    // Parse token contracts from pair name (this is a simplification)
-    const [token0Symbol, token1Symbol] = pair.name.split('-');
-    const token0 = availableTokens.find(t => t.name === token0Symbol)?.id;
-    const token1 = availableTokens.find(t => t.name === token1Symbol)?.id;
-    
-    if (!token0 || !token1) {
-      throw new Error(`Could not determine token contracts for pair ${pair.name}`);
-    }
+    // Get token contracts directly from the pair
+    const token0 = pair.token0;
+    const token1 = pair.token1;
     
     // Determine if amount0 is a percentage
     let actualAmount0;
@@ -1077,18 +1134,49 @@ async function addLiquidity(params) {
       actualAmount1 = Math.floor(parseFloat(balance) * percentage).toString();
     }
     
-    // Get the DEX contract
-    const dexContract = 'con_dex_01';
+    // Get the DEX contract - use the correct one from the repo
+    const dexContract = 'con_dex_v2';
     
-    // Call the add_liquidity method on the DEX contract
+    // Deadline – 5 minutes from now
+    const now = new Date();
+    const deadline = new Date(now.getTime() + 5 * 60 * 1000);
+    const datetimeArg = {
+      '__time__': [
+        deadline.getUTCFullYear(),
+        deadline.getUTCMonth() + 1,
+        deadline.getUTCDate(),
+        deadline.getUTCHours(),
+        deadline.getUTCMinutes()
+      ]
+    };
+    
+    // First approve tokenA
+    await XianWalletUtils.sendTransaction(
+      token0,
+      'approve',
+      { to: dexContract, amount: actualAmount0 }
+    );
+    
+    // Then approve tokenB
+    await XianWalletUtils.sendTransaction(
+      token1,
+      'approve',
+      { to: dexContract, amount: actualAmount1 }
+    );
+    
+    // Call the addLiquidity method on the DEX contract
     const result = await XianWalletUtils.sendTransaction(
       dexContract,
-      'add_liquidity',
+      'addLiquidity',
       {
-        token_a: token0,
-        token_b: token1,
-        amount_a: actualAmount0,
-        amount_b: actualAmount1 || '0' // If not provided, contract will calculate
+        tokenA: token0,
+        tokenB: token1,
+        amountADesired: actualAmount0,
+        amountBDesired: actualAmount1,
+        amountAMin: 0, // Accept any amount for simplicity
+        amountBMin: 0, // Accept any amount for simplicity
+        to: XianWalletUtils.getAddress(), // Current user's address
+        deadline: datetimeArg
       }
     );
     
@@ -1111,36 +1199,63 @@ async function removeLiquidity(params) {
       throw new Error(`Pair with ID ${pairId} not found`);
     }
     
-    // Parse token contracts from pair name (this is a simplification)
-    const [token0Symbol, token1Symbol] = pair.name.split('-');
-    const token0 = availableTokens.find(t => t.name === token0Symbol)?.id;
-    const token1 = availableTokens.find(t => t.name === token1Symbol)?.id;
-    
-    if (!token0 || !token1) {
-      throw new Error(`Could not determine token contracts for pair ${pair.name}`);
-    }
+    // Get token contracts directly from the pair
+    const token0 = pair.token0;
+    const token1 = pair.token1;
     
     // Get the DEX contract
-    const dexContract = 'con_dex_01';
+    const dexContract = 'con_dex_v2';
     
-    // Get LP token contract
-    const lpTokenContract = `con_lp_${token0}_${token1}`;
-    
-    // Get LP token balance
-    const lpBalance = await XianWalletUtils.getBalance(lpTokenContract);
+    // Get LP token balance from the pair
+    const lpBalance = await getLiq("con_pairs", parseInt(pairId), XianWalletUtils.getAddress());
     
     // Calculate amount to remove based on percentage
     const percentageValue = parseFloat(percentage) / 100;
-    const amountToRemove = Math.floor(parseFloat(lpBalance) * percentageValue).toString();
+    const liquidityToRemove = Math.floor(parseFloat(lpBalance) * percentageValue).toString();
     
-    // Call the remove_liquidity method on the DEX contract
+    // Deadline – 5 minutes from now
+    const now = new Date();
+    const deadline = new Date(now.getTime() + 5 * 60 * 1000);
+    const datetimeArg = {
+      '__time__': [
+        deadline.getUTCFullYear(),
+        deadline.getUTCMonth() + 1,
+        deadline.getUTCDate(),
+        deadline.getUTCHours(),
+        deadline.getUTCMinutes()
+      ]
+    };
+    
+    // The smart contract sorts tokens: if(tokenB < tokenA): tokenA, tokenB = tokenB, tokenA
+    // We need to use the same order as in addLiquidity
+    let tokenA, tokenB;
+    if (token1 < token0) {
+      tokenA = token1;
+      tokenB = token0;
+    } else {
+      tokenA = token0;
+      tokenB = token1;
+    }
+    
+    // First approve
+    await XianWalletUtils.sendTransaction(
+      'con_pairs',
+      'liqApprove',
+      { to: dexContract, amount: liquidityToRemove, pair: parseInt(pairId) }
+    );
+    
+    // Call the removeLiquidity method on the DEX contract
     const result = await XianWalletUtils.sendTransaction(
       dexContract,
-      'remove_liquidity',
+      'removeLiquidity',
       {
-        token_a: token0,
-        token_b: token1,
-        amount: amountToRemove
+        tokenA: tokenA,
+        tokenB: tokenB,
+        liquidity: liquidityToRemove,
+        amountAMin: 0, // Accept any amount for simplicity
+        amountBMin: 0, // Accept any amount for simplicity
+        to: XianWalletUtils.getAddress(), // Current user's address
+        deadline: datetimeArg
       }
     );
     
@@ -1157,8 +1272,8 @@ async function addToFarm(params) {
   const { farmId, amount } = params;
   
   try {
-    // Get farm contract from the farm ID
-    const farmContract = `con_farm_${farmId}`;
+    // The farmId is already the contract name from our farms.txt
+    const farmContract = farmId;
     
     // Get farm info to determine LP token
     const farm = availableFarms.find(f => f.id === farmId);
@@ -1166,17 +1281,8 @@ async function addToFarm(params) {
       throw new Error(`Farm with ID ${farmId} not found`);
     }
     
-    // Parse token contracts from farm name (this is a simplification)
-    const [token0Symbol, token1Symbol] = farm.name.split('-');
-    const token0 = availableTokens.find(t => t.name === token0Symbol)?.id;
-    const token1 = availableTokens.find(t => t.name === token1Symbol)?.id;
-    
-    if (!token0 || !token1) {
-      throw new Error(`Could not determine token contracts for farm ${farm.name}`);
-    }
-    
-    // Get LP token contract
-    const lpTokenContract = `con_lp_${token0}_${token1}`;
+    // Get the pair ID from the farm
+    const pairId = farm.pairIdx;
     
     // Determine if amount is a percentage
     let actualAmount;
@@ -1184,8 +1290,8 @@ async function addToFarm(params) {
       // Get percentage value
       const percentage = parseFloat(amount) / 100;
       
-      // Get balance of LP token
-      const balance = await XianWalletUtils.getBalance(lpTokenContract);
+      // Get balance of LP token for this pair
+      const balance = await getLiq("con_pairs", parseInt(pairId), XianWalletUtils.getAddress());
       
       // Calculate amount based on percentage
       actualAmount = Math.floor(parseFloat(balance) * percentage).toString();
@@ -1193,10 +1299,21 @@ async function addToFarm(params) {
       actualAmount = amount;
     }
     
-    // Call the stake method on the farm contract
+    // First approve the farm to use our LP tokens
+    await XianWalletUtils.sendTransaction(
+      "con_pairs",
+      'liqApprove',
+      {
+        pair: parseInt(pairId),
+        amount: actualAmount,
+        to: farmContract
+      }
+    );
+    
+    // Call the deposit method on the farm contract (from farms.js)
     const result = await XianWalletUtils.sendTransaction(
       farmContract,
-      'stake',
+      'deposit',
       {
         amount: actualAmount
       }
