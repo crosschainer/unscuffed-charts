@@ -45,6 +45,37 @@ const MACRO_STEP_TYPES = {
       { id: 'farmId', name: 'Farm ID', type: 'select', options: 'farms' },
       { id: 'amount', name: 'Amount', type: 'text', placeholder: 'Amount or % (e.g. 100%)' }
     ]
+  },
+  REMOVE_FROM_FARM: {
+    name: 'Remove from Farm',
+    description: 'Unstake LP tokens from a farm',
+    params: [
+      { id: 'farmId', name: 'Farm ID', type: 'select', options: 'farms' },
+      { id: 'amount', name: 'Amount', type: 'text', placeholder: 'Amount or % (e.g. 100%)' }
+    ]
+  },
+  STAKE: {
+    name: 'Stake Tokens',
+    description: 'Stake tokens in a staking contract',
+    params: [
+      { id: 'stakingContract', name: 'Staking Contract', type: 'select', options: 'tokens' },
+      { id: 'amount', name: 'Amount', type: 'text', placeholder: 'Amount or % (e.g. 100%)' }
+    ]
+  },
+  UNSTAKE: {
+    name: 'Unstake Tokens',
+    description: 'Unstake tokens from a staking contract',
+    params: [
+      { id: 'stakingContract', name: 'Staking Contract', type: 'select', options: 'tokens' },
+      { id: 'amount', name: 'Amount', type: 'text', placeholder: 'Amount or % (e.g. 100%)' }
+    ]
+  },
+  CLAIM_STAKING_REWARDS: {
+    name: 'Claim Staking Rewards',
+    description: 'Claim rewards from a staking contract',
+    params: [
+      { id: 'stakingContract', name: 'Staking Contract', type: 'select', options: 'tokens' }
+    ]
   }
 };
 
@@ -983,6 +1014,14 @@ async function executeStep(step) {
       return await removeLiquidity(step.params);
     case 'ADD_TO_FARM':
       return await addToFarm(step.params);
+    case 'REMOVE_FROM_FARM':
+      return await removeFromFarm(step.params);
+    case 'STAKE':
+      return await stakeTokens(step.params);
+    case 'UNSTAKE':
+      return await unstakeTokens(step.params);
+    case 'CLAIM_STAKING_REWARDS':
+      return await claimStakingRewards(step.params);
     default:
       throw new Error(`Unknown step type: ${step.type}`);
   }
@@ -1324,6 +1363,191 @@ async function addToFarm(params) {
   } catch (err) {
     console.error('Failed to add to farm:', err);
     throw new Error(`Failed to add to farm: ${err.message || 'Unknown error'}`);
+  }
+}
+
+// Remove LP tokens from a farm
+async function removeFromFarm(params) {
+  const { farmId, amount } = params;
+  
+  try {
+    // The farmId is already the contract name from our farms.txt
+    const farmContract = farmId;
+    
+    // Get farm info to determine LP token
+    const farm = availableFarms.find(f => f.id === farmId);
+    if (!farm) {
+      throw new Error(`Farm with ID ${farmId} not found`);
+    }
+    
+    // Determine if amount is a percentage
+    let actualAmount;
+    if (amount.endsWith('%')) {
+      // Get percentage value
+      const percentage = parseFloat(amount) / 100;
+      
+      // Get staked balance in the farm
+      const stakedBalance = await XianWalletUtils.sendTransaction(
+        farmContract,
+        'getUserStaked',
+        {
+          address: XianWalletUtils.getAddress()
+        }
+      );
+      
+      // Calculate amount based on percentage
+      actualAmount = Math.floor(parseFloat(stakedBalance) * percentage).toString();
+    } else {
+      actualAmount = amount;
+    }
+    
+    // Call the withdraw method on the farm contract
+    const result = await XianWalletUtils.sendTransaction(
+      farmContract,
+      'withdraw',
+      {
+        amount: actualAmount
+      }
+    );
+    
+    console.log('Remove from farm result:', result);
+    return result;
+  } catch (err) {
+    console.error('Failed to remove from farm:', err);
+    throw new Error(`Failed to remove from farm: ${err.message || 'Unknown error'}`);
+  }
+}
+
+// Stake tokens in a staking contract
+async function stakeTokens(params) {
+  const { stakingContract, amount } = params;
+  
+  try {
+    // Get token info
+    const token = availableTokens.find(t => t.id === stakingContract);
+    if (!token) {
+      throw new Error(`Token with ID ${stakingContract} not found`);
+    }
+    
+    // Determine if amount is a percentage
+    let actualAmount;
+    if (amount.endsWith('%')) {
+      // Get percentage value
+      const percentage = parseFloat(amount) / 100;
+      
+      // Get balance of token
+      const balance = await XianWalletUtils.getBalance(token.id);
+      
+      // Calculate amount based on percentage
+      actualAmount = Math.floor(parseFloat(balance) * percentage).toString();
+    } else {
+      actualAmount = amount;
+    }
+    
+    // First approve the staking contract to use our tokens
+    await XianWalletUtils.sendTransaction(
+      token.id,
+      'approve',
+      {
+        amount: actualAmount,
+        to: 'con_staking'
+      }
+    );
+    
+    // Call the stake method on the staking contract
+    const result = await XianWalletUtils.sendTransaction(
+      'con_staking',
+      'stake',
+      {
+        token: token.id,
+        amount: actualAmount
+      }
+    );
+    
+    console.log('Stake tokens result:', result);
+    return result;
+  } catch (err) {
+    console.error('Failed to stake tokens:', err);
+    throw new Error(`Failed to stake tokens: ${err.message || 'Unknown error'}`);
+  }
+}
+
+// Unstake tokens from a staking contract
+async function unstakeTokens(params) {
+  const { stakingContract, amount } = params;
+  
+  try {
+    // Get token info
+    const token = availableTokens.find(t => t.id === stakingContract);
+    if (!token) {
+      throw new Error(`Token with ID ${stakingContract} not found`);
+    }
+    
+    // Determine if amount is a percentage
+    let actualAmount;
+    if (amount.endsWith('%')) {
+      // Get percentage value
+      const percentage = parseFloat(amount) / 100;
+      
+      // Get staked balance
+      const stakedBalance = await XianWalletUtils.sendTransaction(
+        'con_staking',
+        'getUserStaked',
+        {
+          token: token.id,
+          address: XianWalletUtils.getAddress()
+        }
+      );
+      
+      // Calculate amount based on percentage
+      actualAmount = Math.floor(parseFloat(stakedBalance) * percentage).toString();
+    } else {
+      actualAmount = amount;
+    }
+    
+    // Call the unstake method on the staking contract
+    const result = await XianWalletUtils.sendTransaction(
+      'con_staking',
+      'unstake',
+      {
+        token: token.id,
+        amount: actualAmount
+      }
+    );
+    
+    console.log('Unstake tokens result:', result);
+    return result;
+  } catch (err) {
+    console.error('Failed to unstake tokens:', err);
+    throw new Error(`Failed to unstake tokens: ${err.message || 'Unknown error'}`);
+  }
+}
+
+// Claim rewards from a staking contract
+async function claimStakingRewards(params) {
+  const { stakingContract } = params;
+  
+  try {
+    // Get token info
+    const token = availableTokens.find(t => t.id === stakingContract);
+    if (!token) {
+      throw new Error(`Token with ID ${stakingContract} not found`);
+    }
+    
+    // Call the claimRewards method on the staking contract
+    const result = await XianWalletUtils.sendTransaction(
+      'con_staking',
+      'claimRewards',
+      {
+        token: token.id
+      }
+    );
+    
+    console.log('Claim staking rewards result:', result);
+    return result;
+  } catch (err) {
+    console.error('Failed to claim staking rewards:', err);
+    throw new Error(`Failed to claim staking rewards: ${err.message || 'Unknown error'}`);
   }
 }
 
