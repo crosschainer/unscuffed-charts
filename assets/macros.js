@@ -1133,16 +1133,21 @@ function showToast(message, type = 'info') {
   }, 3000);
 }
 
+// Check if the current hash is #macros
+function isMacrosHashLocal() {
+  return location.hash === '#macros';
+}
+
 // Initialize when the DOM is loaded
 document.addEventListener('DOMContentLoaded', () => {
-  if (isMacrosHash()) {
+  if (isMacrosHashLocal()) {
     initMacros();
   }
 });
 
 // Initialize when the hash changes to #macros
 window.addEventListener('hashchange', () => {
-  if (isMacrosHash()) {
+  if (isMacrosHashLocal()) {
     initMacros();
   }
 });
