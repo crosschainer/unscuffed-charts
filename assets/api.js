@@ -2,19 +2,21 @@
    ------------------------------------------------------------------*/
 
 import { fetchJSON } from './utils.js';
+import { API_CONFIG, CACHE_CONFIG } from './constants.js';
+
 export { fetchJSON };                            // re‑export for convenience
 export { throttledFetchJSON } from './utils.js';
 
-export const API_BASE = 'https://api.snaklytics.com';
-export const WS_BASE  = API_BASE.replace(/^http/, 'ws');  // wss://api.snaklytics.com
+export const API_BASE = API_CONFIG.BASE_URL;
+export const WS_BASE = API_CONFIG.WS_BASE;
 
 /* ──────────────────────────  Persistent TOKEN_CACHE  ────────────────── */
 // _fetchedAt is an epoch‑ms timestamp living on every cached entry
 // other fields (symbol, name …) are the meta itself.
 export const TOKEN_CACHE = /** @type {Record<string, any>} */ ({});
 
-const LS_KEY       = 'xian_token_meta';     // localStorage bucket
-const CACHE_VER    = 2;                     // bump if structure changes
+const LS_KEY       = CACHE_CONFIG.LOCAL_STORAGE_KEY;
+const CACHE_VER    = CACHE_CONFIG.VERSION;
 
 // Field‑specific TTLs (ms)
 const TTL_STATIC   = 30 * 24 * 60 * 60 * 1e3;   // symbol, name … ≈ 30 days

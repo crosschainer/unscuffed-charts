@@ -1,4 +1,7 @@
 /* DOM references & skeletons ---------------------------------------------*/
+
+import { UI_CONFIG, ASSETS } from './constants.js';
+import { createSkeleton } from './dom-utils.js';
 export const els = {
   // Sidebar elements
   pairsScroller: document.getElementById('pairsScroller'),
@@ -31,7 +34,7 @@ export const els = {
   volumeM: document.getElementById('volumeM'),
 };
 
-export function showSidebarSkeleton(count = 22) {
+export function showSidebarSkeleton(count = UI_CONFIG.SIDEBAR_SKELETON_COUNT) {
   els.rowHost.innerHTML = '';
   
   for (let i = 0; i < count; i++) {
@@ -40,8 +43,8 @@ export function showSidebarSkeleton(count = 22) {
     btn.innerHTML = `
       <div class="flex items-center justify-between w-full">
         <span class="flex items-center gap-2">
-          <img src="./assets/ph.png" width="20" height="20" 
-               onerror="this.onerror=null;this.src='./assets/ph.png';" 
+          <img src="${ASSETS.PLACEHOLDER_IMAGE}" width="20" height="20" 
+               onerror="this.onerror=null;this.src='${ASSETS.PLACEHOLDER_IMAGE}';" 
                alt="Loading...">
           <span class="bg-gray-700 rounded animate-pulse inline-block w-24 h-4"></span>
         </span>
@@ -58,44 +61,41 @@ export function showSidebarSkeleton(count = 22) {
 }
 
 export function showMainSkeleton() {
-  const pulse = '<span class="bg-gray-700 rounded animate-pulse inline-block';
-  
   // Main stats
-  els.price.innerHTML = `${pulse} w-12 h-4 transform translate-y-1"></span>`;
-  els.delta.innerHTML = `${pulse} w-12 h-4 transform translate-y-1"></span>`;
-  els.liquidity.innerHTML = `${pulse} w-24 h-4 transform translate-y-1"></span>`;
-  els.volume.innerHTML = `${pulse} w-24 h-4 transform translate-y-1"></span>`;
-  els.pairName.innerHTML = `${pulse} w-24 h-6 transform translate-y-1"></span>`;
+  els.price.innerHTML = createSkeleton('w-12', 'h-4');
+  els.delta.innerHTML = createSkeleton('w-12', 'h-4');
+  els.liquidity.innerHTML = createSkeleton('w-24', 'h-4');
+  els.volume.innerHTML = createSkeleton('w-24', 'h-4');
+  els.pairName.innerHTML = createSkeleton('w-24', 'h-6');
   
   // Mobile stats
-  els.priceM.innerHTML = `${pulse} w-12 h-4 transform translate-y-1"></span>`;
-  els.deltaM.innerHTML = `${pulse} w-12 h-4 transform translate-y-1"></span>`;
-  els.liquidityM.innerHTML = `${pulse} w-24 h-4 transform translate-y-1"></span>`;
-  els.volumeM.innerHTML = `${pulse} w-24 h-4 transform translate-y-1"></span>`;
+  els.priceM.innerHTML = createSkeleton('w-12', 'h-4');
+  els.deltaM.innerHTML = createSkeleton('w-12', 'h-4');
+  els.liquidityM.innerHTML = createSkeleton('w-24', 'h-4');
+  els.volumeM.innerHTML = createSkeleton('w-24', 'h-4');
   
   // Logo and chart
-  els.pairLogo.src = './assets/ph.png';
+  els.pairLogo.src = ASSETS.PLACEHOLDER_IMAGE;
   els.chartWrap.innerHTML = '<div class="w-full h-full bg-gray-700 rounded animate-pulse"></div>';
 
   // Trades list skeleton
   els.tradesList.innerHTML = '';
-  Array.from({ length: 5 }).forEach(() => {
+  Array.from({ length: UI_CONFIG.TRADES_SKELETON_COUNT }).forEach(() => {
     const tr = document.createElement('tr');
     tr.className = 'odd:bg-white/5';
     tr.innerHTML = `
-      <td class="px-4 py-2">${pulse} w-10 h-4"></span></td>
-      <td class="px-4 py-2">${pulse} w-16 h-4"></span></td>
-      <td class="px-4 py-2">${pulse} w-14 h-4"></span></td>
-      <td class="px-4 py-2">${pulse} w-12 h-4"></span></td>`;
+      <td class="px-4 py-2">${createSkeleton('w-10', 'h-4')}</td>
+      <td class="px-4 py-2">${createSkeleton('w-16', 'h-4')}</td>
+      <td class="px-4 py-2">${createSkeleton('w-14', 'h-4')}</td>
+      <td class="px-4 py-2">${createSkeleton('w-12', 'h-4')}</td>`;
     els.tradesList.appendChild(tr);
   });
 
   // Token info skeleton
-  const blockPulse = '<span class="bg-gray-700 rounded animate-pulse block ';
-  els.infoTokenName.innerHTML = `${blockPulse} w-12 h-4"></span>`;
-  els.infoTokenSymbol.innerHTML = `${blockPulse} w-12 h-4"></span>`;
-  els.infoTokenSupply.innerHTML = `${blockPulse} w-24 h-4"></span>`;
-  els.infoTokenOperator.innerHTML = `${blockPulse} w-24 h-4"></span>`;
-  els.infoTokenExplorer.innerHTML = `${blockPulse} w-24 h-4"></span>`;
-  els.infoTokenMarketCap.innerHTML = `${blockPulse} w-24 h-4"></span>`;
+  els.infoTokenName.innerHTML = createSkeleton('w-12', 'h-4', true);
+  els.infoTokenSymbol.innerHTML = createSkeleton('w-12', 'h-4', true);
+  els.infoTokenSupply.innerHTML = createSkeleton('w-24', 'h-4', true);
+  els.infoTokenOperator.innerHTML = createSkeleton('w-24', 'h-4', true);
+  els.infoTokenExplorer.innerHTML = createSkeleton('w-24', 'h-4', true);
+  els.infoTokenMarketCap.innerHTML = createSkeleton('w-24', 'h-4', true);
 }

@@ -13,9 +13,7 @@ import {
   isScrolling,
   setIsScrolling,
   scrollTimeout,
-  setScrollTimeout,
-  CURRENCY_UPDATE_INTERVAL,
-  ivMs
+  setScrollTimeout
 } from './state.js';
 import { 
   setCurrentPairsWs, 
@@ -33,6 +31,10 @@ import {
 } from './sidebar.js';
 import { selectPair } from './pair-page.js';
 import { blinkLive, tickUpdated } from './ui-updates.js';
+import { INTERVALS, DEFAULTS } from './constants.js';
+import { viewManager } from './view-manager.js';
+import { handleError, createNetworkError, createWebSocketError } from './error-handler.js';
+import { debounce, addEventListener } from './dom-utils.js';
 
 /* --------------------------- Start-up -----------------------------------*/
 document.addEventListener('DOMContentLoaded', init);
@@ -51,11 +53,11 @@ async function updateCurrencyPrice() {
     const { priceNow } = await api.getCurrencyPrice();
     if (priceNow != null) setCurrencyUsdPrice(priceNow);
   } catch (err) {
-    console.warn('Failed to refresh XIAN→USD rate', err);
+    handleError(createNetworkError('Failed to refresh XIAN→USD rate', err), 'updateCurrencyPrice');
   }
 }
 
-function handleScroll() {
+const handleScroll = debounce(() => {
   setIsScrolling(true);
   
   // Clear existing timeout
@@ -67,8 +69,8 @@ function handleScroll() {
   setScrollTimeout(setTimeout(() => {
     setIsScrolling(false);
     updateVisibleRows();
-  }, 50)); // Increased delay to prevent conflicts
-}
+  }, INTERVALS.SCROLL_DEBOUNCE));
+}, INTERVALS.SCROLL_DEBOUNCE);
 
 function handleResize() {
   if (!isScrolling) {
@@ -76,65 +78,10 @@ function handleResize() {
   }
 }
 
-// Function to show the farms placeholder
-function showFarmsPlaceholder() {
-  // Hide the trade container
-  document.getElementById('loadingView').style.display = 'none';
-  document.getElementById('tradeView').style.display = 'none';
-  document.getElementById('farmsView').style.display = 'flex';
-  document.getElementById('stakingView').style.display = 'none';
-  if(!document.getElementById('mobilePairHeader').classList.contains('hidden')) {
-    document.getElementById('mobilePairHeader').classList.add('hidden');
-  }
-  
-  // Update navigation highlighting
-  document.querySelector('a[href="/#pair=1"]').classList.remove('text-brand-cyan', 'border-brand-cyan');
-  document.querySelector('a[href="/#pair=1"]').classList.add('text-gray-300', 'border-transparent');
-  document.querySelector('a[href="/#farms"]').classList.remove('text-gray-300', 'border-transparent');
-  document.querySelector('a[href="/#farms"]').classList.add('text-brand-cyan', 'border-brand-cyan');
-  document.querySelector('a[href="/#staking"]').classList.remove('text-brand-cyan', 'border-brand-cyan');
-  document.querySelector('a[href="/#staking"]').classList.add('text-gray-300', 'border-transparent');
-}
-
-// Function to show the staking placeholder
-function showStakingPlaceholder() {
-  // Hide the trade container
-  document.getElementById('loadingView').style.display = 'none';
-  document.getElementById('tradeView').style.display = 'none';
-  document.getElementById('farmsView').style.display = 'none';
-  document.getElementById('stakingView').style.display = 'flex';
-  if(!document.getElementById('mobilePairHeader').classList.contains('hidden')) {
-    document.getElementById('mobilePairHeader').classList.add('hidden');
-  }
-  
-  // Update navigation highlighting
-  document.querySelector('a[href="/#pair=1"]').classList.remove('text-brand-cyan', 'border-brand-cyan');
-  document.querySelector('a[href="/#pair=1"]').classList.add('text-gray-300', 'border-transparent');
-  document.querySelector('a[href="/#farms"]').classList.remove('text-brand-cyan', 'border-brand-cyan');
-  document.querySelector('a[href="/#farms"]').classList.add('text-gray-300', 'border-transparent');
-  document.querySelector('a[href="/#staking"]').classList.remove('text-gray-300', 'border-transparent');
-  document.querySelector('a[href="/#staking"]').classList.add('text-brand-cyan', 'border-brand-cyan');
-}
-
-// Function to show the pairs view
-function showPairsView() {
-  // Show the trade container
-  document.getElementById('loadingView').style.display = 'none';
-  document.getElementById('tradeView').style.display = 'flex';
-  document.getElementById('farmsView').style.display = 'none';
-  document.getElementById('stakingView').style.display = 'none';
-  if(document.getElementById('mobilePairHeader').classList.contains('hidden')) {
-    document.getElementById('mobilePairHeader').classList.remove('hidden');
-  }
-  
-  // Update navigation highlighting
-  document.querySelector('a[href="/#pair=1"]').classList.add('text-brand-cyan', 'border-brand-cyan');
-  document.querySelector('a[href="/#pair=1"]').classList.remove('text-gray-300', 'border-transparent');
-  document.querySelector('a[href="/#farms"]').classList.add('text-gray-300', 'border-transparent');
-  document.querySelector('a[href="/#farms"]').classList.remove('text-brand-cyan', 'border-brand-cyan');
-  document.querySelector('a[href="/#staking"]').classList.add('text-gray-300', 'border-transparent');
-  document.querySelector('a[href="/#staking"]').classList.remove('text-brand-cyan', 'border-brand-cyan');
-}
+// View management functions - now using centralized view manager
+const showFarmsPlaceholder = () => viewManager.showFarms();
+const showStakingPlaceholder = () => viewManager.showStaking();
+const showPairsView = () => viewManager.showTrade();
 
 // Function to handle hash changes
 function handleHashChange() {
@@ -168,14 +115,14 @@ async function init() {
   try {
     setCurrencyUsdPrice((await api.getCurrencyPrice()).priceNow);
   } catch (err) {
-    console.warn('Failed to get initial XIAN→USD rate', err);
+    handleError(createNetworkError('Failed to get initial XIAN→USD rate', err), 'init');
     setCurrencyUsdPrice(0);
   }
 
   // Start polling for currency price updates
-  setInterval(updateCurrencyPrice, CURRENCY_UPDATE_INTERVAL);
+  setInterval(updateCurrencyPrice, INTERVALS.CURRENCY_UPDATE);
 
-  const rawPairs = (await api.getPairs({ limit: 1031 })).pairs; // already sorted DESC
+  const rawPairs = (await api.getPairs({ limit: DEFAULTS.PAIR_LIMIT })).pairs; // already sorted DESC
   setAllPairs(normalisePairs(rawPairs));
 
   setHasRealData(true);
@@ -218,7 +165,7 @@ async function init() {
         updateVisibleRows();
       }
     },
-    onError: err => console.error('Pairs WS error', err),
+    onError: err => handleError(createWebSocketError('Pairs WebSocket error', err), 'pairsWebSocket'),
     onOpen: () => console.log('Pairs WS connected'),
   };
   
@@ -231,7 +178,7 @@ async function init() {
   handleHashChange();
 
   tickUpdated(); // initial time stamp
-  setInterval(tickUpdated, 1_000);     // every second
+  setInterval(tickUpdated, INTERVALS.UI_UPDATE);     // every second
 }
 
 // Export selectPair for global access
@@ -251,7 +198,7 @@ window.fetchTokenMetadata = async function(tokenContract) {
 setInterval(() => {
   const last = chart.getLastBar();
   if (!last) return;
-  const slot = Math.floor(Date.now() / ivMs) * ivMs;
+  const slot = Math.floor(Date.now() / INTERVALS.CANDLE_INTERVAL) * INTERVALS.CANDLE_INTERVAL;
   if (slot > last.time * 1000) {
     chart.upsertLastCandle({
       t: slot,
@@ -262,7 +209,7 @@ setInterval(() => {
       volume: 0
     });
   }
-}, 60 * 1000);
+}, INTERVALS.EMPTY_CANDLE_ADVANCE);
 
 // Timeframe button handlers
 document.querySelectorAll('#tfToolbar .tf-btn').forEach(btn => {
