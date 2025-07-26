@@ -1,10 +1,16 @@
 /* Global State Management ------------------------------------------------*/
 
+import { UI_CONFIG, INTERVALS } from './constants.js';
+
 // Global state
 export let currencyUsdPrice = 0;
 export const liveRows = [];
-export const ROW_HEIGHT = 62; // px – real height of 1 sidebar row
-export const ivMs = 5 * 60 * 1000; // 5 minutes in ms – interval for candles
+
+// Re-export constants for backward compatibility
+export const ROW_HEIGHT = UI_CONFIG.ROW_HEIGHT;
+export const ivMs = INTERVALS.CANDLE_INTERVAL;
+export const CURRENCY_UPDATE_INTERVAL = INTERVALS.CURRENCY_UPDATE;
+export const UI_UPDATE_INTERVAL = INTERVALS.UI_UPDATE;
 
 // Search state
 export let searchTerm = '';
@@ -12,10 +18,6 @@ export let allPairs = [];
 export let hasRealData = false;
 export const hydratingContracts = new Set();
 export const hydratedPairs = new Set();
-
-// Constants
-export const CURRENCY_UPDATE_INTERVAL = 60_000; // 1 minute
-export const UI_UPDATE_INTERVAL = 1_000; // 1 second
 
 // Scrolling state
 export let isScrolling = false;

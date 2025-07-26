@@ -1,4 +1,6 @@
-export async function fetchJSON(url, opts = {}, retries = 10, backoff = 200, timeout = 5000) {
+import { DEFAULTS } from './constants.js';
+
+export async function fetchJSON(url, opts = {}, retries = DEFAULTS.RETRY_COUNT, backoff = DEFAULTS.BACKOFF_DELAY, timeout = DEFAULTS.TIMEOUT) {
   let lastErr;
 
   for (let i = 0; i <= retries; i++) {
@@ -40,7 +42,7 @@ export async function fetchJSON(url, opts = {}, retries = 10, backoff = 200, tim
 // Throttle parallel requests to prevent overwhelming the server
 const inFlight = new Set();
 
-export async function throttledFetchJSON(url, opts, limit = 12) {
+export async function throttledFetchJSON(url, opts, limit = DEFAULTS.THROTTLE_LIMIT) {
   while (inFlight.size >= limit) {
     await Promise.race(inFlight);
   }
