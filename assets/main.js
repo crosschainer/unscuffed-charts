@@ -3,6 +3,8 @@ import { els, showSidebarSkeleton, showMainSkeleton } from './ui.js';
 import * as api from './api.js';
 import * as chart from './chart.js';
 import { getPairFromHash, isFarmsHash, isStakingHash } from './utils.js';
+import './staking.js'; // Initialize staking module
+import './farms.js';   // Initialize farms module
 import { 
   currencyUsdPrice, 
   setCurrencyUsdPrice, 

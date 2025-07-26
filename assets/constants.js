@@ -7,6 +7,13 @@ export const API_CONFIG = {
   RPC_URL: 'https://node.xian.org'
 };
 
+// Contract Addresses
+export const CONTRACTS = {
+  PAIRS: 'con_pairs',
+  USDC: 'con_usdc',
+  STAKING: 'con_staking_v1'
+};
+
 // Time Intervals (in milliseconds)
 export const INTERVALS = {
   CURRENCY_UPDATE: 60_000,      // 1 minute
@@ -15,7 +22,9 @@ export const INTERVALS = {
   SCROLL_DEBOUNCE: 50,          // 50ms
   EMPTY_CANDLE_ADVANCE: 60 * 1000, // 1 minute
   RECONNECT_DELAY: 2000,        // 2 seconds
-  WALLET_TIMEOUT: 30000         // 30 seconds
+  WALLET_TIMEOUT: 30000,        // 30 seconds
+  STAKING_REFRESH: 15000,       // 15 seconds
+  FARMS_REFRESH: 15000          // 15 seconds
 };
 
 // Cache Configuration
@@ -90,8 +99,16 @@ export const ASSETS = {
   FARMS_CONFIG: 'farms.txt?v2'
 };
 
-// Contract Addresses and Special Cases
-export const CONTRACTS = {
+// Staking Configuration
+export const STAKING_CONFIG = {
+  LOCK_PERIOD_DAYS: 7,          // lock period in days
+  LOCK_PERIOD_MS: 7 * 24 * 60 * 60 * 1000, // lock period in milliseconds
+  TOKEN: 'XIAN',                // staking token
+  TITLE: 'Xian Staking'         // display title
+};
+
+// Special Contract Values
+export const SPECIAL_CONTRACTS = {
   XIAN_USDC_PAIR: 1,            // special pair ID for XIAN/USDC
   CURRENCY_TOKEN: 'currency',
   USDC_TOKEN: 'con_usdc'
