@@ -1,16 +1,22 @@
 /* assets/staking.js  ────────────────────────────────────────────────────
- * Plain old script (no import / export). Builds staking cards into
+ * ES6 module for staking functionality. Builds staking cards into
  * #stakingView, refreshes them from RPC, and listens for wallet connect.
  */
 
-(() => {
-  const GRID = document.querySelector('#stakingView .staking-grid'); // selector for staking grid
-  const STAKING_CONTRACT = "con_staking_v1";                                  // staking contract from app.js
-  const CHAIN_RPC = "https://node.xian.org";                            // RPC endpoint
-  let refreshTimer = null;                                          // auto-refresh timer
-  
+import { CONTRACTS, API_CONFIG, INTERVALS, STAKING_CONFIG } from './constants.js';
+import { ErrorHandler } from './error-handler.js';
+import { createSkeleton, debounce } from './dom-utils.js';
+
+class StakingManager {
+  constructor() {
+    this.grid = document.querySelector('#stakingView .staking-grid');
+    this.refreshTimer = null;
+    this.errorHandler = new ErrorHandler('StakingManager');
+    this.debouncedRefresh = debounce(() => this.refresh(), 1000);
+  }
+
   /* ---------- card constructor ------------------------------------- */
-  function createCard(meta) {
+  createCard(meta) {
     const el = document.createElement('article');
     el.className = 'staking-card';
 
@@ -38,7 +44,7 @@
         </div>
         <div class="flex justify-between items-center">
           <dt class="text-gray-400 font-medium">Lock Period</dt>
-          <dd class="lock-period text-white/80 font-medium">7 days</dd>
+          <dd class="lock-period text-white/80 font-medium">${STAKING_CONFIG.LOCK_PERIOD_DAYS} days</dd>
         </div>
         <div class="flex justify-between items-center">
           <dt class="text-gray-400 font-medium">Reward Token</dt>
@@ -73,347 +79,352 @@
                    class="amount staking-input">
           </div>
 
-          <div class="grid grid-cols-2 gap-3 mt-4">
-            <button class="stake staking-btn py-2 rounded-md font-medium disabled transition-colors duration-150 bg-brand-cyan text-gray-900">
-              <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 mr-1" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M12 5v14M5 12h14"/>
-              </svg>
-              Stake
-            </button>
-            <button class="unstake staking-btn py-2 rounded-md font-medium disabled transition-colors duration-150 text-gray-900 bg-brand-magenta">
-              <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 mr-1" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M5 12h14"/>
-              </svg>
-              Withdraw
-            </button>
+          <div class="flex justify-between items-center">
+            <p class="staking-info-label">Claimable Rewards</p>
+            <p class="rewards staking-info-value">— ${meta.token}</p>
           </div>
 
-          <div class="flex justify-between items-center p-3 bg-white/5 rounded-lg mt-6">
-            <div>
-              <p class="staking-info-label">Claimable Rewards</p>
-              <p class="earned staking-info-value">0 ${meta.token}</p>
-            </div>
-            <button class="harvest staking-btn staking-btn-harvest px-4" disabled>
-              <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 mr-1" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M8 7V3m8 4V3M3 21h18M3 10h18M3 7h18M3 14h18M3 18h18"/>
-              </svg>
-              Claim
-            </button>
+          <div class="flex justify-between items-center">
+            <p class="staking-info-label">Lock Expires</p>
+            <p class="expiry staking-info-value">—</p>
           </div>
-          
-          <div class="flex justify-between items-center p-3 bg-white/5 rounded-lg mt-2">
-            <div>
-              <p class="staking-info-label">Lock Expires</p>
-              <p class="unlock staking-info-value">—</p>
-            </div>
+
+          <div class="staking-actions flex gap-2">
+            <button class="stake-btn staking-btn staking-btn-primary">Stake</button>
+            <button class="withdraw-btn staking-btn staking-btn-secondary">Withdraw</button>
+            <button class="harvest-btn staking-btn staking-btn-accent">Harvest</button>
           </div>
         </div>
       </details>
     `;
 
-    /* cached selectors */
-    const $ = (sel) => el.querySelector(sel);
-    const $apr = $('.apr');
-    const $totalStaked = $('.total-staked');
-    const $stake = $('.mystake');
-    const $bal = $('.bal');
-    const $earned = $('.earned');
-    const $unlock = $('.unlock');
-    const $amount = $('.amount');
-    const $harvest = $('.harvest');
-
-    /* helper */
-    const fmt = (x, dp = 2) =>
-      Number(x).toLocaleString("en-US", { maximumFractionDigits: dp });
-
-    const toNumber = (str) =>
-  Number(
-    str
-      .replace(/,/g, '')        // remove thousands separators
-      .trim()                   // be nice to copy‑paste
-      .split(' ')[0]            // drop token symbol if present
-  );
-
-    /* ---------------- refresh from RPC ---------------- */
-    window.refreshStaking = async () => {
-      try {
-        // Simulate the getInfo call to the staking contract
-        const farmInfo = await simulate(STAKING_CONTRACT, "getInfo", { who: userAddress || "" });
-        
-        // Parse the response
-        const data = farmInfo.split(",").map(item => item.trim());
-        
-        if (!data || data.length < 6) {
-          console.error("Invalid staking info format:", data);
-          return;
-        }
-        
-        let beg, end, rps, total, stakeTok, rewardToken, staked, rewardsAvailable;
-        
-        if (data.length == 6) {
-          [beg, end, rps, total, stakeTok, rewardToken] = data;
-        } else if (data.length == 8) {
-          [beg, end, rps, total, stakeTok, rewardToken, staked, rewardsAvailable] = data;
-        }
-        
-        // Update APR
-        const APR_PCT = 20; // constant from app.js
-        $apr.textContent = APR_PCT.toFixed(2) + '%';
-        
-        // Update total staked
-        let totalFormatted = typeof total === "number" ? total : parseFloat(total).toFixed(4);
-        $totalStaked.textContent = fmt(totalFormatted);
-        
-        if (userAddress) {
-          // Get user rewards
-          const pendingRewards = await getRewards(userAddress);
-          
-          // Update user stake
-          let stakedFormatted = typeof staked === "number" ? staked : parseFloat(staked).toFixed(8);
-          $stake.textContent = stakedFormatted + " " + meta.token;
-          
-          // Update user rewards
-          let rewardsFormatted = typeof pendingRewards === "number" ? pendingRewards : parseFloat(pendingRewards).toFixed(8);
-          if (rewardsFormatted < 0.00000001) {
-            rewardsFormatted = "0.00000000"; // avoid showing too small numbers
-          }
-          if (rewardsFormatted === "NaN") {
-            rewardsFormatted = "0.00000000"; // handle NaN case
-          }
-          $earned.textContent = rewardsFormatted + " " + meta.token;
-          $earned.dataset.raw = rewardsFormatted;
-          $harvest.disabled = !(pendingRewards > 0);
-          
-          // Update wallet balance
-          const bal = await fetchWalletBalance(userAddress);
-          $bal.textContent = parseFloat(bal).toFixed(8) + " " + meta.token;
-          
-          // Update unlock time
-          let depositTime = await getDepositTime(userAddress);
-          if (depositTime) {
-            try {
-              // depositTime is array [2025, 6, 27, 18, 45, 33, 0]
-              // convert to Date object, the source is UTC
-              depositTime = new Date(depositTime[0], depositTime[1] - 1, depositTime[2], depositTime[3], depositTime[4], depositTime[5]);
-              // This is a UTC date, we need to convert it to local time
-              depositTime = new Date(depositTime.getTime() - depositTime.getTimezoneOffset() * 60000); // adjust for local timezone
-              
-              const unlockDate = new Date(depositTime.getTime() + 7 * 24 * 60 * 60 * 1000); // 7 days later
-              $unlock.textContent = unlockDate.toLocaleDateString() + " " + unlockDate.toLocaleTimeString();
-            } catch (e) {
-              console.error("Invalid deposit time format:", depositTime);
-              $unlock.textContent = "—";
-            }
-          } else {
-            $unlock.textContent = "—"; // no deposit yet
-          }
-        }
-      } catch (error) {
-        console.error("Error refreshing staking data:", error);
-      }
-    }
-
-    /* ---------------- button handlers ----------------- */
-    async function stakeTx(amt) {
-      if (amt <= 0) return toast('Enter amount', 'error');
-      
-      await runTx({
-        btn: $('.stake'),
-        labelIdle: 'Stake',
-        txs: [
-          { c: 'currency', f: 'approve', k: { to: STAKING_CONTRACT, amount: amt } },
-          { c: STAKING_CONTRACT, f: 'deposit', k: { amount: amt } }
-        ],
-        onSuccess: async () => {
-          toast('Deposit submitted');
-          $amount.value = '';
-          await window.refreshStaking();
-        }
-      });
-    }
-    
-    async function withdrawTx(amt) {
-      if (amt <= 0) return toast('Enter amount', 'error');
-      
-      await runTx({
-        btn: $('.unstake'),
-        labelIdle: 'Withdraw',
-        txs: [{ c: STAKING_CONTRACT, f: 'withdraw', k: { amount: amt } }],
-        onSuccess: async () => {
-          toast('Withdraw submitted');
-          $amount.value = '';
-          await window.refreshStaking();
-        }
-      });
-    }
-    
-    async function harvestTx() {
-      const rewards = Number($earned.dataset.raw);   // exact, no re‑parse
-      if (rewards <= 0) return toast('Nothing to harvest', 'error');
-      
-      await runTx({
-        btn: $('.harvest'),
-        labelIdle: 'Claim',
-        txs: [{ c: STAKING_CONTRACT, f: 'withdrawRewards', k: { amount: rewards } }],
-        onSuccess: async () => {
-          toast('Claim TX submitted');
-          await window.refreshStaking();
-        }
-      });
-    }
-    
-    $('.stake').onclick = async () => {
-      const amt = toNumber($amount.value);
-      if (!amt) return toast('Enter amount', 'error');
-      await stakeTx(amt);
-    };
-    
-    $('.unstake').onclick = async () => {
-      const amt = toNumber($amount.value);
-      if (!amt) return toast('Enter amount', 'error');
-      await withdrawTx(amt);
-    };
-    
-    $harvest.onclick = async () => {
-      await harvestTx();
-    };
-
-    return { el };
+    return el;
   }
 
-  /* ---------- helper functions ------------------------------------- */
-  /* ——— toast helper ——— */
-  function toast(msg, type = "success") {
-    const box = document.createElement("div");
-    box.className = `toast text-white px-3 py-2 mb-2 ${type === 'success' ? 'toast-success' : 'toast-error'}`;
-    box.innerHTML = msg;
-    document.getElementById("toastContainer").appendChild(box);
-    setTimeout(() => box.classList.add("show"), 50);
-    setTimeout(() => box.classList.remove("show"), 3000);
-    setTimeout(() => box.remove(), 3500);
-  }
-
-  /* ——— helper to build simulate_tx path ——— */
-  const enc = new TextEncoder();
-  const toHex = (bytes) => Array.from(bytes).map(b => ('0' + (b & 0xff).toString(16)).slice(-2)).join('');
-
-  async function simulate(contract, fn, kwargs = {}) {
-    const payload = { sender: "", contract, function: fn, kwargs };
-    const hex = toHex(enc.encode(JSON.stringify(payload)));
-    const res = await fetch(`${CHAIN_RPC}/abci_query?path="/simulate_tx/${hex}"`);
-    const json = await res.json();
-    return JSON.parse(atob(json.result.response.value)).result;
-  }
-
-  async function fetchWalletBalance(addr) {
-    const payload = {
-      sender: "",          // dry-run
-      contract: "currency",
-      function: "balance_of",
-      kwargs: { address: addr }
-    };
-    const hex = toHex(enc.encode(JSON.stringify(payload)));
-    const r = await fetch(`${CHAIN_RPC}/abci_query?path="/simulate_tx/${hex}"`);
-    const val = atob((await r.json()).result.response.value);
-    return +JSON.parse(val).result;        // numeric
-  }
-
-  async function getDepositTime(addr = "") {
-    /* returns deposit time in ISO format */
-    const res = await fetch(`${CHAIN_RPC}/abci_query?path="/get/${STAKING_CONTRACT}.deposits:${addr}"`);
-    const json = await res.json();
+  /* ---------- RPC helpers ------------------------------------------ */
+  async simulate(contract, method, sender = '', kwargs = {}) {
     try {
-      if (!json.result.response.value) return null; // no deposit
-    } catch (e) {
-      console.error("Failed to parse deposit data:", e);
+      const response = await fetch(`${API_CONFIG.RPC_URL}/simulate_tx`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          contract,
+          method,
+          sender,
+          kwargs
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      }
+
+      const data = await response.json();
+      return data.result || data;
+    } catch (error) {
+      this.errorHandler.handleError(error, 'simulate', { contract, method });
+      throw error;
+    }
+  }
+
+  async fetchWalletBalance(address) {
+    try {
+      return await this.simulate('currency', 'balance_of', '', { account: address });
+    } catch (error) {
+      this.errorHandler.handleError(error, 'fetchWalletBalance', { address });
+      return 0;
+    }
+  }
+
+  async getDepositTime(address) {
+    try {
+      const response = await fetch(`${API_CONFIG.RPC_URL}/abci_query`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          path: `/get/${CONTRACTS.STAKING}.deposit_time:${address}`
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      }
+
+      const data = await response.json();
+      return data.result?.response?.value ? 
+        JSON.parse(atob(data.result.response.value)) : null;
+    } catch (error) {
+      this.errorHandler.handleError(error, 'getDepositTime', { address });
       return null;
     }
-    const decoded = JSON.parse(atob(json.result.response.value));
-    if (!decoded || !decoded.deposit_time) return null;
-    return decoded.deposit_time.__time__;
   }
 
-  async function getRewards(addr = "") {
-    /* returns rewards available for withdrawal */
-    return await simulate(STAKING_CONTRACT, "getRewards", { address: addr });
-  }
-
-  async function runTx({ btn, labelIdle, onSuccess, txs }) {
-    /* btn – DOM element or selector string      (optional)
-       labelIdle – text to restore after spinner (optional)
-       onSuccess – callback executed after ALL tx succeed
-       txs – array of { c, f, k } contracts to execute in order   */
-
-    const $btn = btn ? (typeof btn === 'string' ? document.querySelector(btn) : btn) : null;
-
-    // helper for showing / hiding spinner
-    const showSpinner = () => {
-      if ($btn) { $btn.disabled = true; $btn.innerHTML = `<div class="spinner-border spinner-border-sm"></div>`; }
-    };
-    const hideSpinner = () => {
-      if ($btn) { $btn.disabled = false; $btn.innerHTML = labelIdle; }
-    };
-
+  async getRewards(address) {
     try {
-      showSpinner();
-      for (const { c, f, k } of txs) {
-        const res = await XianWalletUtils.sendTransaction(c, f, k);
-        if (res?.errors) { throw new Error(res.errors); }
-      }
-      await onSuccess?.();                        // final callback
-    } catch (err) {
-      console.error(err);
-      toast(err.message || 'Transaction failed', 'error');
-    } finally { hideSpinner(); }
-  }
-
-  /* ---------- boot -------------------------------------------------- */
-  
-  async function init() {
-    // Add loading indicator
-    const loadingEl = document.createElement('div');
-    loadingEl.className = 'flex items-center justify-center w-full py-12';
-    loadingEl.innerHTML = `
-      <div class="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-brand-cyan"></div>
-    `;
-    GRID.appendChild(loadingEl);
-    
-    try {
-      // Remove loading indicator
-      GRID.removeChild(loadingEl);
-      
-      // Create staking card
-      const stakingData = {
-        title: "Xian Staking",
-        token: "XIAN",
-        contract: STAKING_CONTRACT
-      };
-      
-      const { el } = createCard(stakingData);
-      GRID.appendChild(el);
-      
-      // Store refresh function globally
-      window.refreshStaking()
-      
-      // Set up auto-refresh
-      refreshTimer = setInterval(window.refreshStaking, 15000);  // auto refresh every 15 s
+      return await this.simulate(CONTRACTS.STAKING, 'get_rewards', '', { account: address });
     } catch (error) {
-      console.error('Error loading staking:', error);
-      // Show error message
-      GRID.innerHTML = `
-        <div class="col-span-full text-center py-12">
-          <p class="text-red-400">Failed to load staking. Please try again later.</p>
-        </div>
-      `;
+      this.errorHandler.handleError(error, 'getRewards', { address });
+      return 0;
     }
   }
 
-  
-
-  /* kick-off when DOM ready */
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', init);
-  } else {
-    init();
+  /* ---------- transaction helpers ---------------------------------- */
+  async runTx(description, txFunction) {
+    try {
+      this.showToast(`${description}...`, 'info');
+      const result = await txFunction();
+      this.showToast(`${description} successful!`, 'success');
+      this.debouncedRefresh();
+      return result;
+    } catch (error) {
+      this.errorHandler.handleError(error, 'runTx', { description });
+      this.showToast(`${description} failed: ${error.message}`, 'error');
+      throw error;
+    }
   }
-})();
+
+  async stakeTx(amount) {
+    return this.runTx('Staking', async () => {
+      // First approve the amount
+      await window.XianWalletUtils.sendTransaction(
+        'currency', 'approve', 
+        { to: CONTRACTS.STAKING, amount: parseFloat(amount) }, 
+        50000
+      );
+
+      // Then stake
+      return await window.XianWalletUtils.sendTransaction(
+        CONTRACTS.STAKING, 'stake', 
+        { amount: parseFloat(amount) }, 
+        50000
+      );
+    });
+  }
+
+  async withdrawTx(amount) {
+    return this.runTx('Withdrawing', async () => {
+      return await window.XianWalletUtils.sendTransaction(
+        CONTRACTS.STAKING, 'withdraw', 
+        { amount: parseFloat(amount) }, 
+        50000
+      );
+    });
+  }
+
+  async harvestTx() {
+    return this.runTx('Harvesting rewards', async () => {
+      return await window.XianWalletUtils.sendTransaction(
+        CONTRACTS.STAKING, 'harvest', 
+        {}, 
+        50000
+      );
+    });
+  }
+
+  /* ---------- UI helpers ------------------------------------------- */
+  showToast(message, type = 'info', duration = 3000) {
+    if (typeof window.showToast === 'function') {
+      window.showToast(message, type, duration);
+    } else {
+      console.log(`[${type.toUpperCase()}] ${message}`);
+    }
+  }
+
+  formatNumber(value) {
+    if (!value || isNaN(value)) return '—';
+    const num = parseFloat(value);
+    if (num === 0) return '0';
+    if (num < 0.01) return num.toFixed(6);
+    if (num < 1) return num.toFixed(4);
+    if (num < 1000) return num.toFixed(2);
+    if (num < 1000000) return (num / 1000).toFixed(1) + 'K';
+    return (num / 1000000).toFixed(1) + 'M';
+  }
+
+  formatDate(timestamp) {
+    if (!timestamp) return '—';
+    try {
+      const date = new Date(timestamp);
+      return date.toLocaleDateString() + ' ' + date.toLocaleTimeString();
+    } catch {
+      return '—';
+    }
+  }
+
+  /* ---------- main refresh logic ----------------------------------- */
+  async refresh() {
+    if (!this.grid) {
+      this.errorHandler.handleError(new Error('Staking grid not found'), 'refresh');
+      return;
+    }
+
+    try {
+      // Show loading state
+      this.grid.innerHTML = createSkeleton('staking-card', 1);
+
+      // Get wallet address
+      const userAddress = window.userAddress;
+      if (!userAddress) {
+        this.renderCard({
+          title: STAKING_CONFIG.TITLE,
+          token: STAKING_CONFIG.TOKEN,
+          apr: '—',
+          totalStaked: '—',
+          userStake: '—',
+          walletBalance: '—',
+          rewards: '—',
+          lockExpiry: '—'
+        });
+        return;
+      }
+
+      // Fetch all data concurrently
+      const [
+        totalStaked,
+        userStake,
+        walletBalance,
+        rewards,
+        depositTime
+      ] = await Promise.all([
+        this.simulate(CONTRACTS.STAKING, 'get_total_staked'),
+        this.simulate(CONTRACTS.STAKING, 'get_stake', '', { account: userAddress }),
+        this.fetchWalletBalance(userAddress),
+        this.getRewards(userAddress),
+        this.getDepositTime(userAddress)
+      ]);
+
+      // Calculate APR (simplified - you may want to implement proper APR calculation)
+      const apr = totalStaked > 0 ? '12.5%' : '—'; // Placeholder
+
+      // Calculate lock expiry
+      let lockExpiry = '—';
+      if (depositTime && userStake > 0) {
+        const expiryTime = new Date(depositTime).getTime() + STAKING_CONFIG.LOCK_PERIOD_MS;
+        lockExpiry = this.formatDate(expiryTime);
+      }
+
+      this.renderCard({
+        title: STAKING_CONFIG.TITLE,
+        token: STAKING_CONFIG.TOKEN,
+        apr,
+        totalStaked: this.formatNumber(totalStaked),
+        userStake: this.formatNumber(userStake),
+        walletBalance: this.formatNumber(walletBalance),
+        rewards: this.formatNumber(rewards),
+        lockExpiry
+      });
+
+    } catch (error) {
+      this.errorHandler.handleError(error, 'refresh');
+      this.showToast('Failed to load staking data', 'error');
+    }
+  }
+
+  renderCard(data) {
+    const card = this.createCard({
+      title: data.title,
+      token: data.token
+    });
+
+    // Update data fields
+    card.querySelector('.apr').textContent = data.apr;
+    card.querySelector('.total-staked').textContent = `${data.totalStaked} ${data.token}`;
+    card.querySelector('.mystake').textContent = `${data.userStake} ${data.token}`;
+    card.querySelector('.bal').textContent = `${data.walletBalance} ${data.token}`;
+    card.querySelector('.rewards').textContent = `${data.rewards} ${data.token}`;
+    card.querySelector('.expiry').textContent = data.lockExpiry;
+
+    // Wire up event handlers
+    this.wireCardEvents(card);
+
+    // Replace grid content
+    this.grid.innerHTML = '';
+    this.grid.appendChild(card);
+  }
+
+  wireCardEvents(card) {
+    const amountInput = card.querySelector('.amount');
+    const stakeBtn = card.querySelector('.stake-btn');
+    const withdrawBtn = card.querySelector('.withdraw-btn');
+    const harvestBtn = card.querySelector('.harvest-btn');
+
+    stakeBtn?.addEventListener('click', async () => {
+      const amount = amountInput.value;
+      if (!amount || parseFloat(amount) <= 0) {
+        this.showToast('Please enter a valid amount', 'error');
+        return;
+      }
+      try {
+        await this.stakeTx(amount);
+        amountInput.value = '';
+      } catch (error) {
+        // Error already handled in stakeTx
+      }
+    });
+
+    withdrawBtn?.addEventListener('click', async () => {
+      const amount = amountInput.value;
+      if (!amount || parseFloat(amount) <= 0) {
+        this.showToast('Please enter a valid amount', 'error');
+        return;
+      }
+      try {
+        await this.withdrawTx(amount);
+        amountInput.value = '';
+      } catch (error) {
+        // Error already handled in withdrawTx
+      }
+    });
+
+    harvestBtn?.addEventListener('click', async () => {
+      try {
+        await this.harvestTx();
+      } catch (error) {
+        // Error already handled in harvestTx
+      }
+    });
+  }
+
+  /* ---------- lifecycle -------------------------------------------- */
+  init() {
+    try {
+      if (!this.grid) {
+        throw new Error('Staking grid element not found');
+      }
+
+      // Initial refresh
+      this.refresh();
+
+      // Set up auto-refresh
+      this.refreshTimer = setInterval(() => {
+        this.refresh();
+      }, INTERVALS.STAKING_REFRESH);
+
+      this.errorHandler.log('StakingManager initialized successfully', 'info');
+    } catch (error) {
+      this.errorHandler.handleError(error, 'init');
+    }
+  }
+
+  destroy() {
+    if (this.refreshTimer) {
+      clearInterval(this.refreshTimer);
+      this.refreshTimer = null;
+    }
+  }
+}
+
+// Create and export singleton instance
+const stakingManager = new StakingManager();
+
+// Global refresh function for compatibility
+window.refreshStaking = () => stakingManager.refresh();
+
+// Auto-initialize on DOM ready
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', () => stakingManager.init());
+} else {
+  stakingManager.init();
+}
+
+export { stakingManager as default, StakingManager };

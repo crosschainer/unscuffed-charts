@@ -1,330 +1,402 @@
 /* assets/farms.js  ────────────────────────────────────────────────────
- * Plain old script (no import / export).  Builds farm cards into
+ * ES6 module for farming functionality. Builds farm cards into
  * #farmsView, refreshes them from RPC, and listens for wallet connect.
  */
 
-(() => {
-  const GRID = document.querySelector('#farmsView .farms-grid'); // updated selector
-  const FARMS_TXT = 'farms.txt?v2';                                // 1 line / farm
-  const farms = [];                                             // live instances
+import { ASSETS, INTERVALS, API_CONFIG } from './constants.js';
+import { ErrorHandler } from './error-handler.js';
+import { createSkeleton, debounce } from './dom-utils.js';
+
+class FarmsManager {
+  constructor() {
+    this.grid = document.querySelector('#farmsView .farms-grid');
+    this.farms = [];
+    this.refreshTimer = null;
+    this.errorHandler = new ErrorHandler('FarmsManager');
+    this.debouncedRefresh = debounce(() => this.refresh(), 1000);
+  }
 
   /* ---------- card constructor ------------------------------------- */
-  /* ---------- card constructor ------------------------------------- */
-function createCard(meta) {
-  const el = document.createElement('article');
-  el.className = 'farm-card';
+  createCard(meta) {
+    const el = document.createElement('article');
+    el.className = 'farm-card';
 
-  /* template */
-  el.innerHTML = /*html*/`
-    <!-- header -->
-    <div class="farm-card-header">
-      <div class="flex items-center gap-3">
-        <div class="flex-1">
-          <h3 class="farm-title">${meta.title}</h3>
-          <p class="farm-pair">Pool #${meta.pairIdx}</p>
-        </div>
-      </div>
-    </div>
-
-    <!-- quick stats -->
-    <dl class="farm-stats flex flex-col gap-4 text-sm">
-      <div class="flex justify-between items-center">
-        <dt class="text-gray-400 font-medium">Annual Percentage Rate</dt>
-        <dd class="apr farm-apr">—</dd>
-      </div>
-      <div class="flex justify-between items-center">
-        <dt class="text-gray-400 font-medium">Reward Token</dt>
-        <dd class="reward farm-reward">${meta.reward}</dd>
-      </div>
-
-      <div class="flex justify-between items-center">
-        <dt class="text-gray-400 font-medium">Farm Starts</dt>
-        <dd class="starts text-white/80 font-medium">—</dd>
-      </div>
-      <div class="flex justify-between items-center">
-        <dt class="text-gray-400 font-medium">Farm Ends</dt>
-        <dd class="ends text-white/80 font-medium">—</dd>
-      </div>
-    </dl>
-
-    <!-- interaction -->
-    <details class="farm-manage group">
-      <summary class="flex items-center justify-between">
-        <span>Manage Your Position</span>
-        <svg class="w-4 h-4 shrink-0 transition-transform group-open:-rotate-180"
-             viewBox="0 0 24 24" fill="none">
-          <path d="M6 9l6 6 6-6" stroke="currentColor" stroke-width="2"
-                stroke-linecap="round" stroke-linejoin="round"/>
-        </svg>
-      </summary>
-      
-
-      <div class="farm-manage-body space-y-4">
-       <!-- subtle helper link -->
-<p class="mt-2 text-right">
-  <a href="https://dex.xian.org/#pair=${meta.pairIdx}" rel="noopener noreferrer"
-     class="inline-flex items-center gap-1 text-brand-cyan hover:text-brand-cyan/80
-            text-sm font-medium underline-offset-2 hover:underline">
-    Add Liquidity
-    <svg xmlns="http://www.w3.org/2000/svg" class="w-3 h-3" fill="none"
-         viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-      <path d="M7 17L17 7M7 7h10v10"/>
-    </svg>
-  </a>
-</p>
-        <div class="flex justify-between items-center p-3 bg-white/5 rounded-lg">
-          <p class="farm-info-label">Your Stake</p>
-          <p class="mystake farm-info-value">— LP</p>
-        </div>
-        
-        <div class="flex justify-between">
-          <p class="farm-info-label">Wallet Balance</p>
-          <p class="bal farm-info-value">— LP</p>
-        </div>
-
-        <div class="relative mt-2">
-          <input type="number" min="0" step="any" inputmode="decimal" placeholder="Enter amount to stake or withdraw"
-                 class="amount farm-input">
-        </div>
-        
-        <div class="grid grid-cols-2 gap-3 mt-4">
-          <button class="stake farm-btn  py-2 rounded-md font-medium disabled transition-colors duration-150 bg-brand-cyan text-gray-900">
-            <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 mr-1" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M12 5v14M5 12h14"/>
-            </svg>
-            Stake LP
-          </button>
-          <button class="unstake farm-btn  py-2 rounded-md font-medium disabled transition-colors duration-150 text-gray-900 bg-brand-magenta">
-            <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 mr-1" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M5 12h14"/>
-            </svg>
-            Withdraw LP
-          </button>
-         
-        </div>
-       
-        <div class="flex justify-between items-center p-3 bg-white/5 rounded-lg mt-6">
-          <div>
-            <p class="farm-info-label">Harvestable Rewards</p>
-            <p class="earned farm-info-value">0 ${meta.reward}</p>
+    /* template */
+    el.innerHTML = /*html*/`
+      <!-- header -->
+      <div class="farm-card-header">
+        <div class="flex items-center gap-3">
+          <div class="flex-1">
+            <h3 class="farm-title">${meta.title}</h3>
+            <p class="farm-pair">Pool #${meta.pairIdx}</p>
           </div>
-          <button class="harvest farm-btn farm-btn-harvest px-4" disabled>
-            <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 mr-1" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M8 7V3m8 4V3M3 21h18M3 10h18M3 7h18M3 14h18M3 18h18"/>
-            </svg>
-            Harvest
-          </button>
         </div>
       </div>
-    </details>
-  `;
 
+      <!-- quick stats -->
+      <dl class="farm-stats flex flex-col gap-4 text-sm">
+        <div class="flex justify-between items-center">
+          <dt class="text-gray-400 font-medium">Annual Percentage Rate</dt>
+          <dd class="apr farm-apr">—</dd>
+        </div>
+        <div class="flex justify-between items-center">
+          <dt class="text-gray-400 font-medium">Reward Token</dt>
+          <dd class="reward farm-reward">${meta.reward}</dd>
+        </div>
 
-  /* cached selectors */
-  const $ = (sel) => el.querySelector(sel);
-  const $apr     = $('.apr');
-  const $tvl     = $('.tvl');
-  const $stake   = $('.mystake');
-  const $bal     = $('.bal');
-  const $earned  = $('.earned');
-  const $starts  = $('.starts');
-  const $ends    = $('.ends');
-  const $amount  = $('.amount');
-  const $harvest = $('.harvest');
+        <div class="flex justify-between items-center">
+          <dt class="text-gray-400 font-medium">Farm Starts</dt>
+          <dd class="starts text-white/80 font-medium">—</dd>
+        </div>
+        <div class="flex justify-between items-center">
+          <dt class="text-gray-400 font-medium">Farm Ends</dt>
+          <dd class="ends text-white/80 font-medium">—</dd>
+        </div>
+      </dl>
 
-  /* helper */
-  const fmt = (x, dp = 2) =>
-    Number(x).toLocaleString("en-US", { maximumFractionDigits: dp });
+      <!-- interaction -->
+      <details class="farm-manage group">
+        <summary class="flex items-center justify-between">
+          <span>Manage Your Position</span>
+          <svg class="w-4 h-4 shrink-0 transition-transform group-open:-rotate-180"
+               viewBox="0 0 24 24" fill="none">
+            <path d="M6 9l6 6 6-6" stroke="currentColor" stroke-width="2"
+                  stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </summary>
 
-const toNumber = (str) =>
-  Number(
-    str
-      .replace(/,/g, '')   // kill thousands commas
-      .trim()              // be nice to copy‑paste
-      .split(' ')[0]       // drop token symbol if present
-  );
+        <div class="farm-manage-body space-y-4">
+          <div class="flex justify-between items-center p-3 bg-white/5 rounded-lg">
+            <p class="farm-info-label">Your Stake</p>
+            <p class="mystake farm-info-value">— LP</p>
+          </div>
+          
+          <div class="flex justify-between">
+            <p class="farm-info-label">Wallet LP</p>
+            <p class="bal farm-info-value">— LP</p>
+          </div>
 
-  /* ---------------- refresh from RPC ---------------- */
-  async function refresh() {
-    const infoJson = await getFarmsInfo(
-      'con_staking_mc1',
-      userAddress || '',
-      [meta.farm]                // single farm
-    );
-    const data = JSON.parse(infoJson.replace(/'/g, '"'))[0];
-    if (!data) return;
-    console.log('Farm data:', data);
-    let start;
-    let end;
-    let rps;
-    let totalStk;
-    let rewardCon;
-    let usrLiq;
-    let usrStk;
-    let usrRew;
-    if (userAddress) {
-        [start, end, rps, totalStk,pairIdx,rewardCon, usrLiq, usrStk, usrRew] = data;
+          <div class="relative mt-2">
+            <input type="number" min="0" step="any" inputmode="decimal" placeholder="Enter LP amount"
+                   class="amount farm-input">
+          </div>
+
+          <div class="flex justify-between items-center">
+            <p class="farm-info-label">Harvestable</p>
+            <p class="rewards farm-info-value">— ${meta.reward}</p>
+          </div>
+
+          <div class="farm-actions flex gap-2">
+            <button class="stake-btn farm-btn farm-btn-primary">Stake</button>
+            <button class="unstake-btn farm-btn farm-btn-secondary">Unstake</button>
+            <button class="harvest-btn farm-btn farm-btn-accent">Harvest</button>
+          </div>
+
+          <div class="farm-liquidity-link">
+            <a href="#pair=${meta.pairIdx}" class="text-brand-cyan hover:text-brand-cyan/80 text-sm">
+              → Add Liquidity for Pool #${meta.pairIdx}
+            </a>
+          </div>
+        </div>
+      </details>
+    `;
+
+    return el;
+  }
+
+  /* ---------- RPC helpers ------------------------------------------ */
+  async fetchFarmsConfig() {
+    try {
+      const response = await fetch(ASSETS.FARMS_CONFIG);
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      }
+      const text = await response.text();
+      return text.trim().split('\n').filter(line => line.trim());
+    } catch (error) {
+      this.errorHandler.handleError(error, 'fetchFarmsConfig');
+      return [];
+    }
+  }
+
+  async getFarmsInfo(contract, userAddress, farmsList) {
+    try {
+      return await window.RPCcall(contract, 'get_farms_info', userAddress, { farms: farmsList });
+    } catch (error) {
+      this.errorHandler.handleError(error, 'getFarmsInfo', { contract, userAddress });
+      return {};
+    }
+  }
+
+  async getLiq(contract, pairIdx, address) {
+    try {
+      return await window.getLiq(contract, pairIdx, address);
+    } catch (error) {
+      this.errorHandler.handleError(error, 'getLiq', { contract, pairIdx, address });
+      return 0;
+    }
+  }
+
+  /* ---------- transaction helpers ---------------------------------- */
+  async runTx(description, txFunction) {
+    try {
+      this.showToast(`${description}...`, 'info');
+      const result = await txFunction();
+      this.showToast(`${description} successful!`, 'success');
+      this.debouncedRefresh();
+      return result;
+    } catch (error) {
+      this.errorHandler.handleError(error, 'runTx', { description });
+      this.showToast(`${description} failed: ${error.message}`, 'error');
+      throw error;
+    }
+  }
+
+  async stakeFarm(farmContract, amount) {
+    return this.runTx('Staking to farm', async () => {
+      return await window.XianWalletUtils.sendTransaction(
+        farmContract, 'stake', 
+        { amount: parseFloat(amount) }, 
+        50000
+      );
+    });
+  }
+
+  async unstakeFarm(farmContract, amount) {
+    return this.runTx('Unstaking from farm', async () => {
+      return await window.XianWalletUtils.sendTransaction(
+        farmContract, 'unstake', 
+        { amount: parseFloat(amount) }, 
+        50000
+      );
+    });
+  }
+
+  async harvestFarm(farmContract) {
+    return this.runTx('Harvesting farm rewards', async () => {
+      return await window.XianWalletUtils.sendTransaction(
+        farmContract, 'harvest', 
+        {}, 
+        50000
+      );
+    });
+  }
+
+  /* ---------- UI helpers ------------------------------------------- */
+  showToast(message, type = 'info', duration = 3000) {
+    if (typeof window.showToast === 'function') {
+      window.showToast(message, type, duration);
     } else {
-        [start, end, rps, totalStk, rewardCon] = data;
-    }
-
-    let tvlRaw = await RPCcall(
-      'con_staking_mc1',
-      'lpvalue_xian',
-      userAddress || '',
-      { dexpairs: 'con_pairs', pairs: [meta.pairIdx] }
-    );
-    tvlRaw = Number(JSON.parse(tvlRaw.replace(/'/g, '"'))[0]); // tvlRaw is how much 1 LP is worth
-
-    /* APR */
-    if (+totalStk > 0){
-      // APR should only show when the farm already started
-      let startDate = new Date(`${start}Z`);
-      if (startDate < new Date()) {
-        console.log(rps, totalStk, tvlRaw);
-      const apr = (Number(rps) * 31_556_926 / (Number(totalStk) * Number(tvlRaw))) * 100;
-      $apr.textContent = fmt(apr) + '%';
-      }
-        
-      
-    }
-
-    /* Ends date */
-    if (end) {
-      const d = new Date(`${end}Z`);
-      $ends.textContent =
-        d.toLocaleDateString() + ' ' + d.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'});
-    }
-
-    /* Starts date */
-    if (start) {
-      const d = new Date(`${start}Z`);
-      $starts.textContent =
-        d.toLocaleDateString() + ' ' + d.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'});
-    }
-
-
-    if (userAddress) {
-        /* user stake / rewards */
-        $stake.textContent = fmt(usrStk, 6) + " LP";
-        $earned.textContent = fmt(usrRew, 4) + " " + meta.reward;
-        $earned.dataset.raw = usrRew;
-        $harvest.disabled = !(usrRew > 0);
-
-        /* wallet balance */
-        const bal = await getLiq("con_pairs", meta.pairIdx, userAddress);
-        $bal.textContent = fmt(bal, 6) + " LP";
+      console.log(`[${type.toUpperCase()}] ${message}`);
     }
   }
 
-  /* ---------------- button handlers ----------------- */
-  async function stakeTx(amt) {
-    if (amt <= 0) return toast('Enter amount', 'error');
-    await XianWalletUtils.sendTransaction(
-      "con_pairs",
-      'liqApprove',
-      {
-        pair: parseInt(meta.pairIdx),
-        amount: amt,
-        to: meta.farm
-      }
-    );
-    await XianWalletUtils.sendTransaction(
-      meta.farm,
-      'deposit',
-      {
-        amount: amt
-      }
-    );
-
+  formatNumber(value) {
+    if (!value || isNaN(value)) return '—';
+    const num = parseFloat(value);
+    if (num === 0) return '0';
+    if (num < 0.01) return num.toFixed(6);
+    if (num < 1) return num.toFixed(4);
+    if (num < 1000) return num.toFixed(2);
+    if (num < 1000000) return (num / 1000).toFixed(1) + 'K';
+    return (num / 1000000).toFixed(1) + 'M';
   }
-  async function withdrawTx(amt) {
-    await XianWalletUtils.sendTransaction(
-      meta.farm,
-      'withdraw',
-      {
-        amount: amt
-      }
-    );
 
+  formatDate(timestamp) {
+    if (!timestamp) return '—';
+    try {
+      const date = new Date(timestamp * 1000); // Assuming Unix timestamp
+      return date.toLocaleDateString();
+    } catch {
+      return '—';
+    }
   }
-  async function harvestTx (amt) {
-    await XianWalletUtils.sendTransaction(
-      meta.farm,
-      'withdrawRewards',
-      {
-        amount: amt
-      }
-    );
-  }
-  el.querySelector('.stake'  ).onclick = async () => {
-    const amt = toNumber($amount.value);
-    if (!amt) return toast('Enter amount', 'error');
-    await stakeTx(amt);  toast('Staked!',    'success'); $amount.value='';
-    refresh();
-  };
-  el.querySelector('.unstake').onclick = async () => {
-    const amt = toNumber($amount.value);
-    if (!amt) return toast('Enter amount', 'error');
-    await withdrawTx(amt); toast('Withdrawn!', 'success'); $amount.value='';
-    refresh();
-  };
-  $harvest.onclick = async () => {
-    const amt = Number($earned.dataset.raw);
-    await harvestTx(amt);   toast('Harvested!', 'success');
-    refresh();
-  };
 
-  return { el, refresh };
+  /* ---------- main refresh logic ----------------------------------- */
+  async refresh() {
+    if (!this.grid) {
+      this.errorHandler.handleError(new Error('Farms grid not found'), 'refresh');
+      return;
+    }
+
+    try {
+      // Show loading state
+      this.grid.innerHTML = createSkeleton('farm-card', 3);
+
+      // Fetch farms configuration
+      const farmsList = await this.fetchFarmsConfig();
+      if (!farmsList.length) {
+        this.grid.innerHTML = '<p class="text-gray-400 text-center">No farms available</p>';
+        return;
+      }
+
+      // Parse farm configurations
+      this.farms = farmsList.map(line => {
+        const parts = line.split(',');
+        return {
+          contract: parts[0]?.trim(),
+          title: parts[1]?.trim() || 'Unknown Farm',
+          pairIdx: parseInt(parts[2]?.trim()) || 0,
+          reward: parts[3]?.trim() || 'Unknown'
+        };
+      });
+
+      // Get user address
+      const userAddress = window.userAddress;
+
+      // Fetch farm data
+      const farmCards = await Promise.all(
+        this.farms.map(async (farm) => {
+          try {
+            // Get farm info and user LP balance concurrently
+            const [farmInfo, userLpBalance] = await Promise.all([
+              this.getFarmsInfo(farm.contract, userAddress || '', [farm.contract]),
+              userAddress ? this.getLiq('con_pairs', farm.pairIdx, userAddress) : Promise.resolve(0)
+            ]);
+
+            const info = farmInfo[farm.contract] || {};
+            
+            return {
+              ...farm,
+              apr: this.formatNumber(info.apr),
+              starts: this.formatDate(info.start_time),
+              ends: this.formatDate(info.end_time),
+              userStake: this.formatNumber(info.user_stake),
+              userLpBalance: this.formatNumber(userLpBalance),
+              harvestable: this.formatNumber(info.harvestable)
+            };
+          } catch (error) {
+            this.errorHandler.handleError(error, 'refresh farm', { farm: farm.contract });
+            return {
+              ...farm,
+              apr: '—',
+              starts: '—',
+              ends: '—',
+              userStake: '—',
+              userLpBalance: '—',
+              harvestable: '—'
+            };
+          }
+        })
+      );
+
+      this.renderFarms(farmCards);
+
+    } catch (error) {
+      this.errorHandler.handleError(error, 'refresh');
+      this.showToast('Failed to load farms data', 'error');
+      this.grid.innerHTML = '<p class="text-red-400 text-center">Failed to load farms</p>';
+    }
+  }
+
+  renderFarms(farmData) {
+    this.grid.innerHTML = '';
+
+    farmData.forEach(farm => {
+      const card = this.createCard({
+        title: farm.title,
+        pairIdx: farm.pairIdx,
+        reward: farm.reward
+      });
+
+      // Update data fields
+      card.querySelector('.apr').textContent = `${farm.apr}%`;
+      card.querySelector('.starts').textContent = farm.starts;
+      card.querySelector('.ends').textContent = farm.ends;
+      card.querySelector('.mystake').textContent = `${farm.userStake} LP`;
+      card.querySelector('.bal').textContent = `${farm.userLpBalance} LP`;
+      card.querySelector('.rewards').textContent = `${farm.harvestable} ${farm.reward}`;
+
+      // Wire up event handlers
+      this.wireCardEvents(card, farm);
+
+      this.grid.appendChild(card);
+    });
+  }
+
+  wireCardEvents(card, farm) {
+    const amountInput = card.querySelector('.amount');
+    const stakeBtn = card.querySelector('.stake-btn');
+    const unstakeBtn = card.querySelector('.unstake-btn');
+    const harvestBtn = card.querySelector('.harvest-btn');
+
+    stakeBtn?.addEventListener('click', async () => {
+      const amount = amountInput.value;
+      if (!amount || parseFloat(amount) <= 0) {
+        this.showToast('Please enter a valid amount', 'error');
+        return;
+      }
+      try {
+        await this.stakeFarm(farm.contract, amount);
+        amountInput.value = '';
+      } catch (error) {
+        // Error already handled in stakeFarm
+      }
+    });
+
+    unstakeBtn?.addEventListener('click', async () => {
+      const amount = amountInput.value;
+      if (!amount || parseFloat(amount) <= 0) {
+        this.showToast('Please enter a valid amount', 'error');
+        return;
+      }
+      try {
+        await this.unstakeFarm(farm.contract, amount);
+        amountInput.value = '';
+      } catch (error) {
+        // Error already handled in unstakeFarm
+      }
+    });
+
+    harvestBtn?.addEventListener('click', async () => {
+      try {
+        await this.harvestFarm(farm.contract);
+      } catch (error) {
+        // Error already handled in harvestFarm
+      }
+    });
+  }
+
+  /* ---------- lifecycle -------------------------------------------- */
+  init() {
+    try {
+      if (!this.grid) {
+        throw new Error('Farms grid element not found');
+      }
+
+      // Initial refresh
+      this.refresh();
+
+      // Set up auto-refresh
+      this.refreshTimer = setInterval(() => {
+        this.refresh();
+      }, INTERVALS.FARMS_REFRESH);
+
+      this.errorHandler.log('FarmsManager initialized successfully', 'info');
+    } catch (error) {
+      this.errorHandler.handleError(error, 'init');
+    }
+  }
+
+  destroy() {
+    if (this.refreshTimer) {
+      clearInterval(this.refreshTimer);
+      this.refreshTimer = null;
+    }
+  }
 }
 
+// Create and export singleton instance
+const farmsManager = new FarmsManager();
 
-  /* ---------- boot -------------------------------------------------- */
-  async function init() {
-    // Add loading indicator
-    const loadingEl = document.createElement('div');
-    loadingEl.className = 'flex items-center justify-center w-full py-12';
-    loadingEl.innerHTML = `
-      <div class="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-brand-cyan"></div>
-    `;
-    GRID.appendChild(loadingEl);
-    
-    try {
-      const txt = await fetch(FARMS_TXT).then(r => r.text());
-      
-      // Remove loading indicator
-      GRID.removeChild(loadingEl);
-      
-      // Create farm cards
-      txt.trim().split('\n').forEach(line => {
-        if (!line) return;
-        const [pairIdx, title, reward, farm, stake, contract0, contract1] = line.split(';');
-        const { el, refresh } = createCard({pairIdx, title, reward, farm, stake, contract0, contract1});
-        GRID.appendChild(el);
-        farms.push({ refresh });
-      });
-      
-      // Refresh farm data
-      farms.forEach(f => f.refresh());
-    } catch (error) {
-      console.error('Error loading farms:', error);
-      // Show error message
-      GRID.innerHTML = `
-        <div class="col-span-full text-center py-12">
-          <p class="text-red-400">Failed to load farming pools. Please try again later.</p>
-        </div>
-      `;
-    }
-  }
+// Global refresh function for compatibility
+window.refreshFarms = () => farmsManager.refresh();
 
-  window.refreshFarms = () => {
-    farms.forEach(f => f.refresh());
-  };
+// Auto-initialize on DOM ready
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', () => farmsManager.init());
+} else {
+  farmsManager.init();
+}
 
-  /* kick-off when DOM ready */
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', init);
-  } else {
-    init();
-  }
-})();
+export { farmsManager as default, FarmsManager };
