@@ -167,9 +167,12 @@ const toNumber = (str) =>
     } else {
         [start, end, rps, totalStk, rewardCon] = data;
     }
-
+    let mc_contract = 'con_staking_mc1';
+    if (meta.farm != 'con_farm_xian_usdc') {
+      mc_contract = 'con_staking_mc2';
+    }
     let tvlRaw = await RPCcall(
-      'con_staking_mc1',
+      mc_contract,
       'lpvalue_xian',
       userAddress || '',
       { dexpairs: 'con_pairs', pairs: [meta.pairIdx] }
