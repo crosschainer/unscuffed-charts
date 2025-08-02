@@ -45,6 +45,7 @@
   <link href="assets/styles.css?v=19" rel="stylesheet" />
   <link href="assets/farms.css?v=32" rel="stylesheet" />
   <link href="assets/staking.css?v=1" rel="stylesheet" />
+  <link href="assets/macros.css?v=1" rel="stylesheet" />
 </head>
 
 <body class="font-inter bg-brand-base text-gray-200 min-h-screen
@@ -99,9 +100,9 @@
         Staking
       </a>
 
-      <a href="https://bridge.xian.org" target="_blank" class="px-1 pb-0.5 border-b-2 border-transparent
+      <a href="/#macros" class="px-1 pb-0.5 border-b-2 border-transparent
               text-gray-300 hover:text-brand-cyan hover:border-brand-cyan">
-        Bridge
+        Macros
       </a>
     </nav>
   </header>
@@ -124,6 +125,201 @@
       <div class="animate-spin rounded-full h-12 w-12 border-t-2 border-brand-cyan"></div>
     </div>
   </div>
+  
+  <!-- Macros View -->
+  <div class="flex flex-1 flex-col md:overflow-auto" id="macrosView" style="display: none;">
+    <div class="container mx-auto px-4 py-6">
+      <h1 class="text-2xl font-bold mb-2">DeFi Macros</h1>
+      <p class="text-gray-400 mb-6">Create automated sequences of DeFi operations that execute with a single click</p>
+      
+      <!-- Quick Start Guide -->
+      <div class="bg-brand-indigo/10 rounded-lg p-4 border border-brand-indigo/30 mb-6">
+        <h3 class="font-semibold text-brand-indigo mb-2">How to Use Macros</h3>
+        <ol class="list-decimal list-inside text-sm space-y-1 text-gray-300">
+          <li>Give your macro a descriptive name</li>
+          <li>Add steps in the order you want them executed</li>
+          <li>Configure each step with the required parameters</li>
+          <li>Save your macro to use it later</li>
+          <li>Execute the macro to run all steps in sequence</li>
+        </ol>
+      </div>
+      
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <!-- Left Column: Create & Edit Macros -->
+        <div class="bg-brand-card rounded-lg p-4 border border-white/5">
+          <h2 class="text-xl font-semibold mb-4 flex items-center">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2 text-brand-cyan" viewBox="0 0 20 20" fill="currentColor">
+              <path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z" />
+            </svg>
+            Create Macro
+          </h2>
+          
+          <div class="mb-4">
+            <label class="block text-sm font-medium text-gray-400 mb-1">Macro Name</label>
+            <input type="text" id="macroName" placeholder="E.g., Harvest and Reinvest LP Rewards" 
+                   class="w-full rounded bg-white/5 px-3 py-2 
+                   focus:outline-none focus:ring-2 focus:ring-brand-cyan">
+          </div>
+          
+          <div class="mb-4">
+            <div class="flex justify-between items-center mb-1">
+              <label class="block text-sm font-medium text-gray-400">Macro Steps</label>
+              <span class="text-xs text-gray-500">Steps execute in order from top to bottom</span>
+            </div>
+            <div id="macroSteps" class="space-y-2 min-h-[100px] border border-dashed border-white/10 rounded-md p-2 mb-2">
+              <!-- Steps will be added here dynamically -->
+            </div>
+            
+            <div class="flex gap-2 mt-3">
+              <button id="addStepBtn" class="px-3 py-2 text-sm font-medium rounded-md
+                       bg-brand-cyan/20 text-brand-cyan border border-brand-cyan/30
+                       hover:bg-brand-cyan/30 active:bg-brand-cyan/40
+                       focus:outline-none focus:ring-2 focus:ring-brand-cyan
+                       transition flex items-center">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1" viewBox="0 0 20 20" fill="currentColor">
+                  <path fill-rule="evenodd" d="M10 5a1 1 0 011 1v3h3a1 1 0 110 2h-3v3a1 1 0 11-2 0v-3H6a1 1 0 110-2h3V6a1 1 0 011-1z" clip-rule="evenodd" />
+                </svg>
+                Add Step
+              </button>
+            </div>
+          </div>
+          
+          <div class="flex justify-between mt-6">
+            <button id="saveMacroBtn" class="px-4 py-2 font-medium rounded-md
+                     bg-brand-cyan text-black
+                     hover:bg-brand-cyan/90 active:bg-brand-cyan/80
+                     focus:outline-none focus:ring-2 focus:ring-brand-cyan
+                     transition flex items-center">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1" viewBox="0 0 20 20" fill="currentColor">
+                <path d="M7.707 10.293a1 1 0 10-1.414 1.414l3 3a1 1 0 001.414 0l3-3a1 1 0 00-1.414-1.414L11 11.586V6h5a2 2 0 012 2v7a2 2 0 01-2 2H4a2 2 0 01-2-2V8a2 2 0 012-2h5v5.586l-1.293-1.293zM9 4a1 1 0 012 0v2H9V4z" />
+              </svg>
+              Save Macro
+            </button>
+            
+            <button id="clearMacroBtn" class="px-4 py-2 font-medium rounded-md
+                     bg-white/10 text-white
+                     hover:bg-white/15 active:bg-white/20
+                     focus:outline-none focus:ring-2 focus:ring-white/30
+                     transition flex items-center">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1" viewBox="0 0 20 20" fill="currentColor">
+                <path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clip-rule="evenodd" />
+              </svg>
+              Clear
+            </button>
+          </div>
+        </div>
+        
+        <!-- Right Column: Saved & Shared Macros -->
+        <div class="bg-brand-card rounded-lg p-4 border border-white/5">
+          <h2 class="text-xl font-semibold mb-4 flex items-center">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2 text-brand-cyan" viewBox="0 0 20 20" fill="currentColor">
+              <path d="M7 9a2 2 0 012-2h6a2 2 0 012 2v6a2 2 0 01-2 2H9a2 2 0 01-2-2V9z" />
+              <path d="M5 3a2 2 0 00-2 2v6a2 2 0 002 2V5h8a2 2 0 00-2-2H5z" />
+            </svg>
+            Your Macros
+          </h2>
+          
+          <div id="savedMacros" class="space-y-3 mb-6 min-h-[100px]">
+            <!-- Saved macros will appear here -->
+            <div class="text-sm text-gray-400 italic">No saved macros yet</div>
+          </div>
+          
+          <h2 class="text-xl font-semibold mb-4 mt-8 flex items-center">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2 text-brand-cyan" viewBox="0 0 20 20" fill="currentColor">
+              <path d="M15 8a3 3 0 10-2.977-2.63l-4.94 2.47a3 3 0 100 4.319l4.94 2.47a3 3 0 10.895-1.789l-4.94-2.47a3.027 3.027 0 000-.74l4.94-2.47C13.456 7.68 14.19 8 15 8z" />
+            </svg>
+            Share & Import
+          </h2>
+          
+          <div class="mb-4">
+            <label class="block text-sm font-medium text-gray-400 mb-1">Share Current Macro</label>
+            <div class="flex gap-2">
+              <input type="text" id="shareLink" readonly
+                     class="w-full rounded bg-white/5 px-3 py-2 
+                     focus:outline-none focus:ring-2 focus:ring-brand-cyan">
+              <button id="copyShareLinkBtn" class="px-3 py-1 text-xs font-medium rounded-md
+                       bg-white/10 text-white
+                       hover:bg-white/15 active:bg-white/20
+                       focus:outline-none focus:ring-2 focus:ring-white/30
+                       transition flex items-center">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1" viewBox="0 0 20 20" fill="currentColor">
+                  <path d="M8 3a1 1 0 011-1h2a1 1 0 110 2H9a1 1 0 01-1-1z" />
+                  <path d="M6 3a2 2 0 00-2 2v11a2 2 0 002 2h8a2 2 0 002-2V5a2 2 0 00-2-2 3 3 0 01-3 3H9a3 3 0 01-3-3z" />
+                </svg>
+                Copy
+              </button>
+            </div>
+          </div>
+          
+          <div class="mb-4">
+            <label class="block text-sm font-medium text-gray-400 mb-1">Import Macro</label>
+            <div class="flex gap-2">
+              <input type="text" id="importLink" placeholder="Paste macro code here"
+                     class="w-full rounded bg-white/5 px-3 py-2 
+                     focus:outline-none focus:ring-2 focus:ring-brand-cyan">
+              <button id="importMacroBtn" class="px-3 py-1 text-xs font-medium rounded-md
+                       bg-brand-cyan/20 text-brand-cyan border border-brand-cyan/30
+                       hover:bg-brand-cyan/30 active:bg-brand-cyan/40
+                       focus:outline-none focus:ring-2 focus:ring-brand-cyan
+                       transition flex items-center">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1" viewBox="0 0 20 20" fill="currentColor">
+                  <path fill-rule="evenodd" d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zM6.293 6.707a1 1 0 010-1.414l3-3a1 1 0 011.414 0l3 3a1 1 0 01-1.414 1.414L11 5.414V13a1 1 0 11-2 0V5.414L7.707 6.707a1 1 0 01-1.414 0z" clip-rule="evenodd" />
+                </svg>
+                Import
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Macro Execution Panel -->
+      <div class="bg-brand-card rounded-lg p-4 border border-white/5 mt-6">
+        <h2 class="text-xl font-semibold mb-4 flex items-center">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2 text-brand-magenta" viewBox="0 0 20 20" fill="currentColor">
+            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" clip-rule="evenodd" />
+          </svg>
+          Execute Macro
+        </h2>
+        
+        <div class="flex flex-col md:flex-row gap-4">
+          <div class="flex-1">
+            <label class="block text-sm font-medium text-gray-400 mb-1">Select Macro</label>
+            <select id="executeMacroSelect" 
+                    class="w-full rounded bg-brand-base px-3 py-2 border border-white/10
+                    focus:outline-none focus:ring-2 focus:ring-brand-cyan">
+              <option value="">-- Select a macro --</option>
+            </select>
+          </div>
+          
+          <div class="flex items-end">
+            <button id="executeMacroBtn" class="px-4 py-2 font-medium rounded-md
+                     bg-brand-magenta text-white
+                     hover:bg-brand-magenta/90 active:bg-brand-magenta/80
+                     focus:outline-none focus:ring-2 focus:ring-brand-magenta
+                     transition flex items-center">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1" viewBox="0 0 20 20" fill="currentColor">
+                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" clip-rule="evenodd" />
+              </svg>
+              Execute Macro
+            </button>
+          </div>
+        </div>
+        
+        <div id="executionStatus" class="mt-4 p-3 rounded bg-white/5 hidden">
+          <h3 class="font-medium mb-2 flex items-center">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1 text-brand-cyan" viewBox="0 0 20 20" fill="currentColor">
+              <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clip-rule="evenodd" />
+            </svg>
+            Execution Status
+          </h3>
+          <div id="executionSteps" class="space-y-2 text-sm">
+            <!-- Execution steps will appear here -->
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  
   <div class="flex flex-1 md:overflow-hidden" id="tradeView" style="display: none;">
 
     <!-- Sidebar on md+; toggled offcanvas on mobile -->
@@ -655,6 +851,7 @@
   <script src="assets/main.js?v=212022320" type="module"></script>
   <script src="assets/farms.js?v=62"></script>
   <script src="assets/staking.js?v=322"></script>
+  <script src="assets/macros.js?v=1"></script>
 </body>
 
 </html>

@@ -1,0 +1,125 @@
+/* Macros CSS */
+
+/* Step type buttons */
+.macro-step-type {
+  @apply px-3 py-2 rounded-md text-sm font-medium transition-colors;
+  @apply bg-white/5 hover:bg-white/10 active:bg-white/15;
+}
+
+.macro-step-type.active {
+  @apply bg-brand-cyan/20 text-brand-cyan border border-brand-cyan/30;
+}
+
+/* Step cards */
+.macro-step-card {
+  @apply bg-white/5 rounded-lg p-3 mb-3 relative;
+  @apply border border-white/10;
+}
+
+.macro-step-card:hover {
+  @apply border-white/20;
+}
+
+/* Parameter inputs */
+.param-input {
+  @apply w-full rounded bg-brand-base px-3 py-2 border border-white/10;
+  @apply focus:outline-none focus:ring-2 focus:ring-brand-cyan;
+}
+
+/* Fix dropdown styling */
+select.param-input {
+  @apply appearance-none bg-no-repeat bg-right pr-8;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='white'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E");
+  background-position: right 0.5rem center;
+  background-size: 1rem;
+}
+
+/* Fix dropdown option colors */
+select.param-input option {
+  @apply bg-brand-base text-white;
+}
+
+/* Add step modal */
+.modal-backdrop {
+  @apply fixed inset-0 bg-black/80 flex items-center justify-center z-50;
+}
+
+.modal-content {
+  @apply bg-brand-card rounded-lg p-4 max-w-md w-full mx-4;
+  @apply border border-white/10;
+}
+
+/* Execution status */
+.execution-step {
+  @apply flex items-center gap-2 p-2 rounded;
+}
+
+.execution-step.pending {
+  @apply bg-white/5;
+}
+
+.execution-step.success {
+  @apply bg-green-500/10;
+}
+
+.execution-step.error {
+  @apply bg-red-500/10;
+}
+
+/* Toast notifications */
+.toast {
+  @apply px-4 py-2 rounded-md text-sm font-medium shadow-lg;
+  @apply transform transition-all duration-300;
+}
+
+.toast-success {
+  @apply bg-green-500 text-white;
+}
+
+.toast-error {
+  @apply bg-red-500 text-white;
+}
+
+.toast-info {
+  @apply bg-brand-cyan text-black;
+}
+
+.toast-warning {
+  @apply bg-yellow-500 text-white;
+}
+
+/* Buttons */
+.btn-primary {
+  @apply px-4 py-2 font-medium rounded-md;
+  @apply bg-brand-cyan text-black;
+  @apply hover:bg-brand-cyan/90 active:bg-brand-cyan/80;
+  @apply focus:outline-none focus:ring-2 focus:ring-brand-cyan;
+  @apply transition;
+}
+
+.btn-secondary {
+  @apply px-4 py-2 font-medium rounded-md;
+  @apply bg-white/10 text-white;
+  @apply hover:bg-white/15 active:bg-white/20;
+  @apply focus:outline-none focus:ring-2 focus:ring-white/30;
+  @apply transition;
+}
+
+.btn-accent {
+  @apply px-4 py-2 font-medium rounded-md;
+  @apply bg-brand-magenta text-white;
+  @apply hover:bg-brand-magenta/90 active:bg-brand-magenta/80;
+  @apply focus:outline-none focus:ring-2 focus:ring-brand-magenta;
+  @apply transition;
+}
+
+/* Utility classes */
+.tf-btn {
+  @apply px-2 py-1 text-xs font-medium rounded;
+  @apply bg-white/5 hover:bg-white/10 active:bg-white/15;
+  @apply transition-colors;
+}
+
+.tf-btn.active {
+  @apply bg-brand-cyan/20 text-brand-cyan;
+}
