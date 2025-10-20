@@ -2,7 +2,7 @@
 import { els, showSidebarSkeleton, showMainSkeleton } from './ui.js';
 import * as api from './api.js';
 import * as chart from './chart.js';
-import { getPairFromHash, isFarmsHash, isStakingHash } from './utils.js';
+import { getPairFromHash, isFarmsHash, isStakingHash, isMacrosHash } from './utils.js';
 import { 
   currencyUsdPrice, 
   setCurrencyUsdPrice, 
@@ -83,6 +83,7 @@ function showFarmsPlaceholder() {
   document.getElementById('tradeView').style.display = 'none';
   document.getElementById('farmsView').style.display = 'flex';
   document.getElementById('stakingView').style.display = 'none';
+  document.getElementById('macrosView').style.display = 'none';
   if(!document.getElementById('mobilePairHeader').classList.contains('hidden')) {
     document.getElementById('mobilePairHeader').classList.add('hidden');
   }
@@ -94,6 +95,8 @@ function showFarmsPlaceholder() {
   document.querySelector('a[href="/#farms"]').classList.add('text-brand-cyan', 'border-brand-cyan');
   document.querySelector('a[href="/#staking"]').classList.remove('text-brand-cyan', 'border-brand-cyan');
   document.querySelector('a[href="/#staking"]').classList.add('text-gray-300', 'border-transparent');
+  document.querySelector('a[href="/#macros"]').classList.remove('text-brand-cyan', 'border-brand-cyan');
+  document.querySelector('a[href="/#macros"]').classList.add('text-gray-300', 'border-transparent');
 }
 
 // Function to show the staking placeholder
@@ -103,6 +106,7 @@ function showStakingPlaceholder() {
   document.getElementById('tradeView').style.display = 'none';
   document.getElementById('farmsView').style.display = 'none';
   document.getElementById('stakingView').style.display = 'flex';
+  document.getElementById('macrosView').style.display = 'none';
   if(!document.getElementById('mobilePairHeader').classList.contains('hidden')) {
     document.getElementById('mobilePairHeader').classList.add('hidden');
   }
@@ -114,6 +118,31 @@ function showStakingPlaceholder() {
   document.querySelector('a[href="/#farms"]').classList.add('text-gray-300', 'border-transparent');
   document.querySelector('a[href="/#staking"]').classList.remove('text-gray-300', 'border-transparent');
   document.querySelector('a[href="/#staking"]').classList.add('text-brand-cyan', 'border-brand-cyan');
+  document.querySelector('a[href="/#macros"]').classList.remove('text-brand-cyan', 'border-brand-cyan');
+  document.querySelector('a[href="/#macros"]').classList.add('text-gray-300', 'border-transparent');
+}
+
+// Function to show the macros view
+function showMacrosView() {
+  // Hide other views, show macros
+  document.getElementById('loadingView').style.display = 'none';
+  document.getElementById('tradeView').style.display = 'none';
+  document.getElementById('farmsView').style.display = 'none';
+  document.getElementById('stakingView').style.display = 'none';
+  document.getElementById('macrosView').style.display = 'flex';
+  if(!document.getElementById('mobilePairHeader').classList.contains('hidden')) {
+    document.getElementById('mobilePairHeader').classList.add('hidden');
+  }
+  
+  // Update navigation highlighting
+  document.querySelector('a[href="/#pair=1"]').classList.remove('text-brand-cyan', 'border-brand-cyan');
+  document.querySelector('a[href="/#pair=1"]').classList.add('text-gray-300', 'border-transparent');
+  document.querySelector('a[href="/#farms"]').classList.remove('text-brand-cyan', 'border-brand-cyan');
+  document.querySelector('a[href="/#farms"]').classList.add('text-gray-300', 'border-transparent');
+  document.querySelector('a[href="/#staking"]').classList.remove('text-brand-cyan', 'border-brand-cyan');
+  document.querySelector('a[href="/#staking"]').classList.add('text-gray-300', 'border-transparent');
+  document.querySelector('a[href="/#macros"]').classList.remove('text-gray-300', 'border-transparent');
+  document.querySelector('a[href="/#macros"]').classList.add('text-brand-cyan', 'border-brand-cyan');
 }
 
 // Function to show the pairs view
@@ -123,6 +152,7 @@ function showPairsView() {
   document.getElementById('tradeView').style.display = 'flex';
   document.getElementById('farmsView').style.display = 'none';
   document.getElementById('stakingView').style.display = 'none';
+  document.getElementById('macrosView').style.display = 'none';
   if(document.getElementById('mobilePairHeader').classList.contains('hidden')) {
     document.getElementById('mobilePairHeader').classList.remove('hidden');
   }
@@ -134,6 +164,8 @@ function showPairsView() {
   document.querySelector('a[href="/#farms"]').classList.remove('text-brand-cyan', 'border-brand-cyan');
   document.querySelector('a[href="/#staking"]').classList.add('text-gray-300', 'border-transparent');
   document.querySelector('a[href="/#staking"]').classList.remove('text-brand-cyan', 'border-brand-cyan');
+  document.querySelector('a[href="/#macros"]').classList.add('text-gray-300', 'border-transparent');
+  document.querySelector('a[href="/#macros"]').classList.remove('text-brand-cyan', 'border-brand-cyan');
 }
 
 // Function to handle hash changes
@@ -142,6 +174,8 @@ function handleHashChange() {
     showFarmsPlaceholder();
   } else if (isStakingHash()) {
     showStakingPlaceholder();
+  } else if (isMacrosHash()) {
+    showMacrosView();
   } else {
     showPairsView();
     const maybeId = getPairFromHash();
