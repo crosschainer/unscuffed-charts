@@ -218,8 +218,8 @@ async function init() {
         updateVisibleRows();
       }
     },
-    onError: err => console.error('Pairs WS error', err),
-    onOpen: () => console.log('Pairs WS connected'),
+    onError: err => console.error('Pairs stream error', err),
+    onOpen: () => console.log('Pairs stream connected'),
   };
   
   setCurrentPairsWs(api.subscribePairs(pairsCallbacks), pairsCallbacks);

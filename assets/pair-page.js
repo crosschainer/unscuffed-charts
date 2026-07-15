@@ -35,7 +35,7 @@ export async function selectPair(pairId) {
   currentPairSelectionId = pairId;
   const thisSelectionId = pairId; // Capture the current selection ID for comparison later
   
-  // Close existing WebSockets first to prevent race conditions
+  // Close existing live streams first to prevent race conditions
   closePairWebSockets();
   
   setPairHash(pairId);  // update URL hash
@@ -171,7 +171,7 @@ export async function selectPair(pairId) {
     }
 
     /* 6) wire up live updates ----------------------------------------------*/
-    setupPairWebSockets(pairId, denomPrice, denomVol, denomTrades, chartDenom, meta0, meta1, tradeBoxState);
+    setupPairStreams(pairId, denomPrice, denomVol, denomTrades, chartDenom, meta0, meta1, tradeBoxState);
     
   } catch (error) {
     console.error(`Error selecting pair ${pairId}:`, error);
@@ -242,17 +242,17 @@ function fillMissingCandles() {
   }
 }
 
-function setupPairWebSockets(pairId, denomPrice, denomVol, denomTrades, chartDenom, meta0, meta1, tradeBoxState) {
+function setupPairStreams(pairId, denomPrice, denomVol, denomTrades, chartDenom, meta0, meta1, tradeBoxState) {
   // Store the current pair ID to check in callbacks
   const currentSetupPairId = pairId;
   
-  // Price change WebSocket
+  // Price change stream
   const priceChangeCallbacks = {
     onOpen: () => {
-      console.log('Price WS open for', pairId);
+      console.log('Price stream open for', pairId);
     },
     onError: err => {
-      console.error('Price WS error', err);
+      console.error('Price stream error', err);
     },
     onData: d => {
       // Check if we're still on the same pair
@@ -283,7 +283,7 @@ function setupPairWebSockets(pairId, denomPrice, denomVol, denomTrades, chartDen
     { pairId, denomPrice, callbacks: priceChangeCallbacks }
   );
 
-  // Volume WebSocket
+  // Volume stream
   const volumeCallbacks = {
     onData: d => {
       // Check if we're still on the same pair
@@ -304,7 +304,7 @@ function setupPairWebSockets(pairId, denomPrice, denomVol, denomTrades, chartDen
     { pairId, denomVol, callbacks: volumeCallbacks }
   );
 
-  // Reserves WebSocket
+  // Reserves stream
   const reservesCallbacks = {
     onData: d => {
       // Check if we're still on the same pair
@@ -325,18 +325,18 @@ function setupPairWebSockets(pairId, denomPrice, denomVol, denomTrades, chartDen
         console.error("Error processing reserves update:", error);
       }
     },
-    onError: err => console.error('Reserves WS error', err),
-    onOpen: () => console.log('Reserves WS open'),
+    onError: err => console.error('Reserves stream error', err),
+    onOpen: () => console.log('Reserves stream open'),
   };
   setCurrentReservesWs(
     api.subscribePairReserves(pairId, reservesCallbacks),
     { pairId, callbacks: reservesCallbacks }
   );
 
-  // Candles WebSocket
+  // Candles stream
   const candlesCallbacks = {
-    onOpen: () => console.log('Candles WS connected for', pairId),
-    onError: err => console.error('Candles WS error', err),
+    onOpen: () => console.log('Candles stream connected for', pairId),
+    onError: err => console.error('Candles stream error', err),
     onData: incomingCandle => {
       // Check if we're still on the same pair
       if (currentPairSelectionId !== currentSetupPairId) {
@@ -350,7 +350,7 @@ function setupPairWebSockets(pairId, denomPrice, denomVol, denomTrades, chartDen
         const last = chart.getLastBar();
         if (last && typeof last.time === 'number' && last.close !== undefined) {
           const lastTs = last.time * 1000;
-          const newTs = incomingCandle.t;
+          const newTs = chart.rawToBar(incomingCandle).time * 1000;
           const missed = Math.floor((newTs - lastTs) / ivMs) - 1;
           
           // Only fill reasonable gaps (avoid filling huge gaps that might be due to data issues)
@@ -380,11 +380,11 @@ function setupPairWebSockets(pairId, denomPrice, denomVol, denomTrades, chartDen
     { pairId, token: chartDenom, interval: "5m", callbacks: candlesCallbacks }
   );
 
-  // Trades WebSocket
-  setupTradesWebSocket(pairId, denomTrades, meta0, meta1);
+  // Trades stream
+  setupTradesStream(pairId, denomTrades, meta0, meta1);
 }
 
-function setupTradesWebSocket(pairId, denomTrades, meta0, meta1) {
+function setupTradesStream(pairId, denomTrades, meta0, meta1) {
   let firstTrade = true;
   let lastTradeTs = 0;
   
@@ -450,7 +450,7 @@ function setupTradesWebSocket(pairId, denomTrades, meta0, meta1) {
         console.error("Error processing trades update:", error);
       }
     },
-    onError: err => console.error('Trades WS error', err),
+    onError: err => console.error('Trades stream error', err),
     onOpen: () => console.log('Connected to live trades for', pairId),
   };
   

@@ -118,7 +118,7 @@ async function getTokenBalance(
   backoffMs = 400,
   timeout = 5000
 ) {
-  const url = `https://api.snaklytics.com/token/${contract}/balance/${address}`;
+  const url = `https://xian-api.poc.workers.dev/token/${contract}/balance/${address}`;
 
   for (let attempt = 0; attempt <= retries; attempt++) {
     const controller = new AbortController();
@@ -308,7 +308,7 @@ async function fetchUserLiquidity() {
         refreshLiquidityBtn.textContent = 'Loading...';
         
         // Fetch user's liquidity data directly
-        const response = await fetch(`https://api.snaklytics.com/pairs/${pairId}/liquidity/${userAddress}`);
+        const response = await fetch(`https://xian-api.poc.workers.dev/pairs/${pairId}/liquidity/${userAddress}`);
         const liquidityData = await response.json();
         _liquidityData = liquidityData;
         

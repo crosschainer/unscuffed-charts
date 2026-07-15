@@ -5,8 +5,8 @@ import { fetchJSON } from './utils.js';
 export { fetchJSON };                            // re‑export for convenience
 export { throttledFetchJSON } from './utils.js';
 
-export const API_BASE = 'https://api.snaklytics.com';
-export const WS_BASE  = API_BASE.replace(/^http/, 'ws');  // wss://api.snaklytics.com
+export const API_BASE = 'https://xian-api.poc.workers.dev';
+export const STREAM_BASE = API_BASE;
 
 /* ──────────────────────────  Persistent TOKEN_CACHE  ────────────────── */
 // _fetchedAt is an epoch‑ms timestamp living on every cached entry
@@ -172,24 +172,24 @@ export const getPairTrades = (
 };
 export const getPairReserves = id => fetchJSON(`${API_BASE}/pairs/${id}/reserves`);
 
-/* ─────────────────────  WebSocket helpers  ────────────────── */
-import { createReconnectingWebSocket } from './websockets.js';
+/* ─────────────────────  Live stream helpers  ────────────────── */
+import { createReconnectingEventSource } from './websockets.js';
 
-function _subscribe(path, onData, onError, onOpen, wsType) {
-  const url = WS_BASE + path;
+function _subscribe(path, onData, onError, onOpen, streamType) {
+  const url = STREAM_BASE + path;
   const callbacks = { onData, onError, onOpen };
-  return createReconnectingWebSocket(url, callbacks, wsType);
+  return createReconnectingEventSource(url, callbacks, streamType);
 }
 
 export const subscribePairCandles = (id, token, interval = '5m', cb = {}) =>
-  _subscribe(`/ws/pairs/${id}/candles?token=${token}&interval=${interval}`, cb.onData, cb.onError, cb.onOpen, 'candles');
+  _subscribe(`/stream/pairs/${id}/candles?token=${token}&interval=${interval}`, cb.onData, cb.onError, cb.onOpen, 'candles');
 export const subscribePairVolume24h = (id, token, cb = {}) =>
-  _subscribe(`/ws/pairs/${id}/volume24h?token=${token}`, cb.onData, cb.onError, cb.onOpen, 'volume');
+  _subscribe(`/stream/pairs/${id}/volume24h?token=${token}`, cb.onData, cb.onError, cb.onOpen, 'volume');
 export const subscribePairPriceChange24h = (id, token, cb = {}) =>
-  _subscribe(`/ws/pairs/${id}/pricechange24h?token=${token}`, cb.onData, cb.onError, cb.onOpen, 'priceChange');
+  _subscribe(`/stream/pairs/${id}/pricechange24h?token=${token}`, cb.onData, cb.onError, cb.onOpen, 'priceChange');
 export const subscribePairTrades = (id, token, cb = {}) =>
-  _subscribe(`/ws/pairs/${id}/trades?token=${token}&limit=25`, cb.onData, cb.onError, cb.onOpen, 'trades');
+  _subscribe(`/stream/pairs/${id}/trades?token=${token}&limit=25`, cb.onData, cb.onError, cb.onOpen, 'trades');
 export const subscribePairReserves = (id, cb = {}) =>
-  _subscribe(`/ws/pairs/${id}/reserves`, cb.onData, cb.onError, cb.onOpen, 'reserves');
+  _subscribe(`/stream/pairs/${id}/reserves`, cb.onData, cb.onError, cb.onOpen, 'reserves');
 export const subscribePairs = (cb = {}) =>
-  _subscribe('/ws/pairs', cb.onData, cb.onError, cb.onOpen, 'pairs');
+  _subscribe('/stream/pairs?limit=100&order=desc', cb.onData, cb.onError, cb.onOpen, 'pairs');

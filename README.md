@@ -5,7 +5,7 @@ App bootstrap & glue code.
 - Shows initial skeleton UIs, then runs `init()` on `DOMContentLoaded`.  
 - Fetches and polls XIAN→USD price (`api.getCurrencyPrice`, `CURRENCY_UPDATE_INTERVAL`).  
 - Loads pair list (`api.getPairs`), normalises & renders sidebar, marks real data ready.  
-- Subscribes to the live pairs WebSocket; efficiently updates only changed rows and visible items.  
+- Subscribes to the live pairs SSE stream; efficiently updates only changed rows and visible items.
 - Debounced scroll/resize handlers to avoid jank while updating the sidebar.  
 - Hash‑based routing: switches between Pairs, Farms, and Staking views; auto-selects a pair.  
 - Periodically advances the current empty chart candle and wires timeframe buttons to `chart.changeTimeframe`.  
@@ -13,14 +13,14 @@ App bootstrap & glue code.
 - Handles mobile sidebar toggle (hamburger/close buttons).
 
 ### api.js
-REST/WebSocket client + persistent token‑meta cache.
+REST/SSE client + persistent token‑meta cache.
 
-- Exports `API_BASE` / `WS_BASE`, `fetchJSON` (and `throttledFetchJSON`) from `utils.js`.
+- Exports `API_BASE` / `STREAM_BASE`, `fetchJSON` (and `throttledFetchJSON`) from `utils.js`.
 - TOKEN_CACHE stored in-memory & mirrored to `localStorage` (`xian_token_meta`, schema ver 2) with field-specific TTLs (static/dynamic/logo).
 - Batch metadata fetcher: queues contract IDs, hits `/tokens/{a,b,c}` once, resolves per‑token promises; stale entries trigger background refresh.
 - Public helper `fetchTokenMeta(contract)` returns fresh/stale meta immediately and refreshes as needed.
 - Thin wrappers for REST endpoints: prices, pairs list/detail, candles, trades, reserves, liquidity, etc.
-- WebSocket subscribe helpers (`subscribePairCandles`, `subscribePairs`, …) built on `createReconnectingWebSocket`, standardizing callbacks.
+- SSE subscribe helpers (`subscribePairCandles`, `subscribePairs`, …) built on `createReconnectingEventSource`, standardizing callbacks.
 
 ### chart.js
 LightweightCharts wrapper with client‑side timeframe aggregation.
@@ -80,9 +80,9 @@ Module that orchestrates loading & live-updating a selected trading pair.
 - Race‑proofing: `currentPairSelectionId` + checks after every await; closes old WS connections before opening new ones.
 - Stats paint: uses `paintPrice`, `paintVolume`, `paintLiquidity`, `updateMarketCap`; USD conversions via `currencyUsdPrice`.
 - Chart flow: `chart.initEmptyChart()` → `loadInitialCandles()` → `fillMissingCandles()` to patch 5m gaps, then timeframe buttons reset.
-- WebSockets: price, volume, reserves, candles, and trades each have guarded callbacks; setters in `websockets.js` track/close them (`setCurrent*Ws`).
+- Live SSE streams: price, volume, reserves, candles, and trades each have guarded callbacks; setters in `websockets.js` track/close them (`setCurrent*Ws`).
 - Helper glue to global UI bits from `dapp-func.js`: `updateTradeBox`, `refreshBalanceLine`.
-- Utility exports: just `selectPair`; internals like `fillMissingCandles`, `setupPairWebSockets`, `setupTradesWebSocket` stay private.
+- Utility exports: just `selectPair`; internals like `fillMissingCandles`, `setupPairStreams`, `setupTradesStream` stay private.
 
 ### rpc.js
 Thin RPC/GraphQL helper (global namespace) for the Xian node.
@@ -168,16 +168,16 @@ Generic helpers: resilient fetchers, array utils, routing, and formatters.
 - `formatPrice(value)` chooses decimals based on magnitude (2–10 dp).
 
 ### websockets.js
-Centralized WebSocket lifecycle + reconnection logic.
+Centralized SSE lifecycle and connection-state logic (the filename and `Ws` handle names are retained for compatibility).
 
 - Keeps handles for each stream: `currentTradesWs`, `currentPriceChangeWs`, `currentVolumeWs`, `currentReservesWs`, `currentPairsWs`, `currentCandlesWs`.
 - `connectionState` tracks which feeds are live; `updateConnectionState()` toggles the `#live-dot` UI.
-- `createReconnectingWebSocket(url, callbacks, wsType)`:
-  - Auto‑reconnects (2 s delay, max 5 tries).
-  - Wraps `.close()` to mark `manualClose` and stop retries.
+- `createReconnectingEventSource(url, callbacks, streamType)`:
+  - Uses the browser's automatic SSE reconnection.
+  - Wraps `.close()` to update the live connection indicator.
   - Parses incoming JSON and calls `onData`, plus `onOpen`/`onError`.
 - Getter/setter pairs store sockets and their params for potential reuse.
 - `closePairWebSockets()` safely nukes all pair-specific sockets (clears globals first to avoid race callbacks).
 - `closeAllWebSockets()` closes the key stat sockets (price/volume/reserves/candles).
 
-Exported helpers: all getters/setters, `closeAllWebSockets`, `closePairWebSockets`, and `createReconnectingWebSocket`.
+Exported helpers: all getters/setters, `closeAllWebSockets`, `closePairWebSockets`, and `createReconnectingEventSource`.

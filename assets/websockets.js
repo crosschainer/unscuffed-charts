@@ -1,6 +1,6 @@
-/* WebSocket Connection Management -----------------------------------------*/
+/* Live stream connection management --------------------------------------*/
 
-// WebSocket connections
+// EventSource connections (legacy `Ws` names are kept for existing imports)
 let currentTradesWs = null;
 let currentPriceChangeWs = null;
 let currentVolumeWs = null;
@@ -8,7 +8,7 @@ let currentReservesWs = null;
 let currentPairsWs = null;
 let currentCandlesWs = null;
 
-// WebSocket connection state
+// Live connection state
 let connectionState = {
   trades: false,
   priceChange: false,
@@ -18,11 +18,7 @@ let connectionState = {
   candles: false
 };
 
-// WebSocket reconnection configuration
-const RECONNECT_DELAY = 2000; // 2 seconds
-const MAX_RECONNECT_ATTEMPTS = 5;
-
-// Store WebSocket connection parameters for reconnection
+// Store stream connection parameters for diagnostics
 let wsParams = {
   trades: null,
   priceChange: null,
@@ -37,7 +33,7 @@ function updateConnectionState() {
   const liveDot = document.getElementById('live-dot');
   if (!liveDot) return;
   
-  // Check if any of the critical websockets are connected
+  // Check if any of the critical streams are connected
   const isConnected = connectionState.priceChange || connectionState.candles;
   
   if (isConnected) {
@@ -47,66 +43,43 @@ function updateConnectionState() {
   }
 }
 
-// Create a websocket with reconnection capability
-function createReconnectingWebSocket(url, callbacks, wsType) {
-  let ws = null;
-  let reconnectAttempts = 0;
-  let reconnectTimeout = null;
-  
-  const connect = () => {
-    ws = new WebSocket(url);
-    
-    ws.addEventListener('open', (ev) => {
-      reconnectAttempts = 0;
-      connectionState[wsType] = true;
-      updateConnectionState();
-      if (callbacks.onOpen) callbacks.onOpen(ev);
-    });
-    
-    ws.addEventListener('error', (ev) => {
-      connectionState[wsType] = false;
-      updateConnectionState();
-      if (callbacks.onError) callbacks.onError(ev);
-    });
-    
-    ws.addEventListener('close', (ev) => {
-      connectionState[wsType] = false;
-      updateConnectionState();
-      
-      // Only attempt to reconnect if this wasn't a manual close
-      if (!ws.manualClose && reconnectAttempts < MAX_RECONNECT_ATTEMPTS) {
-        reconnectAttempts++;
-        reconnectTimeout = setTimeout(() => {
-          connect();
-        }, RECONNECT_DELAY);
-      }
-    });
-    
-    ws.addEventListener('message', (ev) => {
-      try {
-        if (callbacks.onData) callbacks.onData(JSON.parse(ev.data));
-      } catch (err) {
-        console.error('Malformed WS message', ev.data);
-      }
-    });
-    
-    return ws;
-  };
-  
-  const socket = connect();
-  
-  // Add a custom close method that prevents reconnection
-  socket.manualClose = false;
-  const originalClose = socket.close;
-  socket.close = function() {
-    socket.manualClose = true;
-    clearTimeout(reconnectTimeout);
-    connectionState[wsType] = false;
+// EventSource reconnects automatically when a stream is interrupted.
+function createReconnectingEventSource(url, callbacks, streamType) {
+  const source = new EventSource(url);
+  let manuallyClosed = false;
+
+  source.addEventListener('open', ev => {
+    connectionState[streamType] = true;
     updateConnectionState();
-    return originalClose.apply(this, arguments);
+    if (callbacks.onOpen) callbacks.onOpen(ev);
+  });
+
+  source.addEventListener('message', ev => {
+    try {
+      connectionState[streamType] = true;
+      updateConnectionState();
+      if (callbacks.onData) callbacks.onData(JSON.parse(ev.data));
+    } catch (err) {
+      console.error('Malformed live-stream message', ev.data);
+    }
+  });
+
+  source.addEventListener('error', ev => {
+    if (manuallyClosed) return;
+    connectionState[streamType] = false;
+    updateConnectionState();
+    if (callbacks.onError) callbacks.onError(ev);
+  });
+
+  const originalClose = source.close.bind(source);
+  source.close = () => {
+    manuallyClosed = true;
+    connectionState[streamType] = false;
+    updateConnectionState();
+    originalClose();
   };
-  
-  return socket;
+
+  return source;
 }
 
 export function getCurrentTradesWs() {
@@ -170,7 +143,7 @@ export function closeAllWebSockets() {
 }
 
 export function closePairWebSockets() {
-  // Create a local copy of the WebSocket references to avoid race conditions
+  // Create a local copy of the stream references to avoid race conditions
   const socketsToClose = [
     currentTradesWs, 
     currentPriceChangeWs, 
@@ -194,17 +167,17 @@ export function closePairWebSockets() {
   connectionState.candles = false;
   updateConnectionState();
   
-  // Close each WebSocket
+  // Close each stream
   socketsToClose.forEach(ws => {
     if (ws) {
       try {
         ws.close();
       } catch (e) {
-        console.warn("Error closing WebSocket", e);
+        console.warn("Error closing live stream", e);
       }
     }
   });
 }
 
-// Export the reconnecting WebSocket creator for use in api.js
-export { createReconnectingWebSocket };
+// Export the EventSource creator for use in api.js
+export { createReconnectingEventSource };
