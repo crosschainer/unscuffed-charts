@@ -1,7 +1,7 @@
 /* LightweightCharts wrapper – now with client‑side time‑frame resampling
    -----------------------------------------------------------------------*/
 import { els } from './ui.js';
-import { getPairCandles } from './api.js';
+import { getPairCandles } from './api.js?v=20260715-1';
 
 /* ────────────────────────── Constants & helpers ────────────────────── */
 // 5‑minute candles are the canonical feed.  We derive larger buckets here.

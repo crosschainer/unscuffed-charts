@@ -1,7 +1,7 @@
 /* Glue code – ties everything together ----------------------------------*/
 import { els, showSidebarSkeleton, showMainSkeleton } from './ui.js';
-import * as api from './api.js';
-import * as chart from './chart.js';
+import * as api from './api.js?v=20260715-1';
+import * as chart from './chart.js?v=20260715-1';
 import { getPairFromHash, isFarmsHash, isStakingHash } from './utils.js';
 import { 
   currencyUsdPrice, 
@@ -20,7 +20,7 @@ import {
 import { 
   setCurrentPairsWs, 
   getCurrentPairsWs 
-} from './websockets.js';
+} from './websockets.js?v=20260715-1';
 import { 
   normalisePairs, 
   renderSidebar, 
@@ -30,8 +30,8 @@ import {
   onSearch, 
   matchesSearch, 
   toUsdVol 
-} from './sidebar.js';
-import { selectPair } from './pair-page.js';
+} from './sidebar.js?v=20260715-1';
+import { selectPair } from './pair-page.js?v=20260715-1';
 import { blinkLive, tickUpdated } from './ui-updates.js';
 
 /* --------------------------- Start-up -----------------------------------*/

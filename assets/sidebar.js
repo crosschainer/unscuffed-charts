@@ -1,7 +1,7 @@
 /* Sidebar Management ------------------------------------------------------*/
 import { els } from './ui.js';
-import { TOKEN_CACHE } from './api.js';
-import * as api from './api.js';
+import { TOKEN_CACHE } from './api.js?v=20260715-1';
+import * as api from './api.js?v=20260715-1';
 import {
   liveRows,
   ROW_HEIGHT,

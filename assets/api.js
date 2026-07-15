@@ -173,7 +173,7 @@ export const getPairTrades = (
 export const getPairReserves = id => fetchJSON(`${API_BASE}/pairs/${id}/reserves`);
 
 /* ─────────────────────  Live stream helpers  ────────────────── */
-import { createReconnectingEventSource } from './websockets.js';
+import { createReconnectingEventSource } from './websockets.js?v=20260715-1';
 
 function _subscribe(path, onData, onError, onOpen, streamType) {
   const url = STREAM_BASE + path;

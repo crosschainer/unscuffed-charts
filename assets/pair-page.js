@@ -1,7 +1,7 @@
 /* Pair Page Management ----------------------------------------------------*/
 import { els, showMainSkeleton } from './ui.js';
-import * as api from './api.js';
-import * as chart from './chart.js';
+import * as api from './api.js?v=20260715-1';
+import * as chart from './chart.js?v=20260715-1';
 import { setPairHash, formatPrice } from './utils.js';
 import { currencyUsdPrice, ivMs } from './state.js';
 import { paintPrice, paintVolume, paintLiquidity, updateMarketCap } from './ui-updates.js';
@@ -13,7 +13,7 @@ import {
   setCurrentReservesWs, 
   setCurrentCandlesWs,
   closePairWebSockets 
-} from './websockets.js';
+} from './websockets.js?v=20260715-1';
 
 // Track the current pair selection operation
 let currentPairSelectionId = null;
